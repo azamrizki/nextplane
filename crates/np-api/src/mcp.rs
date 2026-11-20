@@ -166,11 +166,8 @@ impl Caller<'_> {
             None => req.body(Body::empty()),
         }
         .map_err(|e| e.to_string())?;
-        let res = router
-            .clone()
-            .oneshot(req)
-            .await
-            .map_err(|e| e.to_string())?;
+        // The router never fails (its error type is `Infallible`); errors are responses.
+        let Ok(res) = router.clone().oneshot(req).await;
         let status = res.status();
         let bytes = res
             .into_body()
