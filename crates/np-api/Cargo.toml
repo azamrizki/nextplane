@@ -1,0 +1,45 @@
+[package]
+name = "np-api"
+description = "NextPlane HTTP API (axum)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+np-core.workspace = true
+np-store.workspace = true
+anyhow.workspace = true
+mime_guess.workspace = true
+axum.workspace = true
+axum-extra.workspace = true
+argon2.workspace = true
+ammonia.workspace = true
+base64.workspace = true
+getrandom.workspace = true
+lettre.workspace = true
+reqwest.workspace = true
+yrs.workspace = true
+csv.workspace = true
+sha2.workspace = true
+time.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+
+http-body-util.workspace = true
+tower.workspace = true
+
+[dev-dependencies]
+tokio-tungstenite = "0.28"
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+base64.workspace = true
+reqwest.workspace = true
+tracing-subscriber.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

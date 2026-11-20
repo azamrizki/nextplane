@@ -1,0 +1,73 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd web && npm ci && npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+
+  build:
+    needs: web
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-musl, name: linux-amd64 }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-musl, name: linux-arm64 }
+          - { os: macos-13, target: x86_64-apple-darwin, name: darwin-amd64 }
+          - { os: macos-14, target: aarch64-apple-darwin, name: darwin-arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: build
+        env:
+          NEXTPLANE_COMMIT: ${{ github.sha }}
+        run: |
+          export NEXTPLANE_BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          cargo build --release --locked -p nextplane --target ${{ matrix.target }}
+          mkdir -p nextplane-${{ matrix.name }}
+          cp target/${{ matrix.target }}/release/nextplane nextplane-${{ matrix.name }}/
+          cp LICENSE README.md nextplane-${{ matrix.name }}/
+          tar -czf nextplane-${{ matrix.name }}.tar.gz nextplane-${{ matrix.name }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nextplane-${{ matrix.name }}
+          path: nextplane-${{ matrix.name }}.tar.gz
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nextplane-*
+          merge-multiple: true
+      - run: sha256sum nextplane-*.tar.gz > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            nextplane-*.tar.gz
+            SHA256SUMS
+          prerelease: ${{ contains(github.ref_name, '-') }}
