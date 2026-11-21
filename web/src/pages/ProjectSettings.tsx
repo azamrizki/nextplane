@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ProjectBar } from "../components/PageHeader";
 import { ProjectSettingsNav, SettingsLayout } from "../components/SettingsFrame";
 import { DataTab, PublishTab } from "./ProjectData";
+import { Automations } from "./ProjectAutomations";
 import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { del, patch, post } from "../api/client";
@@ -22,8 +23,8 @@ import { useQuery } from "@tanstack/react-query";
 import { get } from "../api/client";
 import { useWs } from "./WorkspaceHome";
 
-type Tab = "general" | "members" | "states" | "labels" | "estimates" | "features" | "data" | "publish";
-const TABS: Tab[] = ["general", "members", "states", "labels", "estimates", "features", "data", "publish"];
+type Tab = "general" | "members" | "states" | "labels" | "estimates" | "features" | "automations" | "data" | "publish";
+const TABS: Tab[] = ["general", "members", "states", "labels", "estimates", "features", "automations", "data", "publish"];
 
 export function ProjectSettingsPage() {
   const t = useT();
@@ -44,6 +45,7 @@ export function ProjectSettingsPage() {
       {tab === "labels" ? <Labels p={p} /> : null}
       {tab === "estimates" ? <Estimates p={p} /> : null}
       {tab === "features" ? <Features p={p} /> : null}
+      {tab === "automations" ? <Automations p={p} /> : null}
       {tab === "data" ? <DataTab p={p} /> : null}
       {tab === "publish" ? <PublishTab p={p} /> : null}
       </SettingsLayout>

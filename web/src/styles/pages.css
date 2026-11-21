@@ -427,3 +427,69 @@
 .row-link-inner:hover .cycle-name {
   text-decoration: underline;
 }
+
+/* Project settings › Automations (S3.7): one bordered box per automation, a switch in its
+   head, and its settings underneath while it is on. */
+.settings-lead {
+  margin: 0 0 var(--space-1);
+}
+.automations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.automation {
+  padding: 0;
+  overflow: hidden;
+}
+.automation-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+}
+.automation-head .row-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.automation-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background: var(--layer-1);
+  border: 1px solid var(--border);
+  color: var(--icon);
+}
+.automation-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.automation-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 32px + var(--space-3));
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+.automation-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 32px;
+}
+.automation-row .select {
+  min-width: 160px;
+}
+.automation-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

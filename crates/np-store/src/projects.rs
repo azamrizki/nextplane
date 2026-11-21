@@ -32,6 +32,11 @@ pub struct Project {
     pub created_by: Uuid,
     pub created_at: String,
     pub archived_at: Option<String>,
+    /// Automations (months of 30 days, 0 = off): archive closed items, close inactive ones.
+    pub archive_in: i64,
+    pub close_in: i64,
+    /// The cancelled state that auto-close moves items to.
+    pub close_state_id: Option<Uuid>,
 }
 
 /// `EstimateType` as stored text.
@@ -48,7 +53,8 @@ impl From<String> for EstimateTypeCol {
 
 const P_COLS: &str = "p.id, p.workspace_id, p.identifier, p.name, p.description, p.icon, p.cover_color, p.lead_id,
     p.default_assignee_id, p.is_private, p.estimate_type, p.estimate_values, p.feature_cycles, p.feature_modules,
-    p.feature_pages, p.feature_intake, p.created_by, p.created_at, p.archived_at";
+    p.feature_pages, p.feature_intake, p.created_by, p.created_at, p.archived_at, p.archive_in, p.close_in,
+    p.close_state_id";
 
 /// A project with the caller's explicit membership role (if any).
 #[derive(Debug, Clone, Serialize, FromRow)]
@@ -98,6 +104,9 @@ pub struct ProjectPatch {
     pub feature_modules: Option<bool>,
     pub feature_pages: Option<bool>,
     pub feature_intake: Option<bool>,
+    pub archive_in: Option<i64>,
+    pub close_in: Option<i64>,
+    pub close_state_id: Option<Option<Uuid>>,
 }
 
 #[derive(Debug, Clone, Serialize, FromRow)]
@@ -295,6 +304,9 @@ impl Store {
                feature_modules = COALESCE(?, feature_modules),
                feature_pages = COALESCE(?, feature_pages),
                feature_intake = COALESCE(?, feature_intake),
+               archive_in = COALESCE(?, archive_in),
+               close_in = COALESCE(?, close_in),
+               close_state_id = CASE WHEN ? THEN ? ELSE close_state_id END,
                updated_at = ?
              WHERE id = ?",
         )
@@ -318,6 +330,10 @@ impl Store {
         .bind(p.feature_modules)
         .bind(p.feature_pages)
         .bind(p.feature_intake)
+        .bind(p.archive_in)
+        .bind(p.close_in)
+        .bind(p.close_state_id.is_some())
+        .bind(p.close_state_id.flatten())
         .bind(now_ts())
         .bind(id)
         .execute(self.pool())

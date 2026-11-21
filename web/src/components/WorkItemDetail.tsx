@@ -494,7 +494,7 @@ function ActivityFeed({ slug, ctx, item }: { slug: string; ctx: PropsCtx; item: 
     return v;
   };
   const line = (a: Activity): string => {
-    const who = name(a.actor_id);
+    const who = a.actor_is_bot ? a.actor_name : ctx.members.some((x) => x.user_id.replace(/-/g, "") === a.actor_id.replace(/-/g, "")) ? name(a.actor_id) : a.actor_name || "—";
     const field = a.field ? t(`field.${a.field}` as "field.title") : "";
     if (a.verb === "created") return t("act.created", { who });
     if (a.verb === "archived") return t("act.archived", { who });

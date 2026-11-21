@@ -212,6 +212,9 @@ pub struct Filter {
 pub struct Activity {
     pub id: Uuid,
     pub actor_id: Uuid,
+    /// Who acted, for people and service accounts (GitHub, NextPlane automations) alike.
+    pub actor_name: String,
+    pub actor_is_bot: bool,
     pub verb: String,
     pub field: Option<String>,
     pub old_value: Option<String>,
@@ -1292,8 +1295,10 @@ impl Store {
 
     pub async fn work_item_activity(&self, id: Uuid) -> Result<Vec<Activity>> {
         sqlx::query_as(
-            "SELECT id, actor_id, verb, field, old_value, new_value, created_at FROM work_item_activity
-             WHERE work_item_id = ? ORDER BY created_at, id",
+            "SELECT a.id, a.actor_id, COALESCE(NULLIF(u.name, ''), u.email, '') AS actor_name,
+               COALESCE(u.is_bot, 0) AS actor_is_bot, a.verb, a.field, a.old_value, a.new_value, a.created_at
+             FROM work_item_activity a LEFT JOIN users u ON u.id = a.actor_id
+             WHERE a.work_item_id = ? ORDER BY a.created_at, a.id",
         )
         .bind(id)
         .fetch_all(self.pool())

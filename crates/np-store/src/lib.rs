@@ -12,6 +12,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, S
 use time::OffsetDateTime;
 
 pub mod analytics;
+pub mod automations;
 pub mod collab;
 pub mod cycles;
 pub mod instance;

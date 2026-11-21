@@ -232,6 +232,11 @@ pub struct UpdateReq {
     feature_modules: Option<bool>,
     feature_pages: Option<bool>,
     feature_intake: Option<bool>,
+    /// Automations, in months (0 = off, at most 12).
+    archive_in: Option<i64>,
+    close_in: Option<i64>,
+    #[serde(default, with = "crate::util::double_option")]
+    close_state_id: Option<Option<Uuid>>,
 }
 
 pub async fn update(
@@ -262,6 +267,7 @@ pub async fn update(
         feature_intake: req.feature_intake,
         ..Default::default()
     };
+    automations(&state, &ctx, &req, &mut p).await?;
     if let Some(i) = req.icon {
         p.icon = Some(clean_icon(i)?);
     }
@@ -287,6 +293,63 @@ pub async fn update(
     }
     state.store.update_project(id, &p).await?;
     Ok(Json(load_project(&state, &slug, id, &me).await?.out()))
+}
+
+/// Automation settings (as in Plane): months 0–12; auto-close needs a cancelled state of this
+/// project, the first one when none is given, and turning it off forgets the state.
+async fn automations(
+    state: &AppState,
+    ctx: &ProjCtx,
+    req: &UpdateReq,
+    p: &mut ProjectPatch,
+) -> ApiResult<()> {
+    for m in [req.archive_in, req.close_in].into_iter().flatten() {
+        if !(0..=12).contains(&m) {
+            return Err(Error::bad_request("automations take 0 to 12 months").into());
+        }
+    }
+    p.archive_in = req.archive_in;
+    p.close_in = req.close_in;
+    let close_in = req.close_in.unwrap_or(ctx.row.project.close_in);
+    if close_in == 0 {
+        if req.close_in.is_some() || req.close_state_id.is_some() {
+            p.close_state_id = Some(None);
+        }
+        return Ok(());
+    }
+    let wanted = match req.close_state_id {
+        Some(Some(s)) => Some(s),
+        Some(None) => None,
+        None => ctx.row.project.close_state_id,
+    };
+    let mut cancelled: Vec<_> = state
+        .store
+        .states(ctx.id())
+        .await?
+        .into_iter()
+        .filter(|s| s.group.0 == StateGroup::Cancelled)
+        .collect();
+    cancelled.sort_by(|a, b| a.sort_order.total_cmp(&b.sort_order));
+    let target = match wanted {
+        Some(s) if cancelled.iter().any(|c| c.id == s) => s,
+        Some(_) => {
+            return Err(Error::bad_request(
+                "auto-close moves items to a cancelled state of this project",
+            )
+            .into());
+        }
+        None => match cancelled.first() {
+            Some(c) => c.id,
+            None => {
+                return Err(Error::bad_request(
+                    "this project has no cancelled state to close work items into",
+                )
+                .into());
+            }
+        },
+    };
+    p.close_state_id = Some(Some(target));
+    Ok(())
 }
 
 pub async fn archive(

@@ -1,4 +1,4 @@
-import { Bot, Boxes, Building2, CircleDot, Database, GitBranch, Settings, Share2, Tag, Triangle, ToggleLeft, UsersRound, Webhook } from "lucide-react";
+import { Bot, Boxes, Building2, CircleDot, Database, GitBranch, Settings, Share2, Tag, ToggleLeft, Triangle, UsersRound, Webhook, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, useParams } from "react-router";
 import type { MyWorkspace } from "../api/types";
@@ -65,6 +65,7 @@ const PROJECT_TAB_ICON: Record<string, ReactNode> = {
   labels: <Tag />,
   estimates: <Triangle />,
   features: <ToggleLeft />,
+  automations: <Workflow />,
   data: <Database />,
   publish: <Share2 />,
   bots: <Bot />,

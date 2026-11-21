@@ -1,6 +1,7 @@
 //! The NextPlane HTTP API. Every route lives under `/api/v1` (SPEC §8).
 
 pub mod auth;
+pub mod automations;
 pub mod error;
 pub mod events;
 pub mod extract;

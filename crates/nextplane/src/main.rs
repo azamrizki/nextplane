@@ -334,6 +334,7 @@ async fn serve(cfg: Config) -> Result<()> {
             .unwrap_or_else(|| local_url(cfg.listen));
         tokio::spawn(digest_loop(store.clone(), mailer, base));
     }
+    tokio::spawn(automation_loop(store.clone(), state.events.clone()));
     np_api::webhooks::spawn(
         store.clone(),
         state.events.clone(),
@@ -402,6 +403,26 @@ async fn maintenance_hourly(store: Store, backups: PathBuf) {
         // Webhook delivery logs are kept for 30 days.
         if let Err(e) = store.prune_deliveries(&cutoff).await {
             tracing::warn!(error = %e, "could not prune webhook deliveries");
+        }
+    }
+}
+
+/// Project automations, once a day from 01:00 UTC (as in Plane). A restart the same day runs
+/// them again, which changes nothing new.
+async fn automation_loop(store: Store, events: np_api::events::Bus) {
+    let mut tick = tokio::time::interval(std::time::Duration::from_secs(600));
+    let mut last: Option<time::Date> = None;
+    loop {
+        tick.tick().await;
+        let now = time::OffsetDateTime::now_utc();
+        if now.hour() < 1 || last == Some(now.date()) {
+            continue;
+        }
+        last = Some(now.date());
+        match np_api::automations::run(&store, &events, now).await {
+            Ok(r) if r.archived + r.closed == 0 => {}
+            Ok(r) => tracing::info!(archived = r.archived, closed = r.closed, "project automations ran"),
+            Err(e) => tracing::warn!(error = %format!("{e:#}"), "project automations failed"),
         }
     }
 }

@@ -115,6 +115,10 @@ export interface Project {
   created_by: string;
   created_at: string;
   archived_at: string | null;
+  /** Automations, in months (0 = off). */
+  archive_in: number;
+  close_in: number;
+  close_state_id: string | null;
   member_role: ProjRole | null;
   member_count: number;
   my_role: ProjRole | null;
@@ -181,6 +185,8 @@ export interface WorkItem {
 export interface Activity {
   id: string;
   actor_id: string;
+  actor_name: string;
+  actor_is_bot: boolean;
   verb: string;
   field: string | null;
   old_value: string | null;

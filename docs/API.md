@@ -79,7 +79,7 @@ Base: `/workspaces/{slug}/projects`.
 | Method | Path | Who | What |
 |---|---|---|---|
 | GET / POST | `` | member / creator | projects you can see (`?archived=true` for archived), each with `my_role`, `is_member`, `member_count`; `POST {name, identifier?, description?, icon?, cover_color?, lead_id?, is_private?}` |
-| GET / PATCH / DELETE | `/{id}` | reader / admin / admin | `PATCH` any of the create fields plus `default_assignee_id`, `estimate_type` (`none|points|tshirt`), `estimate_values`, `feature_cycles|modules|pages|intake` |
+| GET / PATCH / DELETE | `/{id}` | reader / admin / admin | `PATCH` any of the create fields plus `default_assignee_id`, `estimate_type` (`none|points|tshirt`), `estimate_values`, `feature_cycles|modules|pages|intake`, and the automations `archive_in`, `close_in` (months 0–12, 0 = off) and `close_state_id` (a cancelled state of the project; the first one when auto-close is turned on without it, cleared when it is turned off). Once a day from 01:00 UTC the server archives items closed (completed or cancelled) for `archive_in` × 30 days and moves open items unchanged for `close_in` × 30 days to `close_state_id`, skipping items in a cycle that has not ended or a module whose target date has not passed; the changes are made by the workspace's `NextPlane` service account (activity, notifications, realtime events and webhooks follow) |
 | POST | `/{id}/archive`, `/{id}/unarchive` | admin | archived projects are read-only |
 | POST | `/{id}/join`, `/{id}/leave` | member | join a public project / leave |
 | GET / POST | `/{id}/members` | member / admin | `POST {user_id, role}` |
@@ -101,7 +101,7 @@ Base: `/workspaces/{slug}/projects/{id}/work-items`.
 | PATCH | `` | contributor+ | bulk: `{ids: [...], state_id?, priority?, assignee_ids?, label_ids?, start_date?, due_date?, estimate?}` |
 | GET / PATCH / DELETE | `/{wid}` | commenter+ / contributor+ / owner of the item or admin | `PATCH` any create field plus `sort_order` and `expected_updated_at` (see below) |
 | POST | `/{wid}/archive`, `/{wid}/unarchive` | contributor+ | only items in a completed or cancelled state are archived (`400` otherwise). An archived item is read-only: `PATCH`, also in bulk, answers `409` until it is restored; it can still be deleted |
-| GET | `/{wid}/activity` | commenter+ | one row per change: `{actor_id, verb, field, old_value, new_value, created_at}` |
+| GET | `/{wid}/activity` | commenter+ | one row per change: `{actor_id, actor_name, actor_is_bot, verb, field, old_value, new_value, created_at}` |
 | GET / POST | `/{wid}/relations` | commenter+ / contributor+ | `POST {kind: blocks|blocked_by|relates_to|duplicate_of, work_item_id}` → all relations from this item's side |
 | DELETE | `/{wid}/relations/{rid}` | contributor+ | |
 | GET / POST | `/{wid}/comments` | commenter+ | `POST {body_json?, body_html}`; `@mentions` are `<span data-type="mention" data-id="<user id>">` |

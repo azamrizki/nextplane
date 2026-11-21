@@ -91,3 +91,27 @@ test("a finished cycle is archived from its page and restored from the archive",
   await page.locator(".cycle-row", { hasText: "Sprint 1" }).getByRole("button", { name: "Restore" }).click();
   await expect(page.getByText("No archived cycles yet")).toBeVisible();
 });
+
+test("project admins set up automations in project settings", async ({ page, hub }) => {
+  await login(page, hub);
+  await page.goto(`${projectUrl}/settings/automations`);
+  await expect(page.getByRole("heading", { level: 1, name: "Automations" })).toBeVisible();
+  const archive = page.getByRole("switch", { name: "Auto-archive closed work items" });
+  await archive.check();
+  await expect(page.getByLabel("Months").first()).toHaveValue("1");
+  await page.getByLabel("Months").first().selectOption("custom");
+  await page.getByRole("dialog").getByLabel("Months").fill("13");
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Save" })).toBeDisabled();
+  await page.getByRole("dialog").getByLabel("Months").fill("4");
+  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await expect(page.getByLabel("Months").first()).toHaveValue("4");
+  const close = page.getByRole("switch", { name: "Auto-close work items" });
+  await close.check();
+  await expect(page.getByLabel("Close into")).toHaveValue(/.+/);
+  await expect(page.getByLabel("Close into").locator("option:checked")).toHaveText("Cancelled");
+  // The settings are saved on the project.
+  const p = await page.evaluate(async (url) => (await fetch("/api/v1" + new URL(url).pathname.replace(/^\//, "/workspaces/"))).json(), projectUrl);
+  expect([p.archive_in, p.close_in]).toEqual([4, 1]);
+  await close.uncheck();
+  await expect(page.getByLabel("Close into")).toHaveCount(0);
+});
