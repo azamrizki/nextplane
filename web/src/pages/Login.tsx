@@ -19,6 +19,7 @@ export function LoginPage() {
   const next = (location.state as { from?: string } | null)?.from ?? "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [adminForm, setAdminForm] = useState(false);
 
   const login = useMutation({
     mutationFn: () => post<User>("/auth/login", { email, password }),
@@ -32,8 +33,11 @@ export function LoginPage() {
   if (instance.data?.setup_required) return <Navigate to="/setup" replace />;
   if (me.data) return <Navigate to={next} replace />;
 
-  const info = instance.data as { signup_policy?: string; sso_name?: string | null } | undefined;
-  const signupOpen = info?.signup_policy === "open";
+  const info = instance.data as { signup_policy?: string; sso_name?: string | null; password_enabled?: boolean; providers?: { key: string; name: string }[] } | undefined;
+  const passwordOn = info?.password_enabled !== false;
+  const signupOpen = info?.signup_policy === "open" && passwordOn;
+  const providers = info?.providers ?? [];
+  const buttons = !!info?.sso_name || providers.length > 0;
   const ssoError = new URLSearchParams(location.search).get("sso_error");
   const error = login.isError
     ? login.error instanceof ApiError && login.error.code === "unauthorized"
@@ -50,13 +54,26 @@ export function LoginPage() {
 
   return (
     <AuthCard title={t("login.title")} subtitle={instance.data?.name ? t("login.subtitle", { instance: instance.data.name }) : undefined}>
-      {info?.sso_name ? (
+      {buttons ? (
         <>
           <ErrorAlert message={ssoError} />
-          <a className="btn btn-block" href={`/api/v1/auth/oidc/start?next=${encodeURIComponent(next)}`}>{t("login.sso", { name: info.sso_name })}</a>
-          <div className="or-line"><span>{t("login.or")}</span></div>
+          <div className="sso-buttons">
+            {providers.map((p) => (
+              <a key={p.key} className="btn btn-block" href={`/api/v1/auth/oauth/${p.key}/start?next=${encodeURIComponent(next)}`}>
+                {t("login.with", { name: p.name })}
+              </a>
+            ))}
+            {info?.sso_name ? <a className="btn btn-block" href={`/api/v1/auth/oidc/start?next=${encodeURIComponent(next)}`}>{t("login.sso", { name: info.sso_name })}</a> : null}
+          </div>
+          {passwordOn ? <div className="or-line"><span>{t("login.or")}</span></div> : null}
         </>
       ) : null}
+      {!passwordOn && !adminForm ? (
+        <button type="button" className="link-btn small" onClick={() => setAdminForm(true)}>
+          {t("login.adminPassword")}
+        </button>
+      ) : null}
+      {passwordOn || adminForm ? (
       <form className="form" onSubmit={onSubmit}>
         <ErrorAlert message={error} />
         <TextField label={t("login.email")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" autoFocus />
@@ -73,6 +90,7 @@ export function LoginPage() {
           ) : null}
         </p>
       </form>
+      ) : null}
     </AuthCard>
   );
 }

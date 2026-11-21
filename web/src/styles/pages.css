@@ -878,3 +878,25 @@
 .member-link {
   color: inherit;
 }
+
+/* Instance admin › sign-in methods and services (S3.7) */
+.auth-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background: var(--layer-1);
+  border: 1px solid var(--border);
+  color: var(--icon);
+}
+.auth-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.sso-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

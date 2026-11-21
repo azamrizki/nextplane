@@ -38,6 +38,12 @@ pub async fn signup(
     state
         .limiter
         .check(&format!("signup:{ip}"), ratelimit::SIGNUP_PER_IP)?;
+    if !crate::providers::password_enabled(&state.store).await {
+        return Err(np_core::Error::forbidden(
+            "password sign-up is turned off on this server; use a sign-in provider",
+        )
+        .into());
+    }
     if state.store.instance().await?.signup_policy != SignupPolicy::Open {
         return Err(Error::forbidden("sign-up is by invitation only on this server").into());
     }

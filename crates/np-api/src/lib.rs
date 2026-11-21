@@ -11,6 +11,7 @@ pub mod oidc;
 pub mod origin;
 pub mod pagehtml;
 pub mod pagesync;
+pub mod providers;
 pub mod ratelimit;
 pub mod richtext;
 mod routes;
@@ -131,6 +132,8 @@ pub fn router(state: AppState, spa: Router) -> Router {
         .route("/auth/forgot", post(account::forgot))
         .route("/auth/oidc/start", get(sso::start))
         .route("/auth/oidc/callback", get(sso::callback))
+        .route("/auth/oauth/{provider}/start", get(sso::oauth_start))
+        .route("/auth/oauth/{provider}/callback", get(sso::oauth_callback))
         .route(
             "/auth/reset/{token}",
             get(account::reset_info).post(account::reset),
@@ -555,6 +558,7 @@ pub fn router(state: AppState, spa: Router) -> Router {
             "/admin/settings",
             get(admin::settings).patch(admin::update_settings),
         )
+        .route("/admin/auth", get(admin::auth).patch(admin::update_auth))
         .route("/admin/users", get(admin::users))
         .route("/admin/users/{id}", patch(admin::update_user))
         .route("/admin/users/{id}/reset-link", post(admin::reset_link))

@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use super::account::RESET_TTL_ADMIN;
 use crate::AppState;
+use crate::providers::Provider;
 use crate::auth::{self, CurrentUser};
 use crate::error::{ApiError, ApiResult};
 
@@ -172,4 +173,154 @@ pub async fn workspaces(
             })
             .collect(),
     ))
+}
+
+// ---- Sign-in methods (S3.7, as in Plane's "Authentication" page) ----------------------------
+
+#[derive(Serialize)]
+pub struct ProviderOut {
+    key: &'static str,
+    name: &'static str,
+    enabled: bool,
+    configured: bool,
+    client_id: String,
+    /// Whether a client secret is saved; the secret itself is never sent back.
+    has_secret: bool,
+    host: String,
+    org: String,
+    /// Where to send people back after they sign in: register it with the provider.
+    callback_url: String,
+}
+
+#[derive(Serialize)]
+pub struct AuthSettings {
+    password_enabled: bool,
+    signup_policy: SignupPolicy,
+    /// The OpenID provider of config.toml, if any (managed in that file).
+    config_sso: Option<String>,
+    providers: Vec<ProviderOut>,
+}
+
+async fn auth_settings(state: &AppState, headers: &HeaderMap) -> ApiResult<Json<AuthSettings>> {
+    let base = state.base_url(headers);
+    let list = crate::providers::load(&state.store).await?;
+    Ok(Json(AuthSettings {
+        password_enabled: crate::providers::password_enabled(&state.store).await,
+        signup_policy: state.store.instance().await?.signup_policy,
+        config_sso: state.oidc.as_ref().map(|o| o.name.clone()),
+        providers: list
+            .into_iter()
+            .map(|p| ProviderOut {
+                key: p.key,
+                name: p.name(),
+                enabled: p.enabled,
+                configured: p.configured(),
+                client_id: p.client_id.clone(),
+                has_secret: !p.client_secret.is_empty(),
+                host: p.host.clone(),
+                org: p.org.clone(),
+                callback_url: format!("{base}/api/v1/auth/oauth/{}/callback", p.key),
+            })
+            .collect(),
+    }))
+}
+
+pub async fn auth(
+    State(state): State<AppState>,
+    InstanceAdmin(_): InstanceAdmin,
+    headers: HeaderMap,
+) -> ApiResult<Json<AuthSettings>> {
+    auth_settings(&state, &headers).await
+}
+
+#[derive(Deserialize)]
+pub struct ProviderReq {
+    enabled: Option<bool>,
+    client_id: Option<String>,
+    /// An empty string keeps the saved secret.
+    client_secret: Option<String>,
+    host: Option<String>,
+    org: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct AuthReq {
+    password_enabled: Option<bool>,
+    #[serde(default)]
+    providers: std::collections::HashMap<String, ProviderReq>,
+}
+
+fn clean_host(h: &str) -> ApiResult<String> {
+    let h = h.trim().trim_end_matches('/');
+    if h.is_empty() {
+        return Ok(String::new());
+    }
+    let ok = (h.starts_with("https://") || h.starts_with("http://"))
+        && reqwest::Url::parse(h).is_ok_and(|u| u.host_str().is_some_and(|x| !x.is_empty()));
+    if !ok {
+        return Err(Error::bad_request("the host is a web address, like https://gitlab.com").into());
+    }
+    Ok(h.to_string())
+}
+
+/// Changes sign-in methods. At least one way to sign in must stay on (as in Plane, but also
+/// checked here, not only in the browser).
+pub async fn update_auth(
+    State(state): State<AppState>,
+    InstanceAdmin(admin): InstanceAdmin,
+    headers: HeaderMap,
+    Json(req): Json<AuthReq>,
+) -> ApiResult<Json<AuthSettings>> {
+    let mut list = crate::providers::load(&state.store).await?;
+    let mut entries: Vec<(String, Option<String>)> = Vec::new();
+    for (key, r) in &req.providers {
+        let Some(p) = list.iter_mut().find(|p| p.key == key.as_str()) else {
+            return Err(Error::bad_request(format!("unknown sign-in provider {key:?}")).into());
+        };
+        let k = |f: &str| format!("auth.{}.{f}", p.key);
+        if let Some(v) = &r.client_id {
+            p.client_id = v.trim().chars().take(500).collect();
+            entries.push((k("client_id"), Some(p.client_id.clone())));
+        }
+        if let Some(v) = r.client_secret.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+            p.client_secret = v.chars().take(500).collect();
+            entries.push((k("client_secret"), Some(p.client_secret.clone())));
+        }
+        if let Some(v) = &r.host {
+            p.host = clean_host(v)?;
+            entries.push((k("host"), Some(p.host.clone())));
+        }
+        if let Some(v) = &r.org {
+            let org = v.trim();
+            if !org.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+                return Err(Error::bad_request("a GitHub organization is its short name, like acme-inc").into());
+            }
+            p.org = org.to_string();
+            entries.push((k("org"), Some(p.org.clone())));
+        }
+        if let Some(on) = r.enabled {
+            if on && !p.configured() {
+                return Err(Error::bad_request(format!(
+                    "set up {} (client id, secret{}) before turning it on",
+                    p.name(),
+                    if matches!(p.key, "gitlab" | "gitea") { " and host" } else { "" }
+                ))
+                .into());
+            }
+            p.enabled = on;
+            entries.push((k("enabled"), Some(if on { "1" } else { "0" }.into())));
+        }
+    }
+    let password = req
+        .password_enabled
+        .unwrap_or(crate::providers::password_enabled(&state.store).await);
+    if !password && state.oidc.is_none() && !list.iter().any(Provider::usable) {
+        return Err(Error::conflict("at least one way to sign in must stay on").into());
+    }
+    if let Some(on) = req.password_enabled {
+        entries.push(("auth.password_enabled".into(), Some(if on { "1" } else { "0" }.into())));
+    }
+    state.store.set_config(&entries).await?;
+    tracing::info!(by = %admin.email, "sign-in settings changed");
+    auth_settings(&state, &headers).await
 }

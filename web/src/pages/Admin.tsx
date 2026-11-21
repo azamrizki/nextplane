@@ -11,6 +11,7 @@ import { useT } from "../i18n";
 import { errorText } from "../lib/errors";
 import { qk, useMe } from "../lib/session";
 import { LinkBox } from "./Members";
+import { AuthSection } from "./AdminAuth";
 
 export function AdminPage() {
   const t = useT();
@@ -80,6 +81,7 @@ export function AdminPage() {
           </div>
         </section>
       ) : null}
+      <AuthSection />
 
       <section className="card">
         <div className="card-head">{t("admin.users")}</div>

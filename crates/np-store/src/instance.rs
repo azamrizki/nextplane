@@ -133,3 +133,49 @@ impl Store {
         Ok(user)
     }
 }
+
+impl Store {
+    /// Instance settings whose key starts with `prefix` (e.g. `auth.`), as a map.
+    pub async fn config(&self, prefix: &str) -> Result<std::collections::HashMap<String, String>> {
+        let rows: Vec<(String, String)> = sqlx::query_as(
+            "SELECT key, value FROM instance_config WHERE substr(key, 1, length(?)) = ?",
+        )
+        .bind(prefix)
+        .bind(prefix)
+        .fetch_all(self.pool())
+        .await
+        .map_err(db_err)?;
+        Ok(rows.into_iter().collect())
+    }
+
+    /// Sets (`Some`) or removes (`None`) instance settings, all at once.
+    pub async fn set_config(&self, entries: &[(String, Option<String>)]) -> Result<()> {
+        let mut tx = self.pool().begin().await.map_err(db_err)?;
+        let now = now_ts();
+        for (k, v) in entries {
+            match v {
+                Some(v) => {
+                    sqlx::query(
+                        "INSERT INTO instance_config (key, value, updated_at) VALUES (?, ?, ?)
+                         ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                    )
+                    .bind(k)
+                    .bind(v)
+                    .bind(&now)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(db_err)?;
+                }
+                None => {
+                    sqlx::query("DELETE FROM instance_config WHERE key = ?")
+                        .bind(k)
+                        .execute(&mut *tx)
+                        .await
+                        .map_err(db_err)?;
+                }
+            }
+        }
+        tx.commit().await.map_err(db_err)?;
+        Ok(())
+    }
+}

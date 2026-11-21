@@ -132,6 +132,7 @@ Base: `/workspaces/{slug}/projects/{id}/work-items`.
 | Method | Path | What |
 |---|---|---|
 | GET / PATCH | `/admin/settings` | `{name, signup_policy: closed|invite|open, email_enabled, public_url}` |
+| GET / PATCH | `/admin/auth` | sign-in methods: `{password_enabled, signup_policy, config_sso, providers[{key, name, enabled, configured, client_id, has_secret, host, org, callback_url}]}` for `google`, `github`, `gitlab`, `gitea`. `PATCH {password_enabled?, providers: {<key>: {enabled?, client_id?, client_secret?, host?, org?}}}`: a provider is turned on only once it has a client id and secret (and a host for GitLab and Gitea); an empty `client_secret` keeps the saved one, which is never sent back. Turning off the last way to sign in is `409` |
 | GET | `/admin/users` | all users |
 | PATCH | `/admin/users/{id}` | `{is_instance_admin}` (one admin always stays) |
 | POST | `/admin/users/{id}/reset-link` | `{link, expires_in_hours}` |
@@ -267,6 +268,8 @@ Notifications go to an item's subscribers (creator, assignees, commenters, menti
 ### Single sign-on
 
 With `[oidc]` in config.toml, `GET /instance` includes `sso_name`, and `GET /auth/oidc/start?next=/path` starts the authorization code flow with PKCE; the provider returns to `/auth/oidc/callback`. People are matched by verified email. New accounts are created only when the signup policy is `open`, or `invite` and the email has a pending invite. Errors come back as `/login?sso_error=…`.
+
+The providers an instance admin turns on (`/admin/auth`) are listed in `GET /instance` as `providers[{key, name}]`, next to `password_enabled`. `GET /auth/oauth/{google|github|gitlab|gitea}/start?next=/path` starts their sign-in and they return to `/auth/oauth/{provider}/callback`. Google, GitLab and Gitea use OpenID Connect (PKCE, a verified email); GitHub uses OAuth with the scopes `read:user user:email` (plus `read:org` with an organization), takes the account's primary email only if it is verified, and with an organization set checks membership. Matching and new accounts follow the same rules as above. With password sign-in off, `POST /auth/login` answers `403` except for instance admins (the way back in if a provider breaks), and password sign-up is refused.
 
 ## MCP (agents)
 

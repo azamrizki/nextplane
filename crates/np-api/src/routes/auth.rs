@@ -44,6 +44,11 @@ pub async fn login(
         return Err(bad().into());
     }
     let user = user.ok_or_else(bad)?;
+    // With password sign-in turned off, only instance admins may still use one: the way back
+    // in when a sign-in provider breaks.
+    if !user.is_instance_admin && !crate::providers::password_enabled(&state.store).await {
+        return Err(Error::forbidden("password sign-in is turned off on this server; use a sign-in provider").into());
+    }
     state.limiter.reset(&email_key);
     let jar = auth::start_session(&state, jar, &headers, &ip, user.id).await?;
     Ok((jar, Json(user)))

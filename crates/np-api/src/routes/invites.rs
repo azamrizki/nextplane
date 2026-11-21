@@ -42,6 +42,12 @@ pub async fn info(
         .limiter
         .check(&format!("invite-open:{ip}"), ratelimit::RESET_PER_IP)?;
     let invite = find(&state, &token).await?;
+    if !crate::providers::password_enabled(&state.store).await {
+        return Err(np_core::Error::forbidden(
+            "password sign-up is turned off on this server; use a sign-in provider",
+        )
+        .into());
+    }
     let policy = state.store.instance().await?.signup_policy;
     Ok(Json(InfoRes {
         invite,

@@ -21,6 +21,16 @@ pub struct InstanceInfo {
     email_enabled: bool,
     /// Name for the "Sign in with …" button, when single sign-on is set up.
     sso_name: Option<String>,
+    /// Email and password sign-in is offered.
+    password_enabled: bool,
+    /// Sign-in providers the instance admin turned on, in a fixed order.
+    providers: Vec<ProviderInfo>,
+}
+
+#[derive(Serialize)]
+pub struct ProviderInfo {
+    key: &'static str,
+    name: &'static str,
 }
 
 pub async fn instance(State(state): State<AppState>) -> ApiResult<Json<InstanceInfo>> {
@@ -31,6 +41,16 @@ pub async fn instance(State(state): State<AppState>) -> ApiResult<Json<InstanceI
         signup_policy: i.signup_policy,
         email_enabled: state.mailer.is_some(),
         sso_name: state.oidc.as_ref().map(|o| o.name.clone()),
+        password_enabled: crate::providers::password_enabled(&state.store).await,
+        providers: crate::providers::load(&state.store)
+            .await?
+            .into_iter()
+            .filter(crate::providers::Provider::usable)
+            .map(|p| ProviderInfo {
+                key: p.key,
+                name: p.name(),
+            })
+            .collect(),
     }))
 }
 
