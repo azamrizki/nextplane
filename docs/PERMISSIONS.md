@@ -43,7 +43,7 @@ The code lives in `crates/np-core/src/perm.rs`; every row below has a test.
 | Role | Summary |
 |---|---|
 | `admin` | Manages project settings, members, states, labels, estimates; edits and deletes anything in the project. |
-| `contributor` | Creates and edits work items, cycles, modules, views, pages; deletes only their own. |
+| `contributor` | Creates and edits work items, cycles, modules, views, pages (any project page); deletes only their own. |
 | `commenter` | Views everything in the project, comments, reacts, submits intake. |
 | `guest` | Sees only their own intake submissions; cannot comment. |
 
@@ -77,15 +77,15 @@ The code lives in `crates/np-core/src/perm.rs`; every row below has a test.
 | Views: create | ✓ | ✓ | — | — |
 | Views: edit/delete | any | own | — | — |
 | Pages: read (project pages) | ✓ | ✓ | ✓ | — |
-| Pages: create, edit own | ✓ | ✓ | — | — |
-| Pages: edit/delete others' | ✓ | — | — | — |
+| Pages: create | ✓ | ✓ | — | — |
+| Pages: edit content, title, place in the tree (any project page) **(D7)** | ✓ | ✓ | — | — |
 | Pages: lock, archive, delete | any | own | — | — |
 | Pages: make private / share with project | own | own | — | — |
 | Intake: submit, edit/delete own submission | ✓ | ✓ | ✓ | ✓ |
 | Intake: accept, decline, mark duplicate | ✓ | — | — | — |
 | Leave the project | ✓ unless last admin | ✓ | ✓ | ✓ |
 
-**Pages.** A private page is visible only to its owner (not even admins see it). A locked or archived page is read-only for everyone, its owner included, until it is unlocked or restored.
+**Pages.** Project pages are shared documents: every contributor and admin co-edits them, live **(D7)**. Locking, archiving, deleting and changing access stay with the page's owner or a project admin. A private page is visible only to its owner (not even admins see it). A locked or archived page is read-only for everyone, its owner included, until it is unlocked or restored.
 
 **Intake.** Guests see only the requests they sent; commenters and up see the whole queue. Submitter emails from the public form are shown only to project admins. Requests change only through intake (submitter while pending or snoozed, admins until accepted), not through the regular work item API.
 
@@ -103,5 +103,6 @@ Separate from workspaces. An **instance admin** (the account created by setup, a
 - **D4** — The docs do not say whether a private project's name shows to non-members. It does not.
 - **D5** — *Member roles* says guests "cannot see or create work items"; the matrix gives guests their own intake items. Both hold: a guest sees and edits only their own intake submissions.
 - **D6** — The docs block the last project admin from leaving or being removed, but say nothing about demotion. Demotion is blocked too.
+- **D7** — The matrix limits members to editing their own pages, while Plane's pages are built for live co-editing of public project pages. Owner's decision (2026-11-21): every contributor edits any project page; only the owner or an admin locks, archives, deletes or changes access.
 - Comments: the matrix says only the author edits or deletes a comment, "including admins"; admins can hide. Followed as written, over the broader "owners/admins have full access" text.
 - Plane's former project setting "guests can view all work items" is replaced by the `commenter` role, as in Plane today.

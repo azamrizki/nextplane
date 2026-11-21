@@ -109,11 +109,26 @@ async fn page_permissions_lock_versions_and_search() {
         1
     );
 
-    // Others: another contributor reads but cannot edit; the admin can.
+    // Others: another contributor co-edits the page but cannot manage it (D7); a commenter
+    // only reads; the admin can do both.
     let other = w.t.get(&url, Some(&w.con2)).await.body;
-    assert_eq!(other["can_edit"], false);
+    assert_eq!(other["can_edit"], true);
+    assert_eq!(other["can_manage"], false);
     assert_eq!(
-        w.t.patch(&url, json!({ "title": "Mine now" }), Some(&w.con2))
+        w.t.patch(&url, json!({ "title": "Shared plan" }), Some(&w.con2))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        w.t.patch(&url, json!({ "access": "private" }), Some(&w.con2))
+            .await
+            .status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(w.t.get(&url, Some(&w.com)).await.body["can_edit"], false);
+    assert_eq!(
+        w.t.patch(&url, json!({ "title": "Mine now" }), Some(&w.com))
             .await
             .status,
         StatusCode::FORBIDDEN
@@ -578,12 +593,12 @@ async fn duplicate_move_and_live_references() {
         w.t.patch(
             &format!("{pg}/{bid}"),
             json!({ "parent_id": cid }),
-            Some(&w.con2)
+            Some(&w.com)
         )
         .await
         .status,
         StatusCode::FORBIDDEN,
-        "others' pages stay put"
+        "commenters cannot reorganise the tree"
     );
 
     // A key resolves to a card with title and state for anyone who can read the project.

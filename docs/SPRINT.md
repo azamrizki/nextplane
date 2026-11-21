@@ -295,7 +295,7 @@ Found while testing: the setup link was printed before the server listened, so o
 
 **Dates:** 2026-11-20 → 2026-11-20 · **Status:** ✅ Done
 
-- [x] Pages table (project pages, owner, private/project access, parent, order, lock, archive, delete) and permissions (contributors create and edit their own, admins any; commenters read; private pages only for their owner)
+- [x] Pages table (project pages, owner, private/project access, parent, order, lock, archive, delete) and permissions (contributors create and edit their own, admins any; commenters read; private pages only for their owner — widened on 2026-11-21: contributors edit any project page, D7)
 - [x] Live co-editing over `/api/v1/collab/{page_id}` with Yjs (`yrs` on the server, y-websocket protocol), stored as a Yjs document with debounced saves
 - [x] Presence: who is on the page, with named, colored cursors
 - [x] HTML snapshot for reading, search (FTS) and agents; page title and description in search results
@@ -368,8 +368,8 @@ Phases 0–3 are done except the two owner-blocked phase 1 tasks. These need the
 2. **Git:** ✅ the repository is `azamrizki/nextplane` (private, first push 2026-11-21; CI added an empty `web/dist` for its Rust job). Open: the `v0.1.0` tag, and making the repository public — `install.sh` downloads from it, which needs a public repository.
 3. **Lint:** ✅ `rustfmt` and `clippy` installed from the distro (1.93); `cargo fmt --check` and `cargo clippy --all-targets -D warnings` pass.
 4. **Rust version:** `yrs` is pinned to 0.26 because 0.27+ needs a newer compiler than 1.93; with rustup the pin can go.
-5. **Behaviour to confirm** (each follows Plane's documented rules today):
-   - Only a page's owner and project admins edit it, so other contributors read along live but cannot co-edit. Relax to "every contributor edits project pages"? (2026-11-21: the owner said "run 4"; the change waits for an explicit yes because it widens edit rights.)
+5. **Behaviour to confirm** (the open ones follow Plane's documented rules today):
+   - ✅ Pages: every contributor now co-edits any project page (owner's yes on 2026-11-21, PERMISSIONS D7). Lock, archive, delete and access stay with the page's owner or an admin.
    - Commenters and up see the whole intake queue; guests see only their own requests and get no inbox notification for the outcome (they see it under *Closed*).
    - Public boards show descriptions.
    - Webhooks may call addresses on your own network (only workspace admins can add them).
@@ -399,6 +399,7 @@ Phases 0–3 are done except the two owner-blocked phase 1 tasks. These need the
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | Contributors co-edit every project page (D7, owner's decision). |
 | 2026-11-21 | fmt/clippy pass done; pushed to `azamrizki/nextplane`. |
 | 2026-11-21 | S3.5 done; phase 3 done; web v1 feature-complete, owner review list added. |
 | 2026-11-20 | S3.4 done (analytics dashboards and custom charts). |

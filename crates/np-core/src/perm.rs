@@ -264,11 +264,12 @@ pub fn proj_can(role: ProjRole, action: ProjAction) -> bool {
         }
         CreateWorkItem | EditWorkItem | ArchiveWorkItem | AddAttachment | CreateCycleOrModule
         | EditCycleOrModule | CreateView | CreatePage => at_least(Contributor),
-        DeleteWorkItem(o)
-        | DeleteAttachment(o)
-        | DeleteCycleOrModule(o)
-        | EditView(o)
-        | EditPage(o) => role == Admin || (role == Contributor && o == Own),
+        // Project pages are shared documents: every contributor co-edits them (D7). Locking,
+        // archiving, deleting and access stay with the owner or an admin.
+        EditPage(_) => at_least(Contributor),
+        DeleteWorkItem(o) | DeleteAttachment(o) | DeleteCycleOrModule(o) | EditView(o) => {
+            role == Admin || (role == Contributor && o == Own)
+        }
         Comment => at_least(Commenter),
         // Only the author edits or deletes a comment, admins included (PERMISSIONS §4).
         EditComment(o) => at_least(Commenter) && o == Own,
@@ -526,7 +527,7 @@ mod tests {
         pr_row(EditView(Others), [true, false, false, false]);
         pr_row(CreatePage, [true, true, false, false]);
         pr_row(EditPage(Own), [true, true, false, false]);
-        pr_row(EditPage(Others), [true, false, false, false]);
+        pr_row(EditPage(Others), [true, true, false, false]);
         pr_row(SubmitIntake, [true, true, true, true]);
         pr_row(EditIntake(Own), [true, true, true, true]);
         pr_row(EditIntake(Others), [true, false, false, false]);

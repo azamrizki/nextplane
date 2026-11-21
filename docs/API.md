@@ -158,7 +158,7 @@ Work items take `cycle_id` (one) and `module_ids` (many) on create and update, a
 
 ### Pages
 
-Base: `/workspaces/{slug}/projects/{id}`. Pages answer `403` while the project's pages toggle is off. Contributors create pages and edit their own; admins edit any; commenters and guests read. A `private` page is seen only by its owner (others get `404`). A locked or archived page is read-only for everyone.
+Base: `/workspaces/{slug}/projects/{id}`. Pages answer `403` while the project's pages toggle is off. Contributors and admins create pages and edit any project page (the owner's choice, PERMISSIONS D7); only the page's owner or an admin locks, archives, deletes or changes access; commenters and guests read. A `private` page is seen only by its owner (others get `404`). A locked or archived page is read-only for everyone.
 
 | Method | Path | Who | What |
 |---|---|---|---|
