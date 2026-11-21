@@ -2,7 +2,7 @@
 
 The single place to see where NextPlane stands: which phase is active, which sprint runs, and which tasks are done. Scope and decisions live in [SPEC.md](SPEC.md); this file tracks progress only.
 
-**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (phase 1: the v0.1.0 tag waits for the owner)
+**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (v0.1.0 released 2026-11-21)
 
 ## How to use this file
 
@@ -19,7 +19,7 @@ The single place to see where NextPlane stands: which phase is active, which spr
 | Phase | Name | Sprints | Status | Progress |
 |---|---|---|---|---|
 | 0 | Skeleton | S0.1 – S0.2 | ✅ Done | 22 / 22 |
-| 1 | MVP | S1.1 – S1.6 | 🚧 Done except the v0.1.0 tag | 59 / 60 |
+| 1 | MVP | S1.1 – S1.6 | ✅ Done (v0.1.0 released) | 60 / 60 |
 | 2 | Planning | S2.1 – S2.5 | ✅ Done | 29 / 29 |
 | 3 | Knowledge & insight | S3.1 – S3.5 | ✅ Done | 26 / 26 |
 | 4 | Clients (desktop, Android) | — | ⏸ Waiting for web v1 final | — |
@@ -183,7 +183,7 @@ Found while testing: the first conflict design compared the whole item's `update
 
 ### S1.6 — Operations and MVP release
 
-**Dates:** 2026-11-20 → 2026-11-20 · **Status:** 🚧 (2 tasks wait for the owner)
+**Dates:** 2026-11-20 → 2026-11-21 · **Status:** ✅
 
 - [x] First `cargo fmt` + `cargo clippy -D warnings` pass (from S1.1) — done 2026-11-21 after the owner had rustfmt/clippy installed: 1,227 formatting fixes, 43 clippy findings fixed (collapsible ifs, complex types, an infallible `TryFrom`, MSRV raised to 1.89 for `File::try_lock`)
 - [x] `nextplane install` / `uninstall` (systemd user service, LaunchAgent)
@@ -196,12 +196,12 @@ Found while testing: the first conflict design compared the whole item's `update
 - [x] Performance check: 100k seeded work items, list/kanban/filter < 200 ms server time (worst 41 ms; `cargo test -p np-store --release --test perf -- --ignored`)
 - [x] Playwright e2e for the main flows against a throwaway instance
 - [x] README with quick start
-- [~] Tag `v0.1.0` — the repository exists since 2026-11-21 (`azamrizki/nextplane`); the crate version is `0.1.0` and the release workflow passed a trial run; the tag waits for the owner's go-ahead (pushing it publishes the release)
+- [x] Tag `v0.1.0` — tagged and released on 2026-11-21 at the owner's go-ahead: https://github.com/azamrizki/nextplane/releases/tag/v0.1.0 (four archives and `SHA256SUMS`; the Linux amd64 download was checked against the sums and runs)
 
 **Review:** Shipped: `install`/`uninstall` (systemd user unit, LaunchAgent, `--dry-run`), `status`, `logs`, `admin reset-password`; a run lock so a second server or a restore cannot touch a data folder in use; daily database copy (newest 14 `daily-*.db` kept, nothing else touched) plus the backup before every migration; `backup` (database, uploads, config in one `.tar.gz`, safe while running); `restore` (refused while running, verifies the archive and its schema, asks for confirmation, writes a fresh backup first and moves replaced files to `backups/replaced-*` instead of deleting); `update` with SHA-256 check and `nextplane.old`; `install.sh`, release workflow, `deploy/` (systemd, nginx, Caddy), README, LICENSE.
 Tests: 83 Rust + 1 performance test, 18 Vitest, 19 Playwright.
 Found while testing: listing work items took ~9.5 s per page at 100k items — a sub-item count subquery made SQLite scan the table once per item; counts are now computed for the returned page only and a list-order index was added (migration 0008): worst case 41 ms. `status` ignored `NEXTPLANE_LISTEN`.
-Open: fmt/clippy pass and the `v0.1.0` tag (both need the owner, see above).
+Open: none. The fmt/clippy pass and the `v0.1.0` release were done on 2026-11-21.
 
 ---
 
@@ -362,10 +362,10 @@ Found while testing: the setup link was printed before the server listened, so o
 
 ### Web v1 — owner review
 
-Phases 0–3 are done except the two owner-blocked phase 1 tasks. These need the owner:
+Phases 0–3 are done and v0.1.0 is released. These need the owner:
 
 1. **Declare web v1 final** (or list changes). That starts phase 4 (desktop, Android).
-2. **Git:** ✅ the repository is `azamrizki/nextplane` (private, first push 2026-11-21; CI added an empty `web/dist` for its Rust job). Open: the `v0.1.0` tag, and making the repository public — `install.sh` downloads from it, which needs a public repository.
+2. **Git:** ✅ the repository is `azamrizki/nextplane` (private, first push 2026-11-21; CI added an empty `web/dist` for its Rust job). ✅ `v0.1.0` released. Open: making the repository public — `install.sh` downloads from it, which needs a public repository.
 3. **Lint:** ✅ `rustfmt` and `clippy` installed from the distro (1.93); `cargo fmt --check` and `cargo clippy --all-targets -D warnings` pass.
 4. **Rust version:** `yrs` is pinned to 0.26 because 0.27+ needs a newer compiler than 1.93; with rustup the pin can go.
 5. **Behaviour to confirm** (the open ones follow Plane's documented rules today):
@@ -399,6 +399,7 @@ Phases 0–3 are done except the two owner-blocked phase 1 tasks. These need the
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | v0.1.0 tagged and released; phase 1 done (60/60). |
 | 2026-11-21 | Release check: retired macOS runners replaced, trial mode, version 0.1.0, installer and updater tested against a local release. |
 | 2026-11-21 | Contributors co-edit every project page (D7, owner's decision). |
 | 2026-11-21 | fmt/clippy pass done; pushed to `azamrizki/nextplane`. |
