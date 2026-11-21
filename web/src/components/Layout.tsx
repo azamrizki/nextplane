@@ -131,6 +131,7 @@ function Sidebar({ ws }: { ws: MyWorkspace }) {
   const { t } = useI18n();
   const shell = useShell();
   const { pathname } = useLocation();
+  const me = useMe().data;
   const base = `/${ws.slug}`;
   const [wsOpen, setWsOpen] = useState(() => localStorage.getItem("np.side.workspace") !== "0");
   const version = useQuery({ queryKey: ["version"], queryFn: () => get<{ version: string }>("/version"), staleTime: Infinity });
@@ -157,7 +158,7 @@ function Sidebar({ ws }: { ws: MyWorkspace }) {
             <House />
             <span className="ellipsis">{t("nav.home")}</span>
           </NavLink>
-          <NavLink to={`${base}/my-work`} className="side-link">
+          <NavLink to={`${base}/profile/${me?.id ?? ""}`} className={() => "side-link" + (pathname.startsWith(`${base}/profile/${me?.id ?? ""}`) ? " active" : "")}>
             <CircleUserRound />
             <span className="ellipsis">{t("nav.myWork")}</span>
           </NavLink>

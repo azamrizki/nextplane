@@ -23,6 +23,7 @@ pub mod invites;
 pub mod modules;
 pub mod notifications;
 pub mod pages;
+pub mod profile;
 pub mod projects;
 pub mod search;
 pub mod sessions;

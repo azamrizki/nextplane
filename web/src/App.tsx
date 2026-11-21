@@ -1,3 +1,4 @@
+import { MemberProfilePage } from "./pages/MemberProfile";
 import { StickiesPage } from "./pages/Stickies";
 import { WorkspaceViewsPage } from "./pages/WorkspaceViews";
 import { ArchivesPage } from "./pages/Archives";
@@ -30,7 +31,7 @@ import { AnalyticsPage, ProjectAnalyticsPage } from "./pages/Analytics";
 import { PublicIntakePage } from "./pages/PublicIntake";
 import { PublicBoardPage } from "./pages/PublicBoard";
 import { GithubPage, WebhooksPage } from "./pages/Integrations";
-import { MyWorkPage } from "./pages/MyWork";
+import { MyWorkRedirect } from "./pages/MyWork";
 import { InboxPage } from "./pages/Inbox";
 import { DraftsPage } from "./pages/Drafts";
 
@@ -69,7 +70,9 @@ export const routes = [
         children: [
           { index: true, element: <WorkspaceHomePage /> },
           { path: "settings", element: <WorkspaceSettingsPage /> },
-          { path: "my-work", element: <MyWorkPage /> },
+          { path: "my-work", element: <MyWorkRedirect /> },
+          { path: "profile/:userId", element: <MemberProfilePage /> },
+          { path: "profile/:userId/:tab", element: <MemberProfilePage /> },
           { path: "views", element: <WorkspaceViewsPage /> },
           { path: "views/:viewId", element: <WorkspaceViewsPage /> },
           { path: "analytics", element: <AnalyticsPage /> },

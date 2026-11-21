@@ -98,8 +98,11 @@ test("save a view and apply it; my work", async ({ page, hub }) => {
   await expect(page.getByRole("tab", { name: "Board" })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".board-card")).toHaveCount(1);
 
+  // "Your work" is your own profile (as in Plane): the summary, then the work lists.
   await page.getByRole("link", { name: "Your work" }).click();
+  await expect(page.locator(".profile-tiles").first()).toContainText("Assigned");
+  await page.locator(".profile-tabs").getByRole("link", { name: "Assigned" }).click();
   await expect(page.locator(".row", { hasText: "Design review" })).toBeVisible();
-  await page.getByRole("tab", { name: "Created" }).click();
-  await expect(page.locator(".row-link")).toHaveCount(3);
+  await page.locator(".profile-tabs").getByRole("link", { name: "Created" }).click();
+  await expect(page.locator(".profile-main .row-link")).toHaveCount(3);
 });

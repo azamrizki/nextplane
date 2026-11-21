@@ -207,6 +207,27 @@ fn decode_ws_cursor(c: &str) -> ApiResult<(String, Uuid)> {
     Ok((at.to_string(), id.parse().map_err(|_| bad())?))
 }
 
+/// Live projects the person is a member of and may read work items in (workspace views,
+/// profiles), as in Plane.
+pub(crate) async fn readable_projects(
+    state: &AppState,
+    ws: &np_store::workspaces::MyWorkspace,
+    me: &np_core::User,
+) -> ApiResult<Vec<np_store::projects::Project>> {
+    Ok(state
+        .store
+        .workspace_projects(ws.workspace.id, me.id, false)
+        .await?
+        .into_iter()
+        .filter(|r| {
+            r.member_role.0.is_some()
+                && perm::effective_proj_role(ws.role, r.member_role.0)
+                    .is_some_and(|role| perm::proj_can(role, ProjAction::ViewWorkItems))
+        })
+        .map(|r| r.project)
+        .collect())
+}
+
 /// `GET /workspaces/{slug}/work-items`: published, unarchived work items of the live projects
 /// the caller is a member of and may read, newest first, with the project filters plus
 /// `project` and `subscribed=true`. Pages of `limit` (default 1000); the next page's cursor is
@@ -222,19 +243,11 @@ pub async fn workspace_items(
         return Err(Error::bad_request("archived work items are listed per project").into());
     }
     let wanted = ids(&q.project)?;
-    let rows = state
-        .store
-        .workspace_projects(ws.workspace.id, me.id, false)
-        .await?;
-    let readable: HashMap<Uuid, (String, String)> = rows
+    let readable: HashMap<Uuid, (String, String)> = readable_projects(&state, &ws, &me)
+        .await?
         .into_iter()
-        .filter(|r| {
-            r.member_role.0.is_some()
-                && perm::effective_proj_role(ws.role, r.member_role.0)
-                    .is_some_and(|role| perm::proj_can(role, ProjAction::ViewWorkItems))
-                && (wanted.is_empty() || wanted.contains(&r.project.id))
-        })
-        .map(|r| (r.project.id, (r.project.identifier, r.project.name)))
+        .filter(|p| wanted.is_empty() || wanted.contains(&p.id))
+        .map(|p| (p.id, (p.identifier, p.name)))
         .collect();
     let limit = q.limit.unwrap_or(PAGE_DEFAULT).clamp(1, PAGE_MAX);
     let mut f = filter_from(&q)?;
@@ -243,6 +256,9 @@ pub async fn workspace_items(
     f.before = q.cursor.as_deref().map(decode_ws_cursor).transpose()?;
     if q.subscribed {
         f.subscribed_by = Some(me.id);
+    }
+    if let Some(u) = q.subscriber {
+        f.subscribed_by = Some(u);
     }
     let pids: Vec<Uuid> = readable.keys().copied().collect();
     let items = state.store.work_items_in(&pids, &f).await?;

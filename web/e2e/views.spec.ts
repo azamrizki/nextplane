@@ -1,4 +1,6 @@
-import { ADMIN, expect, openFilter, test } from "./fixtures";
+import { ADMIN, expect, login, openFilter, test } from "./fixtures";
+
+test.describe.configure({ mode: "serial" });
 
 test("workspace views list work items across projects, filter them and save custom views", async ({ page, hub }) => {
   await page.goto(hub.setupLink);
@@ -57,4 +59,22 @@ test("workspace views list work items across projects, filter them and save cust
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
   await expect(page).toHaveURL(/\/views\/all$/);
   await expect(page.locator(".view-tabs")).not.toContainText("On fire");
+});
+
+test("a member's profile: summary numbers, their work and their activity", async ({ page, hub }) => {
+  await login(page, hub);
+  const me = await page.evaluate(async () => (await (await fetch("/api/v1/me")).json()).id as string);
+  await page.goto(`${hub.url}/acme/settings/members`);
+  await page.locator(".member-link", { hasText: "Ana" }).click();
+  await expect(page).toHaveURL(new RegExp(`/acme/profile/${me}$`));
+  const overview = page.locator(".profile-tiles").first();
+  await expect(overview.locator(".profile-tile-link", { hasText: "Created" })).toContainText("2");
+  await expect(overview.locator(".profile-tile-link", { hasText: "Assigned" })).toContainText("1");
+  await expect(page.locator(".profile-side")).toContainText("Owner");
+  await page.locator(".profile-tabs").getByRole("link", { name: "Assigned" }).click();
+  await expect(page.locator(".profile-main .row-link")).toHaveCount(1);
+  await expect(page.locator(".profile-main .row-link")).toContainText("Ship the beta");
+  await page.locator(".profile-tabs").getByRole("link", { name: "Activity" }).click();
+  await expect(page.locator(".profile-activity li").first()).toContainText("Ana");
+  await expect(page.getByRole("link", { name: "Download today's activity" })).toHaveAttribute("href", /format=csv/);
 });

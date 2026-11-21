@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UsersRound } from "lucide-react";
 import { WsSettingsFrame } from "../components/SettingsFrame";
@@ -73,7 +74,10 @@ export function MembersPage() {
               <Avatar name={m.name} email={m.email} src={m.avatar} size={28} />
               <div className="row-main">
                 <span className="ellipsis">
-                  {m.name || m.email} {self ? <span className="faint">({t("common.you")})</span> : null}
+                  <Link to={`/${ws.slug}/profile/${m.user_id}`} className="member-link" title={t("prof.view")}>
+                    {m.name || m.email}
+                  </Link>{" "}
+                  {self ? <span className="faint">({t("common.you")})</span> : null}
                 </span>
                 <span className="faint small ellipsis">{m.email}</span>
               </div>

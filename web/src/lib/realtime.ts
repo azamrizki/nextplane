@@ -22,6 +22,7 @@ export function applyEvent(qc: QueryClient, slug: string, e: Event) {
   if (e.client === CLIENT_ID) return;
   const pid = e.project_id;
   if (!pid) {
+    if (e.area === "view") qc.invalidateQueries({ queryKey: ["ws-views", slug] });
     qc.invalidateQueries({ queryKey: ["workspaces"] });
     qc.invalidateQueries({ queryKey: ["workspace", slug] });
     qc.invalidateQueries({ queryKey: ["projects", slug] });
@@ -42,6 +43,9 @@ export function applyEvent(qc: QueryClient, slug: string, e: Event) {
   qc.invalidateQueries({ queryKey: ["module", slug, pid] });
   qc.invalidateQueries({ queryKey: ["views", pid] });
   qc.invalidateQueries({ queryKey: ["my-work", slug] });
+  // Lists that span projects: workspace views and profiles.
+  qc.invalidateQueries({ queryKey: ["ws-items", slug] });
+  qc.invalidateQueries({ queryKey: ["profile", slug] });
   if (e.work_item_id) {
     const id = e.work_item_id;
     qc.invalidateQueries({ queryKey: ["work-item", slug, pid, id] });

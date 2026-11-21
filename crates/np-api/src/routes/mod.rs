@@ -12,6 +12,7 @@ pub mod invites;
 pub mod members;
 pub mod modules;
 pub mod pages;
+pub mod profile;
 pub mod projects;
 pub mod setup;
 pub mod sso;

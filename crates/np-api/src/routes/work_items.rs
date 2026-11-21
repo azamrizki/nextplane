@@ -72,6 +72,8 @@ pub struct ListQuery {
     /// Workspace lists only: items the caller follows.
     #[serde(default)]
     pub(crate) subscribed: bool,
+    /// Workspace lists only: items this person follows (profile pages).
+    pub(crate) subscriber: Option<Uuid>,
 }
 
 pub const PAGE_DEFAULT: i64 = 1000;

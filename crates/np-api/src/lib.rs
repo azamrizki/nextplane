@@ -114,7 +114,7 @@ pub fn router(state: AppState, spa: Router) -> Router {
     use axum::routing::{delete, patch};
     use routes::{
         account, admin, analytics, auth, collab, cycles, home, inbox, intake, integrations, invites,
-        members, modules, pages, projects, setup, sso, tokens, transfer, views, work_items as wi,
+        members, modules, pages, profile, projects, setup, sso, tokens, transfer, views, work_items as wi,
         workspaces,
     };
     let api = Router::new()
@@ -154,6 +154,14 @@ pub fn router(state: AppState, spa: Router) -> Router {
             patch(members::set_role).delete(members::remove),
         )
         .route("/workspaces/{slug}/leave", post(members::leave))
+        .route(
+            "/workspaces/{slug}/members/{user_id}/profile",
+            get(profile::profile),
+        )
+        .route(
+            "/workspaces/{slug}/members/{user_id}/activity",
+            get(profile::activity),
+        )
         .route(
             "/workspaces/{slug}/invites",
             get(members::invites).post(members::invite),
