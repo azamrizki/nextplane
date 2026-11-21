@@ -1005,11 +1005,17 @@ kbd {
   color: var(--text-secondary);
 }
 
-/* Toasts (bottom right, above dialogs' scrims but below menus) */
+/* Toasts (bottom right). The list is a manual popover in the top layer (above modal
+   dialogs); these undo the browser's popover box. */
 .toasts {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
+  inset: auto 16px 16px auto;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
   z-index: 60;
   display: flex;
   flex-direction: column;
