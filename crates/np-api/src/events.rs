@@ -105,6 +105,8 @@ pub fn parse_path(path: &str) -> Option<(String, Option<Uuid>, Option<Uuid>, Str
                     "webhooks" => "webhook",
                     "github" => "integration",
                     "notifications" | "read-all" => "subscription",
+                    // One person's own things: nobody else needs to hear about them.
+                    "home" | "quick-links" | "recents" | "stickies" => "personal",
                     _ => area.as_str(),
                 }
                 .to_string();
@@ -211,7 +213,7 @@ pub async fn publish_changes(State(state): State<AppState>, req: Request, next: 
             }
             _ => {}
         }
-        if area != "subscription" {
+        if area != "subscription" && area != "personal" {
             let action = action_of(&method, &path);
             state.events.publish(Event {
                 workspace,

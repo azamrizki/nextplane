@@ -6,6 +6,7 @@ import { ApiError, get, post, del } from "../api/client";
 import type { Activity, Relation, RelationKind, WorkItem } from "../api/types";
 import { useI18n } from "../i18n";
 import { copyText } from "../lib/copy";
+import { recordVisit } from "../lib/home";
 import { errorText } from "../lib/errors";
 import { pcan } from "../lib/perm";
 import { itemsPath, keyOf, useActivity, useArchiveItem, useCreateItem, useRelations, useUpdateItem, useWorkItem, useWorkItems, wiq } from "../lib/workItems";
@@ -26,6 +27,10 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
   const { t } = useI18n();
   const p = ctx.project;
   const q = useWorkItem(slug, p.id, id);
+  const seenId = q.data && !q.data.is_draft ? q.data.id : null;
+  useEffect(() => {
+    if (seenId) recordVisit(slug, "work_item", seenId, p.id);
+  }, [slug, seenId, p.id]);
   const update = useUpdateItem(slug, p.id);
   const archive = useArchiveItem(slug, p.id);
   const navigate = useNavigate();

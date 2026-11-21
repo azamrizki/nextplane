@@ -1,4 +1,5 @@
 // Project pages: a tree on the left, the live editor on the right (SPRINT S3.1).
+import { recordVisit } from "../lib/home";
 import { Lock } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +42,9 @@ export function PagesPage() {
   const [archived, setArchived] = useState(false);
   const p = ctx && ctx !== "missing" ? ctx.project : null;
   const list = usePages(ws.slug, p?.id ?? "", archived, !!p);
+  useEffect(() => {
+    if (p && pageId) recordVisit(ws.slug, "page", pageId, p.id);
+  }, [ws.slug, p, pageId]);
   const create = useMutation({
     mutationFn: (parent: string | null) => post<Page>(pagesPath(ws.slug, p!.id), { title: "", parent_id: parent }),
     onSuccess: (pg) => {

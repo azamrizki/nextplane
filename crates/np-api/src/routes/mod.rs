@@ -3,6 +3,7 @@ pub mod admin;
 pub mod analytics;
 pub mod auth;
 pub mod collab;
+pub mod home;
 pub mod cycles;
 pub mod inbox;
 pub mod intake;

@@ -1,3 +1,4 @@
+import { StickiesPage } from "./pages/Stickies";
 import { WorkspaceViewsPage } from "./pages/WorkspaceViews";
 import { ArchivesPage } from "./pages/Archives";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -74,6 +75,7 @@ export const routes = [
           { path: "analytics", element: <AnalyticsPage /> },
           { path: "inbox", element: <InboxPage /> },
           { path: "drafts", element: <DraftsPage /> },
+          { path: "stickies", element: <StickiesPage /> },
           { path: "settings/members", element: <MembersPage /> },
           { path: "settings/webhooks", element: <WebhooksPage /> },
           { path: "settings/github", element: <GithubPage /> },

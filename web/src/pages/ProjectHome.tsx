@@ -19,6 +19,7 @@ import { WorkItemDetail } from "../components/WorkItemDetail";
 import type { PropsCtx } from "../components/WorkItemProps";
 import { useI18n } from "../i18n";
 import { errorText } from "../lib/errors";
+import { recordVisit } from "../lib/home";
 import { pcan } from "../lib/perm";
 import { useProjectCtx } from "../lib/projectCtx";
 import { pq, projectPath, useProject } from "../lib/projects";
@@ -79,6 +80,9 @@ export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) 
   const ws = useWs();
   const p = ctx.project;
   const [view, setView] = useViewState(scope ? `${p.id}:${scope.key}` : p.id);
+  useEffect(() => {
+    if (!scope) recordVisit(ws.slug, "project", p.id);
+  }, [ws.slug, p.id, scope]);
   const [q, setQ] = useState(view.filters.q);
   useEffect(() => {
     const h = setTimeout(() => setQ(view.filters.q), 250);

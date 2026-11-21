@@ -14,6 +14,7 @@ use time::OffsetDateTime;
 pub mod analytics;
 pub mod automations;
 pub mod collab;
+pub mod home;
 pub mod cycles;
 pub mod instance;
 pub mod intake;

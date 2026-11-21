@@ -113,7 +113,7 @@ impl AppState {
 pub fn router(state: AppState, spa: Router) -> Router {
     use axum::routing::{delete, patch};
     use routes::{
-        account, admin, analytics, auth, collab, cycles, inbox, intake, integrations, invites,
+        account, admin, analytics, auth, collab, cycles, home, inbox, intake, integrations, invites,
         members, modules, pages, projects, setup, sso, tokens, transfer, views, work_items as wi,
         workspaces,
     };
@@ -342,6 +342,31 @@ pub fn router(state: AppState, spa: Router) -> Router {
             patch(views::update).delete(views::remove),
         )
         .route("/workspaces/{slug}/my-work", get(views::my_work))
+        .route("/workspaces/{slug}/home/widgets", get(home::widgets))
+        .route(
+            "/workspaces/{slug}/home/widgets/{key}",
+            patch(home::set_widget),
+        )
+        .route(
+            "/workspaces/{slug}/quick-links",
+            get(home::links).post(home::add_link),
+        )
+        .route(
+            "/workspaces/{slug}/quick-links/{id}",
+            patch(home::update_link).delete(home::delete_link),
+        )
+        .route(
+            "/workspaces/{slug}/recents",
+            get(home::recents).post(home::visit),
+        )
+        .route(
+            "/workspaces/{slug}/stickies",
+            get(home::stickies).post(home::create_sticky),
+        )
+        .route(
+            "/workspaces/{slug}/stickies/{id}",
+            patch(home::update_sticky).delete(home::delete_sticky),
+        )
         .route(
             "/workspaces/{slug}/work-items",
             get(views::workspace_items),

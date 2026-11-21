@@ -29,6 +29,7 @@ import {
   Share2,
   ShieldCheck,
   SquarePen,
+  StickyNote,
   UserPlus,
   UserRound,
 } from "lucide-react";
@@ -163,6 +164,10 @@ function Sidebar({ ws }: { ws: MyWorkspace }) {
           <NavLink to={`${base}/drafts`} className="side-link">
             <FilePen />
             <span className="ellipsis">{t("nav.drafts")}</span>
+          </NavLink>
+          <NavLink to={`${base}/stickies`} className="side-link">
+            <StickyNote />
+            <span className="ellipsis">{t("st.title")}</span>
           </NavLink>
         </nav>
         <section className="side-section">

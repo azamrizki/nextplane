@@ -199,87 +199,21 @@
   font-size: var(--text-2xl);
   font-weight: var(--weight-semibold);
 }
-.home-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-3);
-}
-.stat-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
-  background: var(--layer-2);
-  color: var(--text);
-}
-.stat-card:hover {
-  text-decoration: none;
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
-}
-.stat-card svg {
-  grid-row: span 2;
-  width: 20px;
-  height: 20px;
-  margin-top: 4px;
-  color: var(--icon);
-}
-.stat-card-value {
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
-}
-.stat-card-label {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-}
-.home-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.home-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.home-section-head h3 {
-  font-size: var(--text-md);
-  font-weight: var(--weight-semibold);
-}
-.home-projects {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-3);
-}
-.home-project {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
-  background: var(--layer-2);
-  color: var(--text);
-}
-.home-project:hover {
-  text-decoration: none;
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
-}
-.home-project .grow {
-  display: flex;
-  flex-direction: column;
-}
-.home-project-name {
-  font-weight: var(--weight-medium);
-}
-.home-project-add {
-  border-style: dashed;
-  color: var(--text-muted);
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .logo-tile {
   display: inline-flex;
   align-items: center;
@@ -522,4 +456,283 @@
 .views-search .input {
   padding-left: 30px;
   width: 100%;
+}
+
+/* Home (S3.7): greeting, "get started", then the widgets in a centred column. */
+.home-page > :not(.page-header) {
+  max-width: 760px;
+}
+.home-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  padding-bottom: var(--space-6, 24px);
+}
+.widget-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  margin-bottom: var(--space-2);
+}
+.widget-head h3 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold, 600);
+  color: var(--text-muted);
+}
+.widget-empty {
+  margin: 0 0 var(--space-2);
+}
+.widget-more {
+  margin-top: var(--space-2);
+}
+.widget-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.widget-search svg {
+  position: absolute;
+  left: 8px;
+  width: 13px;
+  height: 13px;
+  color: var(--text-faint);
+}
+.widget-search .input {
+  padding-left: 26px;
+  width: 180px;
+  height: 28px;
+}
+.quickstart {
+  margin-bottom: var(--space-6, 24px);
+}
+.quickstart-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-2);
+}
+.quickstart-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: var(--layer-2);
+  color: var(--text-secondary);
+}
+.quickstart-step:hover {
+  text-decoration: none;
+  background: var(--layer-2-hover);
+}
+.quickstart-step.done {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+.quickstart-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--icon);
+}
+.quickstart-step.done .quickstart-icon svg {
+  color: var(--success);
+}
+
+/* Quick links: cards in up to three columns, about two rows until "Show all". */
+.link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-2);
+}
+.link-grid.capped > :nth-child(n + 7) {
+  display: none;
+}
+.link-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: var(--layer-2);
+}
+.link-card:hover {
+  background: var(--layer-2-hover);
+}
+.link-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  color: inherit;
+}
+.link-card-main:hover {
+  text-decoration: none;
+}
+.link-card-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--radius-md);
+  background: var(--layer-1);
+  color: var(--icon);
+}
+.link-card-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.link-card-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.link-card-title {
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+.link-card-menu {
+  margin-right: 4px;
+  opacity: 0;
+}
+.link-card:hover .link-card-menu,
+.link-card-menu[aria-expanded="true"],
+.link-card-menu:focus-visible {
+  opacity: 1;
+}
+
+/* Recents: rows in a scrolling list. */
+.recents {
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  background: var(--layer-2);
+}
+.recents:empty {
+  display: none;
+}
+.recent-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.recent-row:last-child {
+  border-bottom: none;
+}
+.recent-row:hover {
+  text-decoration: none;
+  background: var(--bg-hover);
+}
+.recent-key {
+  min-width: 56px;
+}
+.recent-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--icon);
+}
+.recent-project {
+  max-width: 160px;
+}
+.recent-when {
+  min-width: 64px;
+  text-align: right;
+}
+.filter-pill-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Stickies: a masonry of coloured notes (2 to 6 columns by width). */
+.sticky-grid {
+  columns: 200px;
+  column-gap: var(--space-3);
+}
+.sticky-grid.capped {
+  max-height: 620px;
+  overflow: hidden;
+}
+.sticky {
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--sticky-bg);
+  border: 1px solid rgb(0 0 0 / 4%);
+}
+.sticky-prose {
+  min-height: 90px;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  outline: none;
+  font-size: var(--text-base);
+}
+.sticky-prose p {
+  margin: 0 0 4px;
+}
+.sticky-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px var(--space-2) var(--space-2);
+  opacity: 0.55;
+}
+.sticky:hover .sticky-tools,
+.sticky:focus-within .sticky-tools {
+  opacity: 1;
+}
+.sticky-tools .icon-btn.on {
+  background: rgb(0 0 0 / 8%);
+}
+.sticky-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 24px);
+  gap: 6px;
+  padding: var(--space-2);
+}
+.sticky-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgb(0 0 0 / 12%);
+  background: var(--sticky-bg);
+  cursor: pointer;
+}
+.sticky-swatch.on {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.sticky-gray { --sticky-bg: #eceef0; }
+.sticky-peach { --sticky-bg: #fde3d6; }
+.sticky-pink { --sticky-bg: #fbdde9; }
+.sticky-orange { --sticky-bg: #fde8c9; }
+.sticky-green { --sticky-bg: #dcf1de; }
+.sticky-light-blue { --sticky-bg: #d8eefa; }
+.sticky-dark-blue { --sticky-bg: #dbe2fa; }
+.sticky-purple { --sticky-bg: #e9e0fa; }
+[data-theme="dark"] .sticky-gray { --sticky-bg: #2a2c2f; }
+[data-theme="dark"] .sticky-peach { --sticky-bg: #3c2b23; }
+[data-theme="dark"] .sticky-pink { --sticky-bg: #3a2430; }
+[data-theme="dark"] .sticky-orange { --sticky-bg: #3b2f1d; }
+[data-theme="dark"] .sticky-green { --sticky-bg: #1f3224; }
+[data-theme="dark"] .sticky-light-blue { --sticky-bg: #1d3140; }
+[data-theme="dark"] .sticky-dark-blue { --sticky-bg: #202842; }
+[data-theme="dark"] .sticky-purple { --sticky-bg: #2d2542; }
+[data-theme="dark"] .sticky,
+[data-theme="dark"] .sticky-swatch {
+  border-color: rgb(255 255 255 / 6%);
+}
+[data-theme="dark"] .sticky-tools .icon-btn.on {
+  background: rgb(255 255 255 / 10%);
+}
+.manage-widgets .row {
+  gap: var(--space-2);
 }

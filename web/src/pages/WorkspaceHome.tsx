@@ -1,147 +1,113 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Briefcase, CalendarClock, CircleAlert, House, ListTodo, Plus } from "lucide-react";
+import { Briefcase, CircleCheck, House, LayoutGrid, Settings, UserPlus, UserRound } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useOutletContext } from "react-router";
 import { get } from "../api/client";
-import type { MyWorkspace, WorkItem } from "../api/types";
+import type { MyWorkspace, WsMember } from "../api/types";
+import { HomeWidgets, ManageWidgets } from "../components/HomeWidgets";
 import { PageHeader } from "../components/PageHeader";
-import { PriorityIcon, fmtDate, isOverdue } from "../components/Props";
 import { useI18n } from "../i18n";
-import { can } from "../lib/perm";
 import { useProjects } from "../lib/projects";
+import { wq } from "../lib/queries";
 import { useMe } from "../lib/session";
-import { emitShell } from "../lib/shell";
-import { ProjectIcon } from "./Projects";
 
 export function useWs() {
   return useOutletContext<MyWorkspace>();
 }
 
-interface Row extends WorkItem {
-  identifier: string;
-  project_name: string;
-}
-
-/** Home, as in Plane: a greeting, then your open work and your projects. */
+/** Home, as in Plane: a greeting, a "get started" checklist for new workspaces, then the
+ * person's widgets (quick links, recents, stickies) in their order. */
 export function WorkspaceHomePage() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const ws = useWs();
-  const me = useMe().data!;
-  const projects = useProjects(ws.slug);
-  const mine = (projects.data ?? []).filter((p) => p.is_member && !p.archived_at);
-  const assigned = useQuery({
-    queryKey: ["my-work", ws.slug, "assigned", false],
-    queryFn: () => get<Row[]>(`/workspaces/${ws.slug}/my-work?kind=assigned`),
-  });
-  const rows = assigned.data ?? [];
-  const overdue = rows.filter((w) => isOverdue(w.due_date, w.completed_at)).length;
-  const today = new Date();
-  const week = new Date(today);
-  week.setDate(week.getDate() + 7);
-  const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const dueSoon = rows.filter((w) => w.due_date && w.due_date >= ymd(today) && w.due_date <= ymd(week)).length;
-  const hour = today.getHours();
-  const greet = hour < 12 ? "home.morning" : hour < 18 ? "home.afternoon" : "home.evening";
-  const first = (me.name || me.email).split(" ")[0] ?? "";
+  const [managing, setManaging] = useState(false);
   return (
-    <div className="page">
+    <div className="page home-page">
       <PageHeader
         crumbs={[{ icon: <House />, label: t("nav.home") }]}
         actions={
-          ws.role !== "guest" ? (
-            <button className="btn btn-primary" onClick={() => emitShell("create-item")}>
-              {t("nav.newItem")}
-            </button>
-          ) : null
+          <button className="btn" onClick={() => setManaging(true)}>
+            <LayoutGrid />
+            {t("hw.manage")}
+          </button>
         }
       />
-      <div className="home-hello">
-        <h2>{t(greet, { name: first })}</h2>
-        <span className="muted">
-          {today.toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { weekday: "long", month: "long", day: "numeric" })}
-        </span>
+      <Greeting />
+      <Quickstart ws={ws} />
+      <HomeWidgets ws={ws} />
+      <ManageWidgets ws={ws} open={managing} onClose={() => setManaging(false)} />
+    </div>
+  );
+}
+
+function Greeting() {
+  const { t, lang } = useI18n();
+  const me = useMe().data!;
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const h = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(h);
+  }, []);
+  const hour = now.getHours();
+  const greet = hour < 12 ? "home.morning" : hour < 18 ? "home.afternoon" : "home.evening";
+  const locale = lang === "id" ? "id-ID" : "en-US";
+  return (
+    <div className="home-hello">
+      <h2>{t(greet, { name: me.name || me.email.split("@")[0]! })}</h2>
+      <span className="muted">
+        {now.toLocaleDateString(locale, { weekday: "long", month: "short", day: "numeric" })} · {now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hour12: false })}
+      </span>
+    </div>
+  );
+}
+
+/** Until it is dismissed, or the person has joined a project and the workspace has someone
+ * else in it (as in Plane). */
+function Quickstart({ ws }: { ws: MyWorkspace }) {
+  const { t } = useI18n();
+  const me = useMe().data!;
+  const key = `np.quickstart.${ws.slug}`;
+  const [hidden, setHidden] = useState(() => localStorage.getItem(key) === "1");
+  const projects = useProjects(ws.slug);
+  const members = useQuery({ queryKey: wq.members(ws.slug), queryFn: () => get<WsMember[]>(`/workspaces/${ws.slug}/members`), enabled: !hidden });
+  if (hidden || !projects.isSuccess || !members.isSuccess) return null;
+  const joined = projects.data.some((p) => p.is_member);
+  const team = members.data.length >= 2;
+  if (joined && team) return null;
+  const admin = ws.role === "owner" || ws.role === "admin";
+  const steps: { done: boolean; icon: ReactNode; label: string; to: string; show: boolean }[] = [
+    { done: joined, icon: <Briefcase />, label: t("hw.qsProject"), to: `/${ws.slug}/projects?new=1`, show: ws.role !== "guest" },
+    { done: team, icon: <UserPlus />, label: t("hw.qsInvite"), to: `/${ws.slug}/settings/members`, show: admin },
+    { done: !!ws.logo, icon: <Settings />, label: t("hw.qsWorkspace"), to: `/${ws.slug}/settings`, show: admin },
+    { done: !!me.avatar, icon: <UserRound />, label: t("hw.qsProfile"), to: "/profile", show: true },
+  ];
+  return (
+    <section className="quickstart" aria-label={t("hw.quickstart")}>
+      <div className="widget-head">
+        <h3>{t("hw.quickstart")}</h3>
+        <span className="grow" />
+        <button
+          className="btn btn-sm btn-ghost"
+          onClick={() => {
+            localStorage.setItem(key, "1");
+            setHidden(true);
+          }}
+        >
+          {t("hw.qsDismiss")}
+        </button>
       </div>
-      <div className="home-stats">
-        <Link to={`/${ws.slug}/my-work`} className="stat-card">
-          <ListTodo aria-hidden />
-          <span className="stat-card-value">{assigned.isSuccess ? rows.length : "—"}</span>
-          <span className="stat-card-label">{t("home.assignedOpen")}</span>
-        </Link>
-        <Link to={`/${ws.slug}/my-work`} className="stat-card">
-          <CircleAlert aria-hidden />
-          <span className="stat-card-value">{assigned.isSuccess ? overdue : "—"}</span>
-          <span className="stat-card-label">{t("home.overdue")}</span>
-        </Link>
-        <Link to={`/${ws.slug}/my-work`} className="stat-card">
-          <CalendarClock aria-hidden />
-          <span className="stat-card-value">{assigned.isSuccess ? dueSoon : "—"}</span>
-          <span className="stat-card-label">{t("home.dueWeek")}</span>
-        </Link>
-      </div>
-      <section className="home-section">
-        <div className="home-section-head">
-          <h3>{t("home.yourWork")}</h3>
-          <Link to={`/${ws.slug}/my-work`} className="btn btn-sm btn-ghost">
-            {t("home.viewAll")}
-            <ArrowRight />
-          </Link>
-        </div>
-        {assigned.isSuccess && rows.length === 0 ? <div className="card empty small">{t("home.nothingAssigned")}</div> : null}
-        {rows.length ? (
-          <div className="rows card">
-            {rows.slice(0, 8).map((w) => (
-              <Link key={w.id} to={`/${ws.slug}/projects/${w.project_id}/work-items/${w.id}`} className="row row-link">
-                <PriorityIcon p={w.priority} />
-                <span className="list-key" style={{ minWidth: 64 }}>{w.identifier}-{w.sequence}</span>
-                <span className="grow ellipsis">{w.title}</span>
-                <span className="faint small">{w.project_name}</span>
-                {w.due_date ? (
-                  <span className={"small" + (isOverdue(w.due_date, w.completed_at) ? " overdue" : " faint")}>
-                    <CalendarClock className="inline-icon" /> {fmtDate(w.due_date, lang)}
-                  </span>
-                ) : null}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-      </section>
-      <section className="home-section">
-        <div className="home-section-head">
-          <h3>{t("home.projects")}</h3>
-          <Link to={`/${ws.slug}/projects`} className="btn btn-sm btn-ghost">
-            {t("home.viewAll")}
-            <ArrowRight />
-          </Link>
-        </div>
-        <div className="home-projects">
-          {mine.map((p) => (
-            <Link key={p.id} to={`/${ws.slug}/projects/${p.id}`} className="home-project">
-              <span className="logo-tile">
-                <ProjectIcon p={p} size={20} />
+      <div className="quickstart-steps">
+        {steps
+          .filter((s) => s.show)
+          .map((s) => (
+            <Link key={s.label} to={s.to} className={"quickstart-step" + (s.done ? " done" : "")}>
+              <span className="quickstart-icon" aria-hidden>
+                {s.done ? <CircleCheck /> : s.icon}
               </span>
-              <span className="grow">
-                <span className="home-project-name ellipsis">{p.name}</span>
-                <span className="faint small">{p.identifier}</span>
-              </span>
+              <span>{s.label}</span>
             </Link>
           ))}
-          {projects.isSuccess && mine.length === 0 ? (
-            <Link to={`/${ws.slug}/projects`} className="home-project faint">
-              <span className="logo-tile">
-                <Briefcase />
-              </span>
-              {t("nav.browseProjects")}
-            </Link>
-          ) : null}
-          {can.createProject(ws) ? (
-            <Link to={`/${ws.slug}/projects?new=1`} className="home-project home-project-add">
-              <span className="logo-tile">
-                <Plus />
-              </span>
-              {t("nav.createProject")}
-            </Link>
-          ) : null}
-        </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }

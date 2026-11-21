@@ -19,7 +19,7 @@ use crate::error::{ApiError, ApiResult};
 use crate::extract::{Json, Path, Query};
 use crate::richtext;
 
-async fn ctx(state: &AppState, me: &User, slug: &str, pid: Uuid) -> ApiResult<ProjCtx> {
+pub(crate) async fn ctx(state: &AppState, me: &User, slug: &str, pid: Uuid) -> ApiResult<ProjCtx> {
     let c = load_project(state, slug, pid, me).await?;
     c.require(ProjAction::ViewWorkItems)?;
     if !c.row.project.feature_pages {
@@ -29,7 +29,7 @@ async fn ctx(state: &AppState, me: &User, slug: &str, pid: Uuid) -> ApiResult<Pr
 }
 
 /// A page the user may see (private ones only by their owner).
-async fn load(state: &AppState, c: &ProjCtx, id: Uuid, me: &User) -> ApiResult<Page> {
+pub(crate) async fn load(state: &AppState, c: &ProjCtx, id: Uuid, me: &User) -> ApiResult<Page> {
     let p = state
         .store
         .page(c.id(), id)
