@@ -31,8 +31,11 @@ test("home widgets: quick links, recents, stickies, and managing them", async ({
     return p.id as string;
   });
   await page.goto(`${hub.url}/acme/projects/${pid}`);
+  // The visit is recorded in the background: wait for it before leaving.
+  const visited = page.waitForResponse((r) => r.url().endsWith("/recents") && r.request().method() === "POST" && r.request().postData()?.includes("work_item") === true);
   await page.locator(".list-row", { hasText: "Fix the footer" }).click();
   await expect(page.getByRole("dialog", { name: "Properties" })).toBeVisible();
+  await visited;
   await page.goto(`${hub.url}/acme`);
   const recents = page.getByRole("region", { name: "Recents" });
   await expect(recents.locator(".recent-row").first()).toContainText("Fix the footer");

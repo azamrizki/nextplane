@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { get, post } from "../api/client";
+import { get } from "../api/client";
 import type { Priority, StateGroup } from "../api/types";
 
 export type WidgetKey = "quick_links" | "recents" | "stickies";
@@ -68,7 +68,14 @@ export function recordVisit(slug: string, entity: RecentEntity, id: string, proj
   const now = Date.now();
   if ((seen.get(key) ?? 0) > now - 60_000) return;
   seen.set(key, now);
-  void post(`/workspaces/${slug}/recents`, { entity, id, project_id: projectId }).catch(() => seen.delete(key));
+  // keepalive: the visit still arrives when the person moves on at once.
+  void fetch(`/api/v1/workspaces/${slug}/recents`, {
+    method: "POST",
+    credentials: "same-origin",
+    keepalive: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ entity, id, project_id: projectId }),
+  }).then((r) => (r.ok ? null : seen.delete(key)), () => seen.delete(key));
 }
 
 /** The host of a link, for its card ("docs.example.com"). */
