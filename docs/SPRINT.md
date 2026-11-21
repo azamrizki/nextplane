@@ -2,7 +2,7 @@
 
 The single place to see where NextPlane stands: which phase is active, which sprint runs, and which tasks are done. Scope and decisions live in [SPEC.md](SPEC.md); this file tracks progress only.
 
-**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (v0.1.0 released 2026-11-21)
+**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (v0.1.1 released 2026-11-21)
 
 ## How to use this file
 
@@ -22,7 +22,7 @@ The single place to see where NextPlane stands: which phase is active, which spr
 | 1 | MVP | S1.1 – S1.6 | ✅ Done (v0.1.0 released) | 60 / 60 |
 | 2 | Planning | S2.1 – S2.5 | ✅ Done | 29 / 29 |
 | 3 | Knowledge & insight | S3.1 – S3.5 | ✅ Done | 26 / 26 |
-| 3.5 | Familiar UI (Plane look and behaviour) | S3.6 | ✅ Done | 10 / 10 |
+| 3.5 | Familiar UI (Plane look and behaviour) | S3.6 | ✅ Done (v0.1.1 released) | 10 / 10 |
 | 4 | Clients (desktop, Android) | — | ⏸ Waiting for web v1 final | — |
 
 Status icons: ⏳ not started · 🚧 in progress · ✅ done · ⏸ on hold.
@@ -386,7 +386,7 @@ Found while testing: the title box in the detail view collapsed to 6 px inside t
 
 ### Web v1 — owner review
 
-Phases 0–3 are done and v0.1.0 is released. These need the owner:
+Phases 0–3.5 are done and v0.1.1 is released. These need the owner:
 
 1. **Declare web v1 final** (or list changes). That starts phase 4 (desktop, Android).
 2. **Git:** ✅ `azamrizki/nextplane`, public since 2026-11-21 (history checked first: no secrets, no `.env`, keys or databases, commits carry no email); `v0.1.0` released.
@@ -423,6 +423,7 @@ Phases 0–3 are done and v0.1.0 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | v0.1.1 released (patch, owner's go-ahead): the S3.6 UI; the Linux amd64 download matched `SHA256SUMS`, reports 0.1.1 and serves the new UI. |
 | 2026-11-21 | S3.6 done: the web app follows Plane's look and behaviour, rebuilt in our own code. |
 | 2026-11-21 | Repository made public; installer and updater checked against GitHub. |
 | 2026-11-21 | v0.1.0 tagged and released; phase 1 done (60/60). |
