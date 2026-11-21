@@ -490,6 +490,26 @@ kbd {
   min-width: 0;
   max-width: 80%;
 }
+/* Narrow headers (a small window, or a wide sidebar): secondary buttons drop their labels to
+   icons (their names stay for screen readers and in a tooltip), and crumbs never shrink to
+   nothing but end in "…". */
+.page-header {
+  container: page-header / inline-size;
+}
+.crumbs .crumb-label {
+  min-width: 3.5em;
+}
+@container page-header (max-width: 860px) {
+  /* Only crowded headers (four or more actions), such as a project's work items. */
+  .page-header-actions:has(> :nth-child(4)) .btn:not(.btn-primary):has(> svg:first-child) {
+    font-size: 0;
+    gap: 2px;
+    padding: 0 6px;
+  }
+  .page-header-actions:has(> :nth-child(4)) .btn:not(.btn-primary):has(> svg:first-child) .dot-badge {
+    font-size: initial;
+  }
+}
 .crumb {
   display: inline-flex;
   align-items: center;

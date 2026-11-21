@@ -151,7 +151,7 @@ export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) 
         <FiltersToggle open={filterRow} onToggle={() => setFilterRow((o) => !o)} count={nFilters} />
         <DisplayMenu view={view} setView={setView} />
         {pcan.viewWorkItems(p) && !scope ? (
-          <Link to={`/${ws.slug}/projects/${p.id}/analytics`} className="btn">
+          <Link to={`/${ws.slug}/projects/${p.id}/analytics`} className="btn" title={t("ptab.analytics")}>
             <ChartColumn />
             {t("ptab.analytics")}
           </Link>

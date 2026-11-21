@@ -58,7 +58,7 @@ export function SavedViews({ ctx, view, setView }: { ctx: PropsCtx; view: ViewSt
         open={open}
         onClose={() => setOpen(false)}
         trigger={
-          <button className="btn btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu">
+          <button className="btn btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" title={active ? active.name : t("views.title")}>
             <Layers />
             {active ? active.name : t("views.title")}
             <ChevronDown className="faint" />

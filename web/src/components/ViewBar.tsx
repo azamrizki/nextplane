@@ -235,7 +235,7 @@ export function DisplayMenu({ view, setView, compact }: { view: ViewState; setVi
       onClose={close}
       right
       trigger={
-        <button className={compact ? "icon-btn bordered" : "btn"} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("view.display")} style={{ position: "relative" }}>
+        <button className={compact ? "icon-btn bordered" : "btn"} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("view.display")} title={t("view.display")} style={{ position: "relative" }}>
           <SlidersHorizontal />
           {compact ? null : t("view.display")}
           {changed ? <span className="dot-badge" aria-hidden /> : null}
