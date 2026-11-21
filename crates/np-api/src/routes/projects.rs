@@ -232,6 +232,13 @@ pub struct UpdateReq {
     feature_modules: Option<bool>,
     feature_pages: Option<bool>,
     feature_intake: Option<bool>,
+    /// An uploaded file (`/api/v1/files/{id}`) or an Unsplash photo; `null` removes it.
+    #[serde(default, with = "crate::util::double_option")]
+    cover_image: Option<Option<String>>,
+    /// The photographer of an Unsplash cover.
+    cover_credit: Option<CoverCredit>,
+    /// Unsplash's download link of the chosen photo: Unsplash is told it was used.
+    unsplash_download: Option<String>,
     /// Automations, in months (0 = off, at most 12).
     archive_in: Option<i64>,
     close_in: Option<i64>,
@@ -268,6 +275,7 @@ pub async fn update(
         ..Default::default()
     };
     automations(&state, &ctx, &req, &mut p).await?;
+    cover(&state, &req, &mut p).await?;
     if let Some(i) = req.icon {
         p.icon = Some(clean_icon(i)?);
     }
@@ -293,6 +301,57 @@ pub async fn update(
     }
     state.store.update_project(id, &p).await?;
     Ok(Json(load_project(&state, &slug, id, &me).await?.out()))
+}
+
+#[derive(Deserialize, serde::Serialize)]
+pub struct CoverCredit {
+    name: String,
+    url: String,
+}
+
+/// A cover is one of our own files or an Unsplash photo (when Unsplash is set up), and an
+/// Unsplash photo carries its photographer's credit (Unsplash's API guidelines).
+async fn cover(state: &AppState, req: &UpdateReq, p: &mut ProjectPatch) -> ApiResult<()> {
+    let Some(img) = &req.cover_image else {
+        return Ok(());
+    };
+    let Some(url) = img.as_deref().map(str::trim).filter(|u| !u.is_empty()) else {
+        p.cover_image = Some(None);
+        return Ok(());
+    };
+    let own = url
+        .strip_prefix("/api/v1/files/")
+        .is_some_and(|id| id.parse::<Uuid>().is_ok());
+    let unsplash = url.starts_with("https://images.unsplash.com/")
+        && url.len() <= 2048
+        && !url.chars().any(|c| c.is_whitespace() || c == '"' || c == '\'' || c == '<');
+    if !own && !unsplash {
+        return Err(Error::bad_request("a cover is an uploaded image or an Unsplash photo").into());
+    }
+    let mut credit = None;
+    if unsplash {
+        let key = crate::services::unsplash_key(&state.store).await?;
+        if key.is_empty() {
+            return Err(Error::bad_request("Unsplash is not set up on this server").into());
+        }
+        let c = req
+            .cover_credit
+            .as_ref()
+            .ok_or_else(|| Error::bad_request("an Unsplash photo needs its photographer's credit"))?;
+        if c.name.trim().is_empty() || !c.url.starts_with("https://unsplash.com/") || c.url.len() > 500 {
+            return Err(Error::bad_request("the photographer's credit is a name and an unsplash.com link").into());
+        }
+        credit = Some(
+            serde_json::json!({ "name": c.name.trim().chars().take(100).collect::<String>(), "url": c.url })
+                .to_string(),
+        );
+        if let Some(d) = req.unsplash_download.clone() {
+            let (http, base) = (state.http.clone(), state.unsplash_api.clone());
+            tokio::spawn(async move { crate::services::unsplash_track(&http, &base, &key, &d).await });
+        }
+    }
+    p.cover_image = Some(Some((url.to_string(), credit)));
+    Ok(())
 }
 
 /// Automation settings (as in Plane): months 0–12; auto-close needs a cancelled state of this

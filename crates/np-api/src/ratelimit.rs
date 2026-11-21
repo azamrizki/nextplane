@@ -42,6 +42,16 @@ pub const SETUP_PER_IP: Limit = Limit {
     window: Duration::from_secs(5 * 60),
 };
 
+/// The AI assistant costs the instance money per request.
+pub const AI_PER_USER: Limit = Limit {
+    max: 60,
+    window: Duration::from_secs(60 * 60),
+};
+pub const UNSPLASH_PER_USER: Limit = Limit {
+    max: 60,
+    window: Duration::from_secs(60 * 60),
+};
+
 #[derive(Default)]
 pub struct RateLimiter {
     hits: Mutex<HashMap<String, VecDeque<Instant>>>,

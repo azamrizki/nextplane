@@ -11,6 +11,7 @@ import type { EstimateType, Label, Project, ProjRole, StateGroup, WfState, WsMem
 import { STATE_GROUPS } from "../api/types";
 import { Avatar } from "../components/Avatar";
 import { ColorPicker, Dot } from "../components/ColorPicker";
+import { CoverPicker } from "../components/CoverPicker";
 import { ConfirmDialog, Dialog } from "../components/Dialog";
 import { ErrorAlert, FullPageSpinner, TextField } from "../components/ui";
 import { useT } from "../i18n";
@@ -138,6 +139,10 @@ function General({ p }: { p: Project }) {
             <div className="field">
               <label>{t("proj.cover")}</label>
               <ColorPicker label={t("proj.cover")} value={f.cover_color} onChange={(c) => setF({ ...f, cover_color: c })} />
+            </div>
+            <div className="field">
+              <label>{t("cover.image")}</label>
+              <CoverPicker slug={ws.slug} p={p} disabled={!editable} />
             </div>
             <div className="form-row">
               <div className="field grow">

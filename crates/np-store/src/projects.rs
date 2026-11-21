@@ -18,6 +18,11 @@ pub struct Project {
     pub description: String,
     pub icon: Option<String>,
     pub cover_color: Option<String>,
+    /// An uploaded file (`/api/v1/files/…`) or an Unsplash photo.
+    pub cover_image: Option<String>,
+    /// The photographer of an Unsplash cover: `{name, url}`.
+    #[sqlx(json(nullable))]
+    pub cover_credit: Option<serde_json::Value>,
     pub lead_id: Option<Uuid>,
     pub default_assignee_id: Option<Uuid>,
     pub is_private: bool,
@@ -51,7 +56,8 @@ impl From<String> for EstimateTypeCol {
     }
 }
 
-const P_COLS: &str = "p.id, p.workspace_id, p.identifier, p.name, p.description, p.icon, p.cover_color, p.lead_id,
+const P_COLS: &str = "p.id, p.workspace_id, p.identifier, p.name, p.description, p.icon, p.cover_color, p.cover_image,
+    p.cover_credit, p.lead_id,
     p.default_assignee_id, p.is_private, p.estimate_type, p.estimate_values, p.feature_cycles, p.feature_modules,
     p.feature_pages, p.feature_intake, p.created_by, p.created_at, p.archived_at, p.archive_in, p.close_in,
     p.close_state_id";
@@ -96,6 +102,8 @@ pub struct ProjectPatch {
     pub description: Option<String>,
     pub icon: Option<Option<String>>,
     pub cover_color: Option<Option<String>>,
+    /// (image, credit); `None` inside removes the cover.
+    pub cover_image: Option<Option<(String, Option<String>)>>,
     pub lead_id: Option<Option<Uuid>>,
     pub default_assignee_id: Option<Option<Uuid>>,
     pub is_private: Option<bool>,
@@ -295,6 +303,8 @@ impl Store {
                description = COALESCE(?, description),
                icon = CASE WHEN ? THEN ? ELSE icon END,
                cover_color = CASE WHEN ? THEN ? ELSE cover_color END,
+               cover_image = CASE WHEN ? THEN ? ELSE cover_image END,
+               cover_credit = CASE WHEN ? THEN ? ELSE cover_credit END,
                lead_id = CASE WHEN ? THEN ? ELSE lead_id END,
                default_assignee_id = CASE WHEN ? THEN ? ELSE default_assignee_id END,
                is_private = COALESCE(?, is_private),
@@ -317,6 +327,10 @@ impl Store {
         .bind(p.icon.clone().flatten())
         .bind(p.cover_color.is_some())
         .bind(p.cover_color.clone().flatten())
+        .bind(p.cover_image.is_some())
+        .bind(p.cover_image.clone().flatten().map(|c| c.0))
+        .bind(p.cover_image.is_some())
+        .bind(p.cover_image.clone().flatten().and_then(|c| c.1))
         .bind(p.lead_id.is_some())
         .bind(p.lead_id.flatten())
         .bind(p.default_assignee_id.is_some())

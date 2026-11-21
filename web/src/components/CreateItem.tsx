@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { useCallback, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { MyWorkspace, WorkItem } from "../api/types";
 import { useI18n } from "../i18n";
@@ -11,7 +11,8 @@ import { useShellEvent } from "../lib/shell";
 import { useCreateItem } from "../lib/workItems";
 import { ProjectIcon } from "../pages/Projects";
 import { Dialog } from "./Dialog";
-import { Editor, type EditorValue } from "./Editor";
+import { AiAssist } from "./AiAssist";
+import { Editor, type EditorHandle, type EditorValue } from "./Editor";
 import { Picker } from "./Picker";
 import { ErrorAlert } from "./ui";
 import { AssigneesProp, CycleProp, DateProp, EstimateProp, LabelsProp, ModulesProp, PriorityProp, StateProp, type PropsCtx } from "./WorkItemProps";
@@ -45,6 +46,7 @@ export function CreateItemDialog({
   });
   const [draft, setDraft] = useState<WorkItem>(blank);
   const [desc, setDesc] = useState<EditorValue | null>(null);
+  const editorRef = useRef<EditorHandle>(null);
   const [more, setMore] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   // A different project means different states, labels and members: start over.
@@ -84,7 +86,8 @@ export function CreateItemDialog({
         <ErrorAlert message={create.isError ? errorText(create.error, t) : null} />
         <input className="create-item-title" autoFocus placeholder={t("wi.titlePlaceholder")} aria-label={t("wi.title")} value={draft.title} onChange={(e) => onPatch({ title: e.target.value })} maxLength={255} required />
         <div className="create-item-desc">
-          <Editor key={`${ctx.project.id}:${editorKey}`} placeholder={t("wi.descriptionPlaceholder")} ariaLabel={t("wi.description")} onChange={setDesc} debounce={150} minHeight={120} />
+          <Editor key={`${ctx.project.id}:${editorKey}`} handle={editorRef} placeholder={t("wi.descriptionPlaceholder")} ariaLabel={t("wi.description")} onChange={setDesc} debounce={150} minHeight={120} />
+          <AiAssist slug={slug} title={draft.title} onUse={(html) => editorRef.current?.insert(html)} />
         </div>
         <div className="chip-row">
           <StateProp item={draft} ctx={ctx} onPatch={onPatch} variant="pill" />

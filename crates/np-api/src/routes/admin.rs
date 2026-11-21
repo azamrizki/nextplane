@@ -324,3 +324,107 @@ pub async fn update_auth(
     tracing::info!(by = %admin.email, "sign-in settings changed");
     auth_settings(&state, &headers).await
 }
+
+// ---- AI assistant and Unsplash (S3.7, as in Plane's "AI" and "Images" pages) ---------------
+
+#[derive(Serialize)]
+pub struct AiOut {
+    enabled: bool,
+    has_key: bool,
+    model: String,
+    base_url: String,
+}
+
+#[derive(Serialize)]
+pub struct ServicesOut {
+    ai: AiOut,
+    unsplash: UnsplashOut,
+}
+
+#[derive(Serialize)]
+pub struct UnsplashOut {
+    enabled: bool,
+}
+
+async fn services_out(state: &AppState) -> ApiResult<Json<ServicesOut>> {
+    let ai = crate::services::ai(&state.store).await?;
+    let key = crate::services::unsplash_key(&state.store).await?;
+    Ok(Json(ServicesOut {
+        ai: AiOut {
+            enabled: ai.enabled(),
+            has_key: ai.enabled(),
+            model: ai.model,
+            base_url: ai.base_url,
+        },
+        unsplash: UnsplashOut {
+            enabled: !key.is_empty(),
+        },
+    }))
+}
+
+pub async fn services(
+    State(state): State<AppState>,
+    InstanceAdmin(_): InstanceAdmin,
+) -> ApiResult<Json<ServicesOut>> {
+    services_out(&state).await
+}
+
+#[derive(Deserialize, Default)]
+pub struct AiReq {
+    /// An empty string removes the key.
+    api_key: Option<String>,
+    model: Option<String>,
+    base_url: Option<String>,
+}
+
+#[derive(Deserialize, Default)]
+pub struct UnsplashReq {
+    /// An empty string removes the key.
+    access_key: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ServicesReq {
+    #[serde(default)]
+    ai: Option<AiReq>,
+    #[serde(default)]
+    unsplash: Option<UnsplashReq>,
+}
+
+/// Saves keys and settings; keys are never sent back, only whether one is set.
+pub async fn update_services(
+    State(state): State<AppState>,
+    InstanceAdmin(admin): InstanceAdmin,
+    Json(req): Json<ServicesReq>,
+) -> ApiResult<Json<ServicesOut>> {
+    let mut entries: Vec<(String, Option<String>)> = Vec::new();
+    let opt = |v: &str| {
+        let v = v.trim();
+        (!v.is_empty()).then(|| v.chars().take(500).collect::<String>())
+    };
+    if let Some(ai) = req.ai {
+        if let Some(k) = ai.api_key {
+            entries.push(("ai.api_key".into(), opt(&k)));
+        }
+        if let Some(m) = ai.model {
+            entries.push(("ai.model".into(), opt(&m)));
+        }
+        if let Some(b) = ai.base_url {
+            let b = b.trim().trim_end_matches('/').to_string();
+            if !b.is_empty()
+                && !(b.starts_with("https://") || b.starts_with("http://"))
+            {
+                return Err(Error::bad_request("the AI address is a web address, like https://api.openai.com/v1").into());
+            }
+            entries.push(("ai.base_url".into(), opt(&b)));
+        }
+    }
+    if let Some(u) = req.unsplash
+        && let Some(k) = u.access_key
+    {
+        entries.push(("unsplash.access_key".into(), opt(&k)));
+    }
+    state.store.set_config(&entries).await?;
+    tracing::info!(by = %admin.email, "outside services changed");
+    services_out(&state).await
+}

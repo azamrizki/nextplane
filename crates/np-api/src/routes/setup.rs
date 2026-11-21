@@ -25,6 +25,9 @@ pub struct InstanceInfo {
     password_enabled: bool,
     /// Sign-in providers the instance admin turned on, in a fixed order.
     providers: Vec<ProviderInfo>,
+    /// The AI writing assistant and Unsplash covers are set up.
+    ai_enabled: bool,
+    unsplash_enabled: bool,
 }
 
 #[derive(Serialize)]
@@ -51,6 +54,8 @@ pub async fn instance(State(state): State<AppState>) -> ApiResult<Json<InstanceI
                 name: p.name(),
             })
             .collect(),
+        ai_enabled: crate::services::ai(&state.store).await?.enabled(),
+        unsplash_enabled: !crate::services::unsplash_key(&state.store).await?.is_empty(),
     }))
 }
 

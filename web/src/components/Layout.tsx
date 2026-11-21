@@ -49,7 +49,6 @@ import { useRealtime } from "../lib/realtime";
 import { useShortcuts } from "../lib/shortcuts";
 import { CommandPalette } from "./CommandPalette";
 import { GlobalCreate } from "./CreateItem";
-import { Toaster } from "./Toaster";
 import { useUnreadCount } from "../pages/Inbox";
 import { Avatar, WsMark } from "./Avatar";
 import { ConfirmDialog } from "./Dialog";
@@ -89,7 +88,6 @@ export function WorkspaceLayout() {
         </div>
         <CommandPalette ws={ws} />
         <GlobalCreate ws={ws} />
-        <Toaster />
       </div>
     </ShellContext.Provider>
   );

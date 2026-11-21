@@ -1,3 +1,4 @@
+import { CoverCredit } from "../components/CoverPicker";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, Lock, UsersRound } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
@@ -68,7 +69,8 @@ export function ProjectsPage() {
       <div className="proj-grid">
         {projects.map((p) => (
           <div key={p.id} className="proj-card">
-            <div className="proj-card-cover" style={{ ["--cover" as string]: p.cover_color ?? "#8b8d98" }}>
+            <div className={"proj-card-cover" + (p.cover_image ? " has-image" : "")} style={{ ["--cover" as string]: p.cover_color ?? "#8b8d98", backgroundImage: p.cover_image ? `url("${p.cover_image}")` : undefined }}>
+              {p.cover_image ? <CoverCredit credit={p.cover_credit} /> : null}
               <span className="logo-tile proj-card-logo">
                 <ProjectIcon p={p} size={20} />
               </span>

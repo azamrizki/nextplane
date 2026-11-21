@@ -14,6 +14,7 @@ pub mod pagesync;
 pub mod providers;
 pub mod ratelimit;
 pub mod richtext;
+pub mod services;
 mod routes;
 mod system;
 pub mod util;
@@ -64,6 +65,8 @@ pub struct AppState {
     pub http: reqwest::Client,
     /// Pages being co-edited right now.
     pub rooms: Arc<pagesync::Rooms>,
+    /// Unsplash's API (tests point it elsewhere).
+    pub unsplash_api: String,
 }
 
 impl AppState {
@@ -86,6 +89,7 @@ impl AppState {
                 .build()
                 .expect("HTTP client"),
             rooms: Arc::default(),
+            unsplash_api: "https://api.unsplash.com".into(),
         }
     }
 
@@ -114,7 +118,7 @@ impl AppState {
 pub fn router(state: AppState, spa: Router) -> Router {
     use axum::routing::{delete, patch};
     use routes::{
-        account, admin, analytics, auth, collab, cycles, home, inbox, intake, integrations, invites,
+        account, admin, analytics, assist, auth, collab, cycles, home, inbox, intake, integrations, invites,
         members, modules, pages, profile, projects, setup, sso, tokens, transfer, views, work_items as wi,
         workspaces,
     };
@@ -559,6 +563,12 @@ pub fn router(state: AppState, spa: Router) -> Router {
             get(admin::settings).patch(admin::update_settings),
         )
         .route("/admin/auth", get(admin::auth).patch(admin::update_auth))
+        .route(
+            "/admin/services",
+            get(admin::services).patch(admin::update_services),
+        )
+        .route("/workspaces/{slug}/ai", post(assist::ai))
+        .route("/workspaces/{slug}/unsplash", get(assist::photos))
         .route("/admin/users", get(admin::users))
         .route("/admin/users/{id}", patch(admin::update_user))
         .route("/admin/users/{id}/reset-link", post(admin::reset_link))

@@ -1,9 +1,10 @@
+import { Toaster } from "./components/Toaster";
 import { MemberProfilePage } from "./pages/MemberProfile";
 import { StickiesPage } from "./pages/Stickies";
 import { WorkspaceViewsPage } from "./pages/WorkspaceViews";
 import { ArchivesPage } from "./pages/Archives";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import { ApiError } from "./api/client";
 import { I18nProvider } from "./i18n";
@@ -105,7 +106,17 @@ export const routes = [
   { path: "*", element: <Navigate to="/" replace /> },
 ];
 
-const router = createBrowserRouter(routes);
+/** Every page, with the toasts that any of them may show. */
+function Frame() {
+  return (
+    <>
+      <Outlet />
+      <Toaster />
+    </>
+  );
+}
+
+const router = createBrowserRouter([{ element: <Frame />, children: routes }]);
 const queryClient = makeQueryClient();
 
 export function App() {

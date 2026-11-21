@@ -900,3 +900,128 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+
+/* Project covers (S3.7): an image over the cover colour, with the photographer's credit. */
+.proj-card-cover.has-image,
+.cover-preview {
+  background-size: cover;
+  background-position: center;
+}
+.proj-card-cover.has-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--layer-2) 70%, transparent));
+  pointer-events: none;
+}
+.cover-credit {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm, 4px);
+  background: rgb(0 0 0 / 45%);
+  color: #fff;
+  font-size: 10px;
+}
+.cover-credit a {
+  color: #fff;
+  text-decoration: underline;
+}
+.cover-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cover-preview {
+  position: relative;
+  height: 96px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--cover) 35%, var(--layer-2));
+}
+.cover-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.cover-search > svg {
+  position: absolute;
+  left: 9px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-faint);
+}
+.cover-search .input {
+  flex: 1;
+  padding-left: 30px;
+}
+.cover-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+  max-height: 420px;
+  overflow-y: auto;
+}
+.cover-thumb {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cover-thumb button {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 16 / 10;
+  background: var(--layer-1);
+}
+.cover-thumb button:hover,
+.cover-thumb button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.cover-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ai-assist {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1) 0 0;
+}
+.ai-pop {
+  width: 380px;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ai-form {
+  display: flex;
+  gap: var(--space-2);
+}
+.ai-form .input {
+  flex: 1;
+}
+.ai-answer {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--layer-1);
+}
+.ai-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}

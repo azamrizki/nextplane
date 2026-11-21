@@ -23,6 +23,8 @@ export interface EditorHandle {
   focus: () => void;
   isEmpty: () => boolean;
   value: () => EditorValue | null;
+  /** Inserts HTML at the cursor (or at the end). */
+  insert: (html: string) => void;
 }
 
 /** The rich-text editor (Tiptap). Calls `onChange` at most every `debounce` ms while typing,
@@ -146,6 +148,7 @@ export function Editor({
     focus: () => editor?.commands.focus(),
     isEmpty: () => !editor || editor.isEmpty,
     value: () => (editor ? { json: editor.getJSON(), html: editor.getHTML() } : null),
+    insert: (html: string) => void editor?.chain().focus().insertContent(html).run(),
   }), [editor]);
   // Without the second argument Tiptap emits an update, which would save unchanged text.
   useEffect(() => editor?.setEditable(editable, false), [editor, editable]);

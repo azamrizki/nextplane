@@ -1,6 +1,7 @@
 pub mod account;
 pub mod admin;
 pub mod analytics;
+pub mod assist;
 pub mod auth;
 pub mod collab;
 pub mod home;

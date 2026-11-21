@@ -26,6 +26,10 @@ export interface InstanceInfoFull extends InstanceInfo {
   signup_policy: SignupPolicy;
   email_enabled: boolean;
   sso_name?: string | null;
+  password_enabled?: boolean;
+  providers?: { key: string; name: string }[];
+  ai_enabled?: boolean;
+  unsplash_enabled?: boolean;
 }
 
 export interface Workspace {
@@ -103,6 +107,9 @@ export interface Project {
   description: string;
   icon: string | null;
   cover_color: string | null;
+  /** An uploaded image or an Unsplash photo, with the photographer's credit for Unsplash. */
+  cover_image?: string | null;
+  cover_credit?: { name: string; url: string } | null;
   lead_id: string | null;
   default_assignee_id: string | null;
   is_private: boolean;
