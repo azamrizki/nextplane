@@ -1,3 +1,4 @@
+import { ArchivesPage } from "./pages/Archives";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, Navigate } from "react-router";
 import { RouterProvider } from "react-router/dom";
@@ -87,6 +88,8 @@ export const routes = [
           { path: "projects/:projectId/pages", element: <PagesPage /> },
           { path: "projects/:projectId/pages/:pageId", element: <PagesPage /> },
           { path: "projects/:projectId/settings/:tab", element: <ProjectSettingsPage /> },
+          { path: "projects/:projectId/archives", element: <ArchivesPage /> },
+          { path: "projects/:projectId/archives/:tab", element: <ArchivesPage /> },
         ],
       },
     ],

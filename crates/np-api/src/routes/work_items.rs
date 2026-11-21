@@ -7,6 +7,7 @@ use axum::http::StatusCode;
 use np_core::Error;
 use np_core::id::Uuid;
 use np_core::perm::{Ownership, ProjAction};
+use np_core::project::StateGroup;
 use np_core::work_item::{self, Priority, RelationKind};
 use np_store::work_items::{Activity, Filter, NewWorkItem, Relation, WorkItem, WorkItemPatch};
 use serde::Deserialize;
@@ -98,7 +99,11 @@ pub async fn list(
     Query(q): Query<ListQuery>,
 ) -> ApiResult<impl axum::response::IntoResponse> {
     let ctx = load_project(&state, &slug, pid, &me).await?;
-    ctx.require(ProjAction::ViewWorkItems)?;
+    ctx.require(if q.archived {
+        ProjAction::ViewArchives
+    } else {
+        ProjAction::ViewWorkItems
+    })?;
     let f = Filter {
         state_ids: ids(&q.state)?,
         state_groups: q
@@ -253,6 +258,16 @@ async fn load_item(state: &AppState, ctx: &ProjCtx, id: Uuid) -> ApiResult<WorkI
     Ok(item)
 }
 
+/// Archived work items are read-only until restored (as in Plane).
+fn require_live(item: &WorkItem) -> ApiResult<()> {
+    if item.archived_at.is_some() {
+        return Err(
+            Error::conflict("this work item is archived; restore it to make changes").into(),
+        );
+    }
+    Ok(())
+}
+
 /// Intake submissions change only through triage (admins); submitters use the intake API.
 fn require_triager(ctx: &ProjCtx, item: &WorkItem) -> ApiResult<()> {
     if item.in_intake && ctx.role != Some(np_core::perm::ProjRole::Admin) {
@@ -348,6 +363,7 @@ pub async fn update(
     ctx.require_write(ProjAction::EditWorkItem)?;
     let before = load_item(&state, &ctx, id).await?;
     require_triager(&ctx, &before)?;
+    require_live(&before)?;
     let touches_text =
         req.title.is_some() || req.description_html.is_some() || req.description_json.is_some();
     if let Some(since) = req.expected_updated_at.as_deref().filter(|_| touches_text)
@@ -416,8 +432,12 @@ pub async fn bulk_update(
     {
         return Err(Error::bad_request("bulk edit changes properties only").into());
     }
+    let ids = dedup(req.ids);
+    for id in &ids {
+        require_live(&load_item(&state, &ctx, *id).await?)?;
+    }
     let mut out = Vec::new();
-    for id in dedup(req.ids) {
+    for id in ids {
         out.push(state.store.update_work_item(pid, id, &p, me.id).await?);
     }
     Ok(Json(out))
@@ -449,7 +469,22 @@ async fn set_archived(
 ) -> ApiResult<Json<WorkItem>> {
     let ctx = load_project(&state, &slug, pid, &me).await?;
     ctx.require_write(ProjAction::ArchiveWorkItem)?;
-    load_item(&state, &ctx, id).await?;
+    let item = load_item(&state, &ctx, id).await?;
+    if on && item.archived_at.is_none() {
+        let group = state
+            .store
+            .states(pid)
+            .await?
+            .into_iter()
+            .find(|s| s.id == item.state_id)
+            .map(|s| s.group.0);
+        if !matches!(group, Some(StateGroup::Completed | StateGroup::Cancelled)) {
+            return Err(Error::bad_request(
+                "only completed or cancelled work items can be archived",
+            )
+            .into());
+        }
+    }
     state
         .store
         .set_work_item_archived(pid, id, on, me.id)

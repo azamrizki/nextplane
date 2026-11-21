@@ -269,3 +269,73 @@ async fn items_in_cycles_progress_transfer_and_completed_cycles() {
     let list = t.get(&c, Some(&owner)).await.body;
     assert_eq!(n(list), 2);
 }
+
+#[tokio::test]
+async fn only_completed_cycles_are_archived_and_archived_ones_are_read_only() {
+    let (t, owner, contrib, base) = setup().await;
+    let c = format!("{base}/cycles");
+    let cur = t
+        .post(
+            &c,
+            json!({ "name": "Now", "start_date": day(-3), "end_date": day(4) }),
+            Some(&owner),
+        )
+        .await
+        .body;
+    let old = t
+        .post(
+            &c,
+            json!({ "name": "Done", "start_date": day(-20), "end_date": day(-6) }),
+            Some(&owner),
+        )
+        .await
+        .body;
+    let (cur, old) = (cur["id"].as_str().unwrap(), old["id"].as_str().unwrap());
+    assert_eq!(
+        t.post(&format!("{c}/{cur}/archive"), json!({}), Some(&owner))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
+        t.post(&format!("{c}/{old}/archive"), json!({}), Some(&contrib))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    let listed = t.get(&format!("{c}?archived=true"), Some(&contrib)).await;
+    assert_eq!(listed.body.as_array().unwrap().len(), 1);
+    for r in [
+        t.patch(&format!("{c}/{old}"), json!({ "name": "x" }), Some(&owner))
+            .await,
+        t.delete(&format!("{c}/{old}"), Some(&owner)).await,
+    ] {
+        assert_eq!(r.status, StatusCode::CONFLICT, "{}", r.body);
+    }
+    // Commenters do not see the archive.
+    let com = t.join(&owner, "acme", "com@example.com", "member").await;
+    t.post(&format!("{base}/join"), json!({}), Some(&com)).await;
+    let com_id = t.user_id(&com).await;
+    t.patch(
+        &format!("{base}/members/{com_id}"),
+        json!({ "role": "commenter" }),
+        Some(&owner),
+    )
+    .await;
+    assert_eq!(
+        t.get(&format!("{c}?archived=true"), Some(&com)).await.status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        t.post(&format!("{c}/{old}/unarchive"), json!({}), Some(&contrib))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        t.patch(&format!("{c}/{old}"), json!({ "name": "Done 1" }), Some(&owner))
+            .await
+            .status,
+        StatusCode::OK
+    );
+}

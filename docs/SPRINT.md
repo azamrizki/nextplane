@@ -2,7 +2,7 @@
 
 The single place to see where NextPlane stands: which phase is active, which sprint runs, and which tasks are done. Scope and decisions live in [SPEC.md](SPEC.md); this file tracks progress only.
 
-**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (v0.1.1 released 2026-11-21)
+**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** S3.7 — Plane Community Edition parity (v0.1.1 released 2026-11-21)
 
 ## How to use this file
 
@@ -23,6 +23,7 @@ The single place to see where NextPlane stands: which phase is active, which spr
 | 2 | Planning | S2.1 – S2.5 | ✅ Done | 29 / 29 |
 | 3 | Knowledge & insight | S3.1 – S3.5 | ✅ Done | 26 / 26 |
 | 3.5 | Familiar UI (Plane look and behaviour) | S3.6 | ✅ Done (v0.1.1 released) | 10 / 10 |
+| 3.6 | Plane Community Edition parity | S3.7 | 🚧 In progress | 0 / 10 |
 | 4 | Clients (desktop, Android) | — | ⏸ Waiting for web v1 final | — |
 
 Status icons: ⏳ not started · 🚧 in progress · ✅ done · ⏸ on hold.
@@ -384,6 +385,21 @@ Found while testing: the setup link was printed before the server listened, so o
 - **Elsewhere:** a home page with a greeting, counts, your open work and your projects; project cards with a colour band and logo tile; settings pages with a left menu; segmented controls; the palette at 672 px with icons and key caps; Plane's `G`/`N` key sequences.
 Found while testing: the title box in the detail view collapsed to 6 px inside the scrolling column (flex items shrink to their padding when they hide overflow). Emoji and text glyphs that served as icons were replaced with lucide icons throughout. Tests: 27 Vitest, 46 Playwright (updated for the new navigation: workspace menu, project ⋯ menu, filter row) plus a screenshot spec (`NEXTPLANE_SHOTS`) for design review; release binary 20.6 MB.
 
+### S3.7 — Plane Community Edition parity
+
+**Dates:** 2026-11-21 → · **Status:** 🚧 · **Why:** a comparison with Plane's open-source edition (source of 2026-11-20) found eight things it has that NextPlane lacked; the owner asked for all of them. Same method as S3.6: Plane's source is read only to write a prose spec of its behaviour, and the code is our own.
+
+- [ ] Research: prose spec of the eight features' behaviour (no code copied)
+- [ ] Project archives: archived work items with restore and delete, next to archived cycles and modules
+- [ ] Automations: auto-archive closed work items and auto-close inactive ones after N months, run by the server
+- [ ] Workspace views: all work items across projects (built-in tabs and custom views), with filters and display
+- [ ] Home: quick links, recents and stickies
+- [ ] Member profile pages: summary, statistics, work lists and activity
+- [ ] Sign in with GitHub, Google, GitLab and Gitea, set up by the instance admin
+- [ ] Instance AI settings and a writing assistant in the editor; Unsplash covers for projects
+- [ ] Workspace exports (several projects, CSV/JSON/XLSX) and comments and reactions on public boards
+- [ ] Docs, tests and e2e for all of the above; screenshots reviewed in light and dark
+
 ### Web v1 — owner review
 
 Phases 0–3.5 are done and v0.1.1 is released. These need the owner:
@@ -423,6 +439,7 @@ Phases 0–3.5 are done and v0.1.1 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | S3.7 started: Plane Community Edition parity (eight features). |
 | 2026-11-21 | v0.1.1 released (patch, owner's go-ahead): the S3.6 UI; the Linux amd64 download matched `SHA256SUMS`, reports 0.1.1 and serves the new UI. |
 | 2026-11-21 | S3.6 done: the web app follows Plane's look and behaviour, rebuilt in our own code. |
 | 2026-11-21 | Repository made public; installer and updater checked against GitHub. |

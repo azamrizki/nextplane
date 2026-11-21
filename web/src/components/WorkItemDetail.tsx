@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Archive, ArchiveRestore, Boxes, CalendarPlus, Check, ChevronsRight, CircleCheck, Contrast, CornerLeftUp, Ellipsis, History, Link as LinkIcon, Maximize2, Tag, Trash2, Triangle, UserRound, X } from "lucide-react";
+import { Archive, Boxes, CalendarPlus, Check, ChevronsRight, CircleCheck, Contrast, CornerLeftUp, Ellipsis, History, Link as LinkIcon, Maximize2, Tag, Triangle, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ApiError, get, post, del } from "../api/client";
@@ -8,11 +8,11 @@ import { useI18n } from "../i18n";
 import { copyText } from "../lib/copy";
 import { errorText } from "../lib/errors";
 import { pcan } from "../lib/perm";
-import { useMe } from "../lib/session";
-import { itemsPath, keyOf, useActivity, useArchiveItem, useCreateItem, useDeleteItem, useRelations, useUpdateItem, useWorkItem, useWorkItems, wiq } from "../lib/workItems";
+import { itemsPath, keyOf, useActivity, useArchiveItem, useCreateItem, useRelations, useUpdateItem, useWorkItem, useWorkItems, wiq } from "../lib/workItems";
 import { Avatar } from "./Avatar";
 import { Attachments, Comments, ItemReactions, Links, SubscribeButton, mentionPeople, useEditorUpload } from "./Collab";
-import { ConfirmDialog, Dialog } from "./Dialog";
+import { Dialog } from "./Dialog";
+import { useItemActions } from "./ItemActions";
 import { Popover } from "./Layout";
 import { ProjectBar } from "./PageHeader";
 import { Editor } from "./Editor";
@@ -28,10 +28,7 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
   const q = useWorkItem(slug, p.id, id);
   const update = useUpdateItem(slug, p.id);
   const archive = useArchiveItem(slug, p.id);
-  const remove = useDeleteItem(slug, p.id);
-  const me = useMe().data!;
   const navigate = useNavigate();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [copied, setCopied] = useState(false);
   const upload = useEditorUpload(slug, ctx.project.id);
   const stamp = useRef("");
@@ -67,7 +64,6 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
   const fullUrl = `/${slug}/projects/${p.id}/work-items/${item.id}`;
   const parent = item.parent_id;
 
-  const canDelete = pcan.deleteWorkItem(p, item.created_by === me.id) && !p.archived_at;
   const copy = async () => {
     setCopied(await copyText(location.origin + fullUrl));
     setTimeout(() => setCopied(false), 1500);
@@ -78,13 +74,13 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
       <button className="icon-btn bordered" onClick={copy} aria-label={copied ? t("common.copied") : t("wi.copyLink")} title={copied ? t("common.copied") : t("wi.copyLink")}>
         {copied ? <Check /> : <LinkIcon />}
       </button>
-      {ctx.editable || canDelete ? (
-        <ItemActions
-          archived={!!item.archived_at}
-          onArchive={ctx.editable ? () => archive.mutate({ id: item.id, on: !item.archived_at }) : undefined}
-          onDelete={canDelete ? () => setConfirmDelete(true) : undefined}
-        />
-      ) : null}
+      <DetailMenu
+        slug={slug}
+        ctx={ctx}
+        item={item}
+        // Archiving or deleting leaves the item: back to the list it came from.
+        onGone={() => (peek && onClose ? onClose() : navigate(`/${slug}/projects/${p.id}${item.archived_at ? "/archives" : ""}`))}
+      />
     </>
   );
   const props = <PropsBlock slug={slug} ctx={pctx} item={item} onPatch={onPatch} />;
@@ -114,6 +110,7 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
         <div className="wi-archived">
           <Archive aria-hidden />
           <span className="grow">{t("wi.archivedNote")}</span>
+          {pcan.viewArchives(p) ? <Link className="btn btn-sm btn-ghost" to={`/${slug}/projects/${p.id}/archives`}>{t("arch.goTo")}</Link> : null}
           {ctx.editable ? <button className="btn btn-sm" onClick={() => archive.mutate({ id: item.id, on: false })}>{t("wi.unarchive")}</button> : null}
         </div>
       ) : null}
@@ -173,18 +170,6 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
           </aside>
         )}
       </div>
-      <ConfirmDialog
-        open={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        onConfirm={() => {
-          setConfirmDelete(false);
-          remove.mutate(item.id, { onSuccess: () => (peek && onClose ? onClose() : navigate(`/${slug}/projects/${p.id}`)) });
-        }}
-        title={t("wi.delete")}
-        body={t("wi.deleteBody", { key })}
-        confirmLabel={t("common.delete")}
-        danger
-      />
     </div>
   );
 }
@@ -231,36 +216,30 @@ function PropsBlock({ slug, ctx, item, onPatch }: { slug: string; ctx: PropsCtx;
   );
 }
 
-function ItemActions({ archived, onArchive, onDelete }: { archived: boolean; onArchive?: () => void; onDelete?: () => void }) {
+function DetailMenu({ slug, ctx, item, onGone }: { slug: string; ctx: PropsCtx; item: WorkItem; onGone: () => void }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  const a = useItemActions(slug, ctx, item, { archived: onGone, deleted: onGone });
+  if (!a.any) return null;
   return (
-    <Popover
-      open={open}
-      onClose={close}
-      right
-      trigger={
-        <button className="icon-btn bordered" onClick={() => setOpen(!open)} aria-label={t("wi.actions")} aria-haspopup="menu" aria-expanded={open}>
-          <Ellipsis />
-        </button>
-      }
-    >
-      <div className="menu" role="menu">
-        {onArchive ? (
-          <button className="menu-item" role="menuitem" onClick={() => (close(), onArchive())}>
-            {archived ? <ArchiveRestore /> : <Archive />}
-            {archived ? t("wi.unarchive") : t("wi.archive")}
+    <>
+      <Popover
+        open={open}
+        onClose={close}
+        right
+        trigger={
+          <button className="icon-btn bordered" onClick={() => setOpen(!open)} aria-label={t("wi.actions")} aria-haspopup="menu" aria-expanded={open}>
+            <Ellipsis />
           </button>
-        ) : null}
-        {onDelete ? (
-          <button className="menu-item danger" role="menuitem" onClick={() => (close(), onDelete())}>
-            <Trash2 />
-            {t("common.delete")}
-          </button>
-        ) : null}
-      </div>
-    </Popover>
+        }
+      >
+        <div className="menu" role="menu">
+          {a.entries(close)}
+        </div>
+      </Popover>
+      {a.dialogs}
+    </>
   );
 }
 

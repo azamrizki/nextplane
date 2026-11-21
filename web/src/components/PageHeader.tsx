@@ -1,4 +1,4 @@
-import { Boxes, ChartColumn, ChevronRight, Contrast, FileText, Import, ListTodo, PanelLeft, Settings } from "lucide-react";
+import { Archive, Boxes, ChartColumn, ChevronRight, Contrast, FileText, Import, ListTodo, PanelLeft, Settings } from "lucide-react";
 import { Fragment, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import type { Project } from "../api/types";
@@ -96,6 +96,7 @@ const SECTIONS: Record<string, { icon: ReactNode; key: MessageKey }> = {
   intake: { icon: <Import />, key: "ptab.intake" },
   analytics: { icon: <ChartColumn />, key: "ptab.analytics" },
   settings: { icon: <Settings />, key: "nav.settings" },
+  archives: { icon: <Archive />, key: "ptab.archives" },
 };
 
 /** A project page's header: project crumb (with a project switcher), the section, any

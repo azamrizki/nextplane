@@ -57,6 +57,8 @@ export const pcan = {
   deleteWorkItem: (p: Project, own: boolean) => p.my_role === "admin" || (p.my_role === "contributor" && own),
   comment: (p: Project) => projAtLeast(p.my_role, "commenter"),
   viewWorkItems: (p: Project) => projAtLeast(p.my_role, "commenter"),
+  /** The project's archives are for contributors and admins (as in Plane). */
+  viewArchives: (p: Project) => projAtLeast(p.my_role, "contributor"),
 };
 
 /** Project roles an admin may give someone with workspace role `ws` (guest ceiling). */

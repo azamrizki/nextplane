@@ -294,11 +294,12 @@ async fn filters_and_search() {
     let base = format!("{}/work-items", w.base);
     let cid = w.t.user_id(&w.contrib).await;
     w.item(&w.owner, json!({ "title": "Login bug", "priority": "urgent", "assignee_ids": [cid], "due_date": "2026-11-10" })).await;
-    w.item(
-        &w.owner,
-        json!({ "title": "Signup page", "priority": "low" }),
-    )
-    .await;
+    let second = w
+        .item(
+            &w.owner,
+            json!({ "title": "Signup page", "priority": "low" }),
+        )
+        .await;
     let third = w
         .item(
             &w.owner,
@@ -359,7 +360,18 @@ async fn filters_and_search() {
         StatusCode::BAD_REQUEST
     );
 
-    // Archive hides from the normal list.
+    // Only closed items may be archived; archive hides from the normal list.
+    let open = second["id"].as_str().unwrap();
+    assert_eq!(
+        w.t.post(
+            &format!("{base}/{open}/archive"),
+            json!({}),
+            Some(&w.contrib)
+        )
+        .await
+        .status,
+        StatusCode::BAD_REQUEST
+    );
     let tid = third["id"].as_str().unwrap();
     assert_eq!(
         w.t.post(
@@ -378,6 +390,33 @@ async fn filters_and_search() {
             .await
             .body),
         1
+    );
+    // The archive is for contributors and admins; archived items are read-only.
+    assert_eq!(
+        w.t.get(&format!("{base}?archived=true"), Some(&w.commenter))
+            .await
+            .status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        w.t.patch(
+            &format!("{base}/{tid}"),
+            json!({ "title": "x" }),
+            Some(&w.owner)
+        )
+        .await
+        .status,
+        StatusCode::CONFLICT
+    );
+    assert_eq!(
+        w.t.patch(
+            &base,
+            json!({ "ids": [tid], "priority": "low" }),
+            Some(&w.owner)
+        )
+        .await
+        .status,
+        StatusCode::CONFLICT
     );
     assert_eq!(
         w.t.post(

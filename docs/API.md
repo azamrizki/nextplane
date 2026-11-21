@@ -96,11 +96,11 @@ Base: `/workspaces/{slug}/projects/{id}/work-items`.
 
 | Method | Path | Who | What |
 |---|---|---|---|
-| GET | `` | commenter+ | filters: `state`, `state_group`, `priority`, `assignee`, `unassigned=true`, `label`, `created_by` (comma-separated), `parent`, `archived=true`, `due_before`, `due_after`, `q` (title or key), `limit`, `cursor` |
+| GET | `` | commenter+ (`archived=true`: contributor+) | filters: `state`, `state_group`, `priority`, `assignee`, `unassigned=true`, `label`, `created_by` (comma-separated), `parent`, `archived=true`, `due_before`, `due_after`, `q` (title or key), `limit`, `cursor` |
 | POST | `` | contributor+ | `{title, description_json?, description_html?, state_id?, priority?, start_date?, due_date?, estimate?, parent_id?, assignee_ids?, label_ids?}` (201) |
 | PATCH | `` | contributor+ | bulk: `{ids: [...], state_id?, priority?, assignee_ids?, label_ids?, start_date?, due_date?, estimate?}` |
 | GET / PATCH / DELETE | `/{wid}` | commenter+ / contributor+ / owner of the item or admin | `PATCH` any create field plus `sort_order` and `expected_updated_at` (see below) |
-| POST | `/{wid}/archive`, `/{wid}/unarchive` | contributor+ | |
+| POST | `/{wid}/archive`, `/{wid}/unarchive` | contributor+ | only items in a completed or cancelled state are archived (`400` otherwise). An archived item is read-only: `PATCH`, also in bulk, answers `409` until it is restored; it can still be deleted |
 | GET | `/{wid}/activity` | commenter+ | one row per change: `{actor_id, verb, field, old_value, new_value, created_at}` |
 | GET / POST | `/{wid}/relations` | commenter+ / contributor+ | `POST {kind: blocks|blocked_by|relates_to|duplicate_of, work_item_id}` → all relations from this item's side |
 | DELETE | `/{wid}/relations/{rid}` | contributor+ | |
@@ -141,14 +141,14 @@ Base: `/workspaces/{slug}/projects/{id}`. Cycles and modules answer `403` while 
 
 | Method | Path | Who | What |
 |---|---|---|---|
-| GET / POST | `/cycles` | reader / contributor+ | `?archived=true`; `POST {name, description?, start_date?, end_date?, owner_id?}` — both dates or neither; ranges may not overlap (`409`). Each cycle has `status` (`draft`, `upcoming`, `current`, `completed`) and item counts |
+| GET / POST | `/cycles` | reader / contributor+ | `?archived=true` (contributor+); `POST {name, description?, start_date?, end_date?, owner_id?}` — both dates or neither; ranges may not overlap (`409`). Each cycle has `status` (`draft`, `upcoming`, `current`, `completed`) and item counts |
 | GET / PATCH / DELETE | `/cycles/{cid}` | reader / contributor+ / creator or admin | delete keeps the items |
-| POST | `/cycles/{cid}/archive`, `/unarchive` | contributor+ | |
+| POST | `/cycles/{cid}/archive`, `/unarchive` | contributor+ | only `completed` cycles (end date passed) are archived (`400`); an archived cycle answers `409` to `PATCH` and `DELETE` until restored |
 | GET | `/cycles/{cid}/progress` | reader | `{groups[{group, items, points}], total_items, completed_items, total_points, completed_points, burndown[{date, ideal, remaining}]}` |
 | POST | `/cycles/{cid}/transfer` | contributor+ | `{to_cycle_id}` moves unfinished items → `{moved}` |
-| GET / POST | `/modules` | reader / contributor+ | `POST {name, description?, status?, lead_id?, start_date?, target_date?, member_ids?}`; status is `backlog`, `planned`, `in_progress`, `paused`, `completed`, `cancelled` |
+| GET / POST | `/modules` | reader / contributor+ | `?archived=true` (contributor+); `POST {name, description?, status?, lead_id?, start_date?, target_date?, member_ids?}`; status is `backlog`, `planned`, `in_progress`, `paused`, `completed`, `cancelled` |
 | GET / PATCH / DELETE | `/modules/{mid}` | reader / contributor+ / creator or admin | |
-| POST | `/modules/{mid}/archive`, `/unarchive` | contributor+ | |
+| POST | `/modules/{mid}/archive`, `/unarchive` | contributor+ | only `completed` or `cancelled` modules are archived (`400`); an archived module answers `409` to `PATCH`, `DELETE` and link changes until restored |
 | GET | `/modules/{mid}/progress` | reader | as for cycles (burn-down from start to target date) |
 | GET / POST, DELETE | `/modules/{mid}/links`, `/modules/{mid}/links/{lid}` | reader / contributor+ | `POST {url, title?}` |
 | GET / POST | `/views` | reader / contributor+ | saved views you may see (shared, or yours); `POST {name, is_shared?, config}` — `config` is the web app's view state (JSON object, 32 KB max) |

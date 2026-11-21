@@ -14,6 +14,7 @@ import {
   FilePen,
   FileText,
   House,
+  Archive,
   Import,
   Inbox,
   Keyboard,
@@ -46,6 +47,7 @@ import { useRealtime } from "../lib/realtime";
 import { useShortcuts } from "../lib/shortcuts";
 import { CommandPalette } from "./CommandPalette";
 import { GlobalCreate } from "./CreateItem";
+import { Toaster } from "./Toaster";
 import { useUnreadCount } from "../pages/Inbox";
 import { Avatar, WsMark } from "./Avatar";
 import { ConfirmDialog } from "./Dialog";
@@ -85,6 +87,7 @@ export function WorkspaceLayout() {
         </div>
         <CommandPalette ws={ws} />
         <GlobalCreate ws={ws} />
+        <Toaster />
       </div>
     </ShellContext.Provider>
   );
@@ -347,6 +350,12 @@ function ProjectMenu({ ws, p, open, setOpen }: { ws: MyWorkspace; p: Project; op
             <LinkIcon />
             {t("nav.copyLink")}
           </button>
+          {pcan.viewArchives(p) ? (
+            <Link to={`${base}/archives`} className="menu-item" role="menuitem" onClick={close}>
+              <Archive />
+              {t("ptab.archives")}
+            </Link>
+          ) : null}
           <Link to={`${base}/settings`} className="menu-item" role="menuitem" onClick={close}>
             <Settings />
             {t("nav.settings")}

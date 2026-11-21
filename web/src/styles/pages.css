@@ -367,3 +367,63 @@
   position: relative;
   z-index: 1;
 }
+
+/* Project archives (S3.7): a 44px underline tab strip under the header, and an empty state. */
+.archive-tabs {
+  height: 44px;
+  align-items: stretch;
+  padding: 0 var(--space-4);
+  background: var(--bg);
+  flex: none;
+}
+.archive-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.archive-tabs svg {
+  width: 14px;
+  height: 14px;
+}
+.archive-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  max-width: 420px;
+  margin: 72px auto;
+  padding: 0 var(--space-4);
+}
+.archive-empty h2 {
+  margin: var(--space-2) 0 0;
+  font-size: 15px;
+  font-weight: var(--weight-semibold, 600);
+}
+.archive-empty p {
+  margin: 0 0 var(--space-2);
+}
+.archive-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-xl, 12px);
+  background: var(--layer-1);
+  border: 1px solid var(--border);
+  color: var(--icon);
+}
+.archive-empty-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.row-link-inner {
+  color: inherit;
+  min-width: 0;
+}
+.row-link-inner:hover {
+  text-decoration: none;
+}
+.row-link-inner:hover .cycle-name {
+  text-decoration: underline;
+}

@@ -15,13 +15,14 @@ import { CSS } from "@dnd-kit/utilities";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Circle, Ellipsis, ExternalLink, Link as LinkIcon, ListTree, Maximize2, Minimize2, Plus } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type { WorkItem } from "../api/types";
 import { useI18n } from "../i18n";
 import { patchForGroup, sortBetween, type Group, type ViewState } from "../lib/view";
 import { keyOf } from "../lib/workItems";
 import { Avatar } from "./Avatar";
 import { Dot } from "./ColorPicker";
+import { useItemActions } from "./ItemActions";
 import { Popover } from "./Layout";
 import { PriorityIcon, StateIcon } from "./Props";
 import { AssigneesProp, CycleProp, DateProp, EstimateProp, LabelsProp, ModulesProp, PriorityProp, StateProp, type PropsCtx } from "./WorkItemProps";
@@ -97,12 +98,14 @@ function SubCount({ n }: { n: number }) {
   );
 }
 
-/** "…" on a row or card: open, copy link. */
+/** "…" on a row or card: peek, open, copy link, archive or restore, delete. */
 function ItemMenu({ item, ctx, onOpen }: { item: WorkItem; ctx: PropsCtx; onOpen: (id: string) => void }) {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { slug = "" } = useParams();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  const actions = useItemActions(slug, ctx, item);
   const url = `${location.pathname.split("/projects/")[0]}/projects/${ctx.project.id}/work-items/${item.id}`;
   return (
     <span className="item-menu" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
@@ -129,8 +132,11 @@ function ItemMenu({ item, ctx, onOpen }: { item: WorkItem; ctx: PropsCtx; onOpen
             <LinkIcon />
             {t("nav.copyLink")}
           </button>
+          {actions.any ? <div className="menu-sep" role="separator" /> : null}
+          {actions.entries(close)}
         </div>
       </Popover>
+      {actions.dialogs}
     </span>
   );
 }

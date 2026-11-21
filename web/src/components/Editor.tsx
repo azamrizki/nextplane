@@ -128,7 +128,7 @@ export function Editor({
       },
     },
     onUpdate: ({ editor }) => {
-      if (!cb.current) return;
+      if (!cb.current || !editor.isEditable) return;
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => cb.current?.({ json: editor.getJSON(), html: editor.getHTML() }), debounce);
     },
@@ -147,7 +147,8 @@ export function Editor({
     isEmpty: () => !editor || editor.isEmpty,
     value: () => (editor ? { json: editor.getJSON(), html: editor.getHTML() } : null),
   }), [editor]);
-  useEffect(() => editor?.setEditable(editable), [editor, editable]);
+  // Without the second argument Tiptap emits an update, which would save unchanged text.
+  useEffect(() => editor?.setEditable(editable, false), [editor, editable]);
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
   }, []);

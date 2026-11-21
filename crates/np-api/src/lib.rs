@@ -16,6 +16,7 @@ mod routes;
 mod system;
 pub mod util;
 pub mod webhooks;
+pub mod xlsx;
 
 pub use routes::inbox::send_digests;
 pub use routes::setup::issue_setup_token;

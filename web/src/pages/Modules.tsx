@@ -1,4 +1,4 @@
-import { ChevronDown, X } from "lucide-react";
+import { Archive, ChevronDown, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
@@ -18,6 +18,7 @@ import { pcan } from "../lib/perm";
 import { useProjectCtx } from "../lib/projectCtx";
 import { useProject } from "../lib/projects";
 import { useMe } from "../lib/session";
+import { toast } from "../lib/toast";
 import { wiq } from "../lib/workItems";
 import { Meter, ProgressPanels } from "./Cycles";
 import { ProjectBar, WorkItemsView } from "./ProjectHome";
@@ -42,19 +43,20 @@ export function ModulesPage() {
   const ws = useWs();
   const ctx = useCtx();
   const [creating, setCreating] = useState(false);
-  const [archived, setArchived] = useState(false);
   const p = ctx && ctx !== "missing" ? ctx.project : null;
-  const list = useModules(ws.slug, p?.id ?? "", !!p, archived);
+  const list = useModules(ws.slug, p?.id ?? "", !!p);
   if (ctx === "missing") return <Navigate to=".." relative="path" replace />;
   if (!ctx || !p) return <FullPageSpinner />;
   const mods = list.data ?? [];
   return (
     <div className="proj-view">
       <ProjectBar ctx={ctx}>
-        <div className="seg" role="tablist">
-          <button role="tab" aria-selected={!archived} className={!archived ? "on" : ""} onClick={() => setArchived(false)}>{t("proj.active")}</button>
-          <button role="tab" aria-selected={archived} className={archived ? "on" : ""} onClick={() => setArchived(true)}>{t("proj.archived")}</button>
-        </div>
+        {pcan.viewArchives(p) ? (
+          <Link to={`/${ws.slug}/projects/${p.id}/archives/modules`} className="btn">
+            <Archive />
+            {t("ptab.archives")}
+          </Link>
+        ) : null}
         {pcan.createWorkItem(p) && !p.archived_at ? <button className="btn btn-primary" onClick={() => setCreating(true)}>{t("mod.new")}</button> : null}
       </ProjectBar>
       <div className="page page-wide">
@@ -178,6 +180,10 @@ function ModuleHeader({ ctx, m }: { ctx: PropsCtx; m: Module }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const lead = ctx.members.find((x) => x.user_id === m.lead_id);
+  const archived = !!m.archived_at;
+  const editable = ctx.editable && !archived;
+  const closed = m.status === "completed" || m.status === "cancelled";
+  const archiveBase = `/${ws.slug}/projects/${pid}/archives/modules`;
   const act = async (fn: () => Promise<unknown>) => {
     try {
       await fn();
@@ -198,11 +204,38 @@ function ModuleHeader({ ctx, m }: { ctx: PropsCtx; m: Module }) {
         {lead ? <span className="prop-inline small"><Avatar name={lead.name} email={lead.email} src={lead.avatar} size={18} />{lead.name || lead.email}</span> : null}
         <span className="grow" />
         <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("cyc.progress")} <ChevronDown className={open ? "rot180" : ""} /></button>
-        {ctx.editable ? <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>{t("common.edit")}</button> : null}
-        {ctx.editable ? <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(modulesPath(ws.slug, pid, m.id) + (m.archived_at ? "/unarchive" : "/archive")))}>{m.archived_at ? t("cyc.unarchive") : t("cyc.archive")}</button> : null}
-        {pcan.deleteWorkItem(ctx.project, m.created_by === me.id) && !ctx.project.archived_at ? <button className="btn btn-sm btn-ghost" onClick={() => setConfirm(true)}>{t("common.delete")}</button> : null}
+        {editable ? <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>{t("common.edit")}</button> : null}
+        {editable ? (
+          <button
+            className="btn btn-sm btn-ghost"
+            disabled={!closed}
+            title={closed ? undefined : t("arch.moduleOnlyClosed")}
+            onClick={() =>
+              act(async () => {
+                await post(modulesPath(ws.slug, pid, m.id) + "/archive");
+                toast({ kind: "success", title: t("arch.moduleArchived"), link: { label: t("arch.view"), to: archiveBase } });
+                navigate(`/${ws.slug}/projects/${pid}/modules`);
+              })
+            }
+          >
+            {t("cyc.archive")}
+          </button>
+        ) : null}
+        {pcan.deleteWorkItem(ctx.project, m.created_by === me.id) && !ctx.project.archived_at && !archived ? <button className="btn btn-sm btn-ghost" onClick={() => setConfirm(true)}>{t("common.delete")}</button> : null}
       </div>
       <ErrorAlert message={error} />
+      {archived ? (
+        <div className="wi-archived">
+          <Archive aria-hidden />
+          <span className="grow">{t("arch.readOnlyModule")}</span>
+          <Link className="btn btn-sm btn-ghost" to={archiveBase}>{t("arch.goTo")}</Link>
+          {ctx.editable ? (
+            <button className="btn btn-sm" onClick={() => act(async () => { await post(modulesPath(ws.slug, pid, m.id) + "/unarchive"); toast({ kind: "success", title: t("arch.moduleRestored") }); })}>
+              {t("cyc.unarchive")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {open && progress.data ? <ProgressPanels pr={progress.data} points={ctx.project.estimate_type === "points"} /> : null}
       {open ? (
         <div className="mod-links small">
@@ -210,10 +243,10 @@ function ModuleHeader({ ctx, m }: { ctx: PropsCtx; m: Module }) {
           {(links.data ?? []).map((l) => (
             <span key={l.id} className="label-pill">
               <a href={l.url} target="_blank" rel="noopener noreferrer nofollow">{l.title || l.url}</a>
-              {ctx.editable ? <button className="link-btn" aria-label={t("common.remove")} onClick={() => act(() => del(`${modulesPath(ws.slug, pid, m.id)}/links/${l.id}`))}><X /></button> : null}
+              {editable ? <button className="link-btn" aria-label={t("common.remove")} onClick={() => act(() => del(`${modulesPath(ws.slug, pid, m.id)}/links/${l.id}`))}><X /></button> : null}
             </span>
           ))}
-          {ctx.editable ? (
+          {editable ? (
             <form className="link-form" onSubmit={(e) => { e.preventDefault(); act(async () => { await post(`${modulesPath(ws.slug, pid, m.id)}/links`, { url }); setUrl(""); qc.invalidateQueries({ queryKey: mq.links(ws.slug, pid, m.id) }); }); }}>
               <input className="input" style={{ height: 26, width: 260 }} placeholder="https://" aria-label={t("links.url")} value={url} onChange={(e) => setUrl(e.target.value)} />
               <button className="btn btn-sm" disabled={!url.trim()}>{t("common.add")}</button>

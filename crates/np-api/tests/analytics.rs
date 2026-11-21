@@ -95,6 +95,8 @@ async fn numbers_follow_what_you_may_read() {
         .post(&items, json!({ "title": "Old" }), Some(&owner))
         .await
         .body;
+    t.complete(&format!("{items}/{}", arch["id"].as_str().unwrap()), &owner)
+        .await;
     t.post(
         &format!("{items}/{}/archive", arch["id"].as_str().unwrap()),
         json!({}),
@@ -132,13 +134,14 @@ async fn numbers_follow_what_you_may_read() {
     );
     let weeks = o["weeks"].as_array().unwrap();
     assert_eq!(weeks.len(), 12);
-    // This week: four live and one archived (the draft and the other project's item do not count).
+    // This week: four live and one archived, which was completed before it could be archived
+    // (the draft and the other project's item do not count).
     assert_eq!(
         (
             weeks[11]["created"].as_i64(),
             weeks[11]["completed"].as_i64()
         ),
-        (Some(5), Some(1)),
+        (Some(5), Some(2)),
         "{o}"
     );
     // State groups in their natural order, assignees largest first with "unassigned" last.

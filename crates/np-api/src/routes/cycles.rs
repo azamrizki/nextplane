@@ -3,6 +3,7 @@
 
 use axum::extract::State;
 use axum::http::StatusCode;
+use np_core::cycle::CycleStatus;
 use np_core::id::Uuid;
 use np_core::perm::{Ownership, ProjAction};
 use np_core::project::EstimateType;
@@ -31,6 +32,14 @@ async fn load(state: &AppState, pid: Uuid, cid: Uuid) -> ApiResult<Cycle> {
         .cycle(pid, cid)
         .await?
         .ok_or_else(|| Error::not_found("cycle not found"))?)
+}
+
+/// Archived cycles are read-only until restored (as in Plane).
+fn live(c: Cycle) -> ApiResult<Cycle> {
+    if c.archived_at.is_some() {
+        return Err(Error::conflict("this cycle is archived; restore it to make changes").into());
+    }
+    Ok(c)
 }
 
 fn clean_dates(
@@ -70,7 +79,10 @@ pub async fn list(
     Path((slug, pid)): Path<(String, Uuid)>,
     Query(q): Query<ListQuery>,
 ) -> ApiResult<Json<Vec<Cycle>>> {
-    ctx(&state, &me, &slug, pid).await?;
+    let c = ctx(&state, &me, &slug, pid).await?;
+    if q.archived {
+        c.require(ProjAction::ViewArchives)?;
+    }
     Ok(Json(state.store.cycles(pid, q.archived).await?))
 }
 
@@ -138,7 +150,7 @@ pub async fn update(
 ) -> ApiResult<Json<Cycle>> {
     let c = ctx(&state, &me, &slug, pid).await?;
     c.require_write(ProjAction::EditCycleOrModule)?;
-    let cur = load(&state, pid, cid).await?;
+    let cur = live(load(&state, pid, cid).await?)?;
     let dates = if req.start_date.is_some() || req.end_date.is_some() {
         Some(clean_dates(
             req.start_date.unwrap_or(cur.start_date.clone()),
@@ -164,7 +176,7 @@ pub async fn remove(
     Path((slug, pid, cid)): Path<(String, Uuid, Uuid)>,
 ) -> ApiResult<StatusCode> {
     let c = ctx(&state, &me, &slug, pid).await?;
-    let cy = load(&state, pid, cid).await?;
+    let cy = live(load(&state, pid, cid).await?)?;
     let own = if cy.created_by == me.id {
         Ownership::Own
     } else {
@@ -185,7 +197,10 @@ async fn set_archived(
 ) -> ApiResult<Json<Cycle>> {
     let c = ctx(&state, &me, &slug, pid).await?;
     c.require_write(ProjAction::EditCycleOrModule)?;
-    load(&state, pid, cid).await?;
+    let cy = load(&state, pid, cid).await?;
+    if on && cy.archived_at.is_none() && cy.status != Some(CycleStatus::Completed) {
+        return Err(Error::bad_request("only completed cycles can be archived").into());
+    }
     state.store.set_cycle_archived(cid, on).await?;
     Ok(Json(load(&state, pid, cid).await?))
 }

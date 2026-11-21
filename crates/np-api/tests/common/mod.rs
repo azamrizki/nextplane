@@ -232,6 +232,24 @@ impl TestApp {
 }
 
 impl TestApp {
+    /// Moves a work item (`{project}/work-items/{id}`) to the project's first completed state,
+    /// so it may be archived.
+    pub async fn complete(&self, item_path: &str, cookie: &str) {
+        let project = item_path.split("/work-items/").next().unwrap();
+        let states = self.get(&format!("{project}/states"), Some(cookie)).await.body;
+        let done = states
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["group"] == "completed")
+            .unwrap()["id"]
+            .clone();
+        let r = self
+            .patch(item_path, serde_json::json!({ "state_id": done }), Some(cookie))
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.body);
+    }
+
     /// POSTs one file as multipart field `file`.
     pub async fn upload(&self, path: &str, name: &str, bytes: &[u8], cookie: &str) -> Res {
         let boundary = "XnpBoundary";

@@ -55,6 +55,8 @@ async fn public_board() {
         .post(&items, json!({ "title": "Old" }), Some(&owner))
         .await
         .body;
+    t.complete(&format!("{items}/{}", old["id"].as_str().unwrap()), &owner)
+        .await;
     t.post(
         &format!("{items}/{}/archive", old["id"].as_str().unwrap()),
         json!({}),

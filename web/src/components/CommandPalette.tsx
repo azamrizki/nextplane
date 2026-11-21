@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router";
 import { get } from "../api/client";
 import type { MyWorkspace } from "../api/types";
 import { useI18n } from "../i18n";
+import { pcan } from "../lib/perm";
 import { useProjects } from "../lib/projects";
 import { useWorkspaces } from "../lib/queries";
 import { useTheme } from "../lib/theme";
@@ -11,7 +12,7 @@ import { Dialog } from "./Dialog";
 import { emitShell, useShellEvent } from "../lib/shell";
 import { SEQUENCES } from "../lib/shortcuts";
 import { WsMark } from "./Avatar";
-import { Briefcase, Keyboard, ListTodo, Plus, Search, Settings, SunMoon, UserRound, UsersRound } from "lucide-react";
+import { Archive, Briefcase, Keyboard, ListTodo, Plus, Search, Settings, SunMoon, UserRound, UsersRound } from "lucide-react";
 
 interface Hit {
   kind: string;
@@ -93,6 +94,10 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
       { id: "theme", section: t("pal.actions"), label: t("pal.toggleTheme"), icon: <SunMoon />, run: () => { setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"); setOpen(false); } },
       { id: "keys", section: t("pal.actions"), label: t("pal.shortcuts"), hint: "?", icon: <Keyboard />, run: () => { setOpen(false); setHelp(true); } },
     ];
+    const here = (projects.data ?? []).find((p) => p.id === projectId);
+    if (here && pcan.viewArchives(here)) {
+      actions.push({ id: "archives", section: t("pal.actions"), label: t("pal.goArchives", { name: here.name }), icon: <Archive />, run: () => go(`/${ws.slug}/projects/${here.id}/archives`) });
+    }
     out.push(...actions.filter((a) => match(a.label)));
     for (const p of projects.data ?? []) {
       if (match(p.name) || match(p.identifier)) {

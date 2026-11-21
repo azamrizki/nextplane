@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { Archive, ChevronDown } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
@@ -17,6 +17,7 @@ import { pcan } from "../lib/perm";
 import { useProjectCtx } from "../lib/projectCtx";
 import { useProject } from "../lib/projects";
 import { useMe } from "../lib/session";
+import { toast } from "../lib/toast";
 import { wiq } from "../lib/workItems";
 import { ProjectBar, WorkItemsView } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
@@ -32,7 +33,7 @@ function useCtx(): PropsCtx | null | "missing" {
   return ctx;
 }
 
-function dates(c: Cycle, lang: string, t: (k: "cyc.noDates") => string) {
+export function cycleDates(c: Cycle, lang: string, t: (k: "cyc.noDates") => string) {
   return c.start_date && c.end_date ? `${fmtDate(c.start_date, lang)} – ${fmtDate(c.end_date, lang)}` : t("cyc.noDates");
 }
 
@@ -50,19 +51,20 @@ export function CyclesPage() {
   const ws = useWs();
   const ctx = useCtx();
   const [creating, setCreating] = useState(false);
-  const [archived, setArchived] = useState(false);
   const p = ctx && ctx !== "missing" ? ctx.project : null;
-  const list = useCycles(ws.slug, p?.id ?? "", !!p, archived);
+  const list = useCycles(ws.slug, p?.id ?? "", !!p);
   if (ctx === "missing") return <Navigate to=".." relative="path" replace />;
   if (!ctx || !p) return <FullPageSpinner />;
   const cycles = list.data ?? [];
   return (
     <div className="proj-view">
       <ProjectBar ctx={ctx}>
-        <div className="seg" role="tablist">
-          <button role="tab" aria-selected={!archived} className={!archived ? "on" : ""} onClick={() => setArchived(false)}>{t("proj.active")}</button>
-          <button role="tab" aria-selected={archived} className={archived ? "on" : ""} onClick={() => setArchived(true)}>{t("proj.archived")}</button>
-        </div>
+        {pcan.viewArchives(p) ? (
+          <Link to={`/${ws.slug}/projects/${p.id}/archives/cycles`} className="btn">
+            <Archive />
+            {t("ptab.archives")}
+          </Link>
+        ) : null}
         {pcan.createWorkItem(p) && !p.archived_at ? <button className="btn btn-primary" onClick={() => setCreating(true)}>{t("cyc.new")}</button> : null}
       </ProjectBar>
       <div className="page page-wide">
@@ -78,7 +80,7 @@ export function CyclesPage() {
                   <Link key={c.id} to={c.id} relative="path" className="row row-link cycle-row">
                     <div className="row-main">
                       <span className="cycle-name">{c.name}</span>
-                      <span className="faint small">{dates(c, lang, t)}</span>
+                      <span className="faint small">{cycleDates(c, lang, t)}</span>
                     </div>
                     <div className="cycle-meter">
                       <Meter done={c.completed_items} total={c.total_items} />
@@ -166,8 +168,20 @@ function CycleHeader({ ctx, c }: { ctx: PropsCtx; c: Cycle }) {
   const [confirm, setConfirm] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const editable = ctx.editable;
-  const canDelete = pcan.deleteWorkItem(ctx.project, c.created_by === me.id) && !ctx.project.archived_at;
+  const archived = !!c.archived_at;
+  const editable = ctx.editable && !archived;
+  const canDelete = pcan.deleteWorkItem(ctx.project, c.created_by === me.id) && !ctx.project.archived_at && !archived;
+  const archiveBase = `/${ws.slug}/projects/${pid}/archives/cycles`;
+  const setArchived = (on: boolean) =>
+    act(async () => {
+      await post(cyclesPath(ws.slug, pid, c.id) + (on ? "/archive" : "/unarchive"));
+      if (on) {
+        toast({ kind: "success", title: t("arch.cycleArchived"), link: { label: t("arch.view"), to: archiveBase } });
+        navigate(`/${ws.slug}/projects/${pid}/cycles`);
+      } else {
+        toast({ kind: "success", title: t("arch.cycleRestored") });
+      }
+    });
   const refresh = () => {
     qc.invalidateQueries({ queryKey: cq.all(ws.slug, pid) });
     qc.invalidateQueries({ queryKey: ["cycle", ws.slug, pid] });
@@ -189,17 +203,29 @@ function CycleHeader({ ctx, c }: { ctx: PropsCtx; c: Cycle }) {
       <div className="cycle-title">
         <b>{c.name}</b>
         <span className="badge">{t(`cyc.status.${c.status}`)}</span>
-        <span className="faint small">{dates(c, lang, t)}</span>
+        <span className="faint small">{cycleDates(c, lang, t)}</span>
         <span className="grow" />
         <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("cyc.progress")} <ChevronDown className={open ? "rot180" : ""} /></button>
         {editable ? <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>{t("common.edit")}</button> : null}
         {editable && pr && pr.total_items > pr.completed_items && targets.length ? (
           <button className="btn btn-sm btn-ghost" onClick={() => setTransfer(true)}>{t("cyc.transfer")}</button>
         ) : null}
-        {editable ? <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(cyclesPath(ws.slug, pid, c.id) + (c.archived_at ? "/unarchive" : "/archive")))}>{c.archived_at ? t("cyc.unarchive") : t("cyc.archive")}</button> : null}
+        {editable ? (
+          <button className="btn btn-sm btn-ghost" disabled={c.status !== "completed"} title={c.status !== "completed" ? t("arch.cycleOnlyCompleted") : undefined} onClick={() => setArchived(true)}>
+            {t("cyc.archive")}
+          </button>
+        ) : null}
         {canDelete ? <button className="btn btn-sm btn-ghost" onClick={() => setConfirm(true)}>{t("common.delete")}</button> : null}
       </div>
       <ErrorAlert message={error} />
+      {archived ? (
+        <div className="wi-archived">
+          <Archive aria-hidden />
+          <span className="grow">{t("arch.readOnlyCycle")}</span>
+          <Link className="btn btn-sm btn-ghost" to={archiveBase}>{t("arch.goTo")}</Link>
+          {ctx.editable ? <button className="btn btn-sm" onClick={() => setArchived(false)}>{t("cyc.unarchive")}</button> : null}
+        </div>
+      ) : null}
       {note ? <div className="alert alert-success">{note}</div> : null}
       {open && pr ? <ProgressPanels pr={pr} points={ctx.project.estimate_type === "points"} /> : null}
       {editing ? <CycleDialog ctx={ctx} open={editing} onClose={() => setEditing(false)} cycle={c} /> : null}

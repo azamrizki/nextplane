@@ -64,7 +64,7 @@ The code lives in `crates/np-core/src/perm.rs`; every row below has a test.
 | View states, labels, estimates | ✓ | ✓ | ✓ | ✓ |
 | Create work items | ✓ | ✓ | — | — |
 | Edit any work item (fields, assignees, relations, bulk edit) | ✓ | ✓ | — | — |
-| Archive work items | ✓ | ✓ | — | — |
+| Archive work items (completed or cancelled ones), see the project's archives | ✓ | ✓ | — | — |
 | Delete a work item | any | own | — | — |
 | Create comments | ✓ | ✓ | ✓ | — |
 | Edit/delete a comment | own only | own only | own only | — |

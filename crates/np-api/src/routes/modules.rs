@@ -34,6 +34,14 @@ async fn load(state: &AppState, pid: Uuid, id: Uuid) -> ApiResult<Module> {
         .ok_or_else(|| Error::not_found("module not found"))?)
 }
 
+/// Archived modules are read-only until restored (as in Plane).
+fn live(m: Module) -> ApiResult<Module> {
+    if m.archived_at.is_some() {
+        return Err(Error::conflict("this module is archived; restore it to make changes").into());
+    }
+    Ok(m)
+}
+
 #[derive(Deserialize, Default)]
 pub struct Fields {
     name: Option<String>,
@@ -117,7 +125,10 @@ pub async fn list(
     Path((slug, pid)): Path<(String, Uuid)>,
     Query(q): Query<ListQuery>,
 ) -> ApiResult<Json<Vec<Module>>> {
-    ctx(&state, &me, &slug, pid).await?;
+    let c = ctx(&state, &me, &slug, pid).await?;
+    if q.archived {
+        c.require(ProjAction::ViewArchives)?;
+    }
     Ok(Json(state.store.modules(pid, q.archived).await?))
 }
 
@@ -156,7 +167,7 @@ pub async fn update(
 ) -> ApiResult<Json<Module>> {
     let c = ctx(&state, &me, &slug, pid).await?;
     c.require_write(ProjAction::EditCycleOrModule)?;
-    let cur = load(&state, pid, id).await?;
+    let cur = live(load(&state, pid, id).await?)?;
     let f = clean(&state, &c, f, Some(&cur)).await?;
     Ok(Json(state.store.update_module(pid, id, &f).await?))
 }
@@ -167,7 +178,7 @@ pub async fn remove(
     Path((slug, pid, id)): Path<(String, Uuid, Uuid)>,
 ) -> ApiResult<StatusCode> {
     let c = ctx(&state, &me, &slug, pid).await?;
-    let m = load(&state, pid, id).await?;
+    let m = live(load(&state, pid, id).await?)?;
     let own = if m.created_by == me.id {
         Ownership::Own
     } else {
@@ -188,7 +199,13 @@ async fn set_archived(
 ) -> ApiResult<Json<Module>> {
     let c = ctx(&state, &me, &slug, pid).await?;
     c.require_write(ProjAction::EditCycleOrModule)?;
-    load(&state, pid, id).await?;
+    let m = load(&state, pid, id).await?;
+    if on && m.archived_at.is_none() && !matches!(m.status.as_str(), "completed" | "cancelled") {
+        return Err(Error::bad_request(
+            "only completed or cancelled modules can be archived",
+        )
+        .into());
+    }
     state.store.set_module_archived(id, on).await?;
     Ok(Json(load(&state, pid, id).await?))
 }
@@ -249,7 +266,7 @@ pub async fn add_link(
 ) -> ApiResult<Json<Vec<ModuleLink>>> {
     let c = ctx(&state, &me, &slug, pid).await?;
     c.require_write(ProjAction::EditCycleOrModule)?;
-    load(&state, pid, id).await?;
+    live(load(&state, pid, id).await?)?;
     let url = req.url.trim();
     if !(url.starts_with("https://") || url.starts_with("http://"))
         || url.len() > 2048
@@ -276,7 +293,7 @@ pub async fn remove_link(
 ) -> ApiResult<StatusCode> {
     let c = ctx(&state, &me, &slug, pid).await?;
     c.require_write(ProjAction::EditCycleOrModule)?;
-    load(&state, pid, id).await?;
+    live(load(&state, pid, id).await?)?;
     state.store.remove_module_link(id, lid).await?;
     Ok(StatusCode::NO_CONTENT)
 }

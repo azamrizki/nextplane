@@ -161,9 +161,48 @@ async fn modules_items_progress_links_and_rules() {
         StatusCode::BAD_REQUEST
     );
 
-    // Archived modules take no new items; delete keeps the items.
-    t.post(&format!("{m}/{bid}/archive"), json!({}), Some(&owner))
-        .await;
+    // Only completed or cancelled modules are archived; archived ones take no new items and
+    // are read-only until restored. Delete keeps the items.
+    assert_eq!(
+        t.post(&format!("{m}/{bid}/archive"), json!({}), Some(&owner))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
+    t.patch(
+        &format!("{m}/{bid}"),
+        json!({ "status": "cancelled" }),
+        Some(&owner),
+    )
+    .await;
+    assert_eq!(
+        t.post(&format!("{m}/{bid}/archive"), json!({}), Some(&owner))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    assert_eq!(
+        t.get(&format!("{m}?archived=true"), Some(&owner))
+            .await
+            .body
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    for r in [
+        t.patch(&format!("{m}/{bid}"), json!({ "name": "y" }), Some(&owner))
+            .await,
+        t.delete(&format!("{m}/{bid}"), Some(&owner)).await,
+        t.post(
+            &format!("{m}/{bid}/links"),
+            json!({ "url": "https://x.io" }),
+            Some(&owner),
+        )
+        .await,
+    ] {
+        assert_eq!(r.status, StatusCode::CONFLICT, "{}", r.body);
+    }
     assert_eq!(
         t.post(
             &wi,
@@ -174,6 +213,8 @@ async fn modules_items_progress_links_and_rules() {
         .status,
         StatusCode::BAD_REQUEST
     );
+    t.post(&format!("{m}/{bid}/unarchive"), json!({}), Some(&owner))
+        .await;
     assert_eq!(
         t.delete(&format!("{m}/{bid}"), Some(&contrib)).await.status,
         StatusCode::FORBIDDEN,

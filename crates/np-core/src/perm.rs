@@ -227,6 +227,9 @@ pub enum Ownership {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProjAction {
     ViewWorkItems,
+    /// The project's archives: archived work items, cycles and modules (not guests or
+    /// commenters, as in Plane).
+    ViewArchives,
     EditSettings,
     ManageMembers,
     ManageStatesLabelsEstimates,
@@ -262,7 +265,8 @@ pub fn proj_can(role: ProjRole, action: ProjAction) -> bool {
         EditSettings | ManageMembers | ManageStatesLabelsEstimates | HideComment | TriageIntake => {
             role == Admin
         }
-        CreateWorkItem | EditWorkItem | ArchiveWorkItem | AddAttachment | CreateCycleOrModule
+        ViewArchives | CreateWorkItem | EditWorkItem | ArchiveWorkItem | AddAttachment
+        | CreateCycleOrModule
         | EditCycleOrModule | CreateView | CreatePage => at_least(Contributor),
         // Project pages are shared documents: every contributor co-edits them (D7). Locking,
         // archiving, deleting and access stay with the owner or an admin.

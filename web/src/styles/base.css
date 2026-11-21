@@ -512,6 +512,35 @@ svg.lucide {
   margin-left: auto;
   color: var(--text);
 }
+.menu-item:disabled {
+  cursor: default;
+  color: var(--text-disabled);
+  background: transparent;
+}
+.menu-item:disabled svg {
+  color: var(--text-disabled);
+}
+/* A menu item with a second, smaller line (e.g. why it is disabled). */
+.menu-item-2line {
+  align-items: flex-start;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.menu-item-2line svg {
+  margin-top: 1px;
+}
+.menu-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.menu-item-sub {
+  font-size: var(--text-xs, 11px);
+  color: var(--text-faint);
+  white-space: normal;
+  max-width: 220px;
+}
 .menu-sep {
   height: 1px;
   margin: var(--space-1) 0;
