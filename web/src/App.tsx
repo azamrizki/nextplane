@@ -1,3 +1,4 @@
+import { WorkspaceViewsPage } from "./pages/WorkspaceViews";
 import { ArchivesPage } from "./pages/Archives";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, Navigate } from "react-router";
@@ -68,6 +69,8 @@ export const routes = [
           { index: true, element: <WorkspaceHomePage /> },
           { path: "settings", element: <WorkspaceSettingsPage /> },
           { path: "my-work", element: <MyWorkPage /> },
+          { path: "views", element: <WorkspaceViewsPage /> },
+          { path: "views/:viewId", element: <WorkspaceViewsPage /> },
           { path: "analytics", element: <AnalyticsPage /> },
           { path: "inbox", element: <InboxPage /> },
           { path: "drafts", element: <DraftsPage /> },

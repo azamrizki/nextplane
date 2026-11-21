@@ -23,13 +23,18 @@ const today = () => fmtDay(Date.UTC(new Date().getFullYear(), new Date().getMont
 
 // ---- Spreadsheet ------------------------------------------------------------------------
 
-export function SpreadsheetLayout({ items, ctx, view, onOpen, activeId, onPatch }: Props) {
+/** One project's items, or (workspace views, `ctxOf`) items of several projects, each edited
+ * with its own project's states, labels and people. */
+export function SpreadsheetLayout({ items, ctx, view, onOpen, activeId, onPatch, ctxOf }: Omit<Props, "ctx"> & { ctx?: PropsCtx; ctxOf?: (w: WorkItem) => PropsCtx | undefined }) {
   const { t, lang } = useI18n();
+  const many = !!ctxOf;
+  const rowCtx = (w: WorkItem) => (ctxOf ? ctxOf(w) : ctx);
   const rows = useMemo(() => sortItems(items, view.orderBy), [items, view.orderBy]);
   const ref = useRef<HTMLDivElement>(null);
   const v = useVirtualizer({ count: rows.length, getScrollElement: () => ref.current, estimateSize: () => 38, overscan: 15 });
   const cols = [
     ["key", t("col.key"), "80px"],
+    ...(many ? [["project", t("col.project"), "150px"]] : []),
     ["title", t("col.title"), "360px"],
     ["state", t("wi.state"), "150px"],
     ["priority", t("wi.priority"), "130px"],
@@ -37,17 +42,26 @@ export function SpreadsheetLayout({ items, ctx, view, onOpen, activeId, onPatch 
     ["labels", t("wi.labels"), "160px"],
     ["start", t("wi.start"), "120px"],
     ["due", t("wi.due"), "120px"],
-    ...(ctx.project.estimate_type !== "none" ? [["estimate", t("wi.estimate"), "100px"]] : []),
-    ...(ctx.project.feature_cycles ? [["cycle", t("wi.cycle"), "140px"]] : []),
-    ...(ctx.project.feature_modules ? [["modules", t("wi.modules"), "160px"]] : []),
+    ...(many || ctx?.project.estimate_type !== "none" ? [["estimate", t("wi.estimate"), "100px"]] : []),
+    ...(many || ctx?.project.feature_cycles ? [["cycle", t("wi.cycle"), "140px"]] : []),
+    ...(many || ctx?.project.feature_modules ? [["modules", t("wi.modules"), "160px"]] : []),
     ["updated", t("col.updated"), "110px"],
   ] as [string, string, string][];
   const grid = { gridTemplateColumns: cols.map((c) => c[2]).join(" ") };
   const cell = (w: WorkItem, k: string) => {
     const p = (b: Partial<WorkItem>) => onPatch(w.id, b);
+    const ctx = rowCtx(w);
+    const info = w as WorkItem & { identifier?: string; project_name?: string };
+    if (k === "key") return <span className="mono faint small">{keyOf(ctx?.project.identifier ?? info.identifier ?? "", w.sequence)}</span>;
+    if (k === "project") return <span className="faint small ellipsis">{ctx?.project.name ?? info.project_name}</span>;
+    if (k === "title") return <button className="sheet-title ellipsis" onClick={() => onOpen(w.id)}>{w.title}</button>;
+    if (k === "updated") return <span className="faint small">{fmtDate(w.updated_at.slice(0, 10), lang)}</span>;
+    // Until the item's project data has loaded, and where the project has no such thing.
+    if (!ctx) return null;
+    if (k === "estimate" && ctx.project.estimate_type === "none") return null;
+    if (k === "cycle" && !ctx.project.feature_cycles) return null;
+    if (k === "modules" && !ctx.project.feature_modules) return null;
     switch (k) {
-      case "key": return <span className="mono faint small">{keyOf(ctx.project.identifier, w.sequence)}</span>;
-      case "title": return <button className="sheet-title ellipsis" onClick={() => onOpen(w.id)}>{w.title}</button>;
       case "state": return <StateProp item={w} ctx={ctx} onPatch={p} />;
       case "priority": return <PriorityProp item={w} ctx={ctx} onPatch={p} />;
       case "assignees": return <AssigneesProp item={w} ctx={ctx} onPatch={p} />;
@@ -57,7 +71,6 @@ export function SpreadsheetLayout({ items, ctx, view, onOpen, activeId, onPatch 
       case "estimate": return <EstimateProp item={w} ctx={ctx} onPatch={p} />;
       case "cycle": return <CycleProp item={w} ctx={ctx} onPatch={p} />;
       case "modules": return <ModulesProp item={w} ctx={ctx} onPatch={p} />;
-      case "updated": return <span className="faint small">{fmtDate(w.updated_at.slice(0, 10), lang)}</span>;
     }
     return null;
   };

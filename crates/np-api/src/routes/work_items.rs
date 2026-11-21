@@ -31,7 +31,7 @@ impl ProjCtx {
     }
 }
 
-fn ids(raw: &Option<String>) -> ApiResult<Vec<Uuid>> {
+pub(crate) fn ids(raw: &Option<String>) -> ApiResult<Vec<Uuid>> {
     raw.as_deref()
         .unwrap_or("")
         .split(',')
@@ -45,26 +45,33 @@ fn ids(raw: &Option<String>) -> ApiResult<Vec<Uuid>> {
 
 #[derive(Deserialize, Default)]
 pub struct ListQuery {
-    state: Option<String>,
-    state_group: Option<String>,
-    priority: Option<String>,
-    assignee: Option<String>,
+    pub(crate) state: Option<String>,
+    pub(crate) state_group: Option<String>,
+    pub(crate) priority: Option<String>,
+    pub(crate) assignee: Option<String>,
     #[serde(default)]
-    unassigned: bool,
-    label: Option<String>,
-    created_by: Option<String>,
-    parent: Option<Uuid>,
+    pub(crate) unassigned: bool,
+    pub(crate) label: Option<String>,
+    pub(crate) created_by: Option<String>,
+    pub(crate) parent: Option<Uuid>,
     /// Cycle ids, comma-separated; `none` for items without a cycle.
-    cycle: Option<String>,
+    pub(crate) cycle: Option<String>,
     /// Module ids, comma-separated; `none` for items in no module.
-    module: Option<String>,
+    pub(crate) module: Option<String>,
     #[serde(default)]
-    archived: bool,
-    due_before: Option<String>,
-    due_after: Option<String>,
-    q: Option<String>,
-    limit: Option<i64>,
-    cursor: Option<String>,
+    pub(crate) archived: bool,
+    pub(crate) due_before: Option<String>,
+    pub(crate) due_after: Option<String>,
+    pub(crate) start_before: Option<String>,
+    pub(crate) start_after: Option<String>,
+    pub(crate) q: Option<String>,
+    pub(crate) limit: Option<i64>,
+    pub(crate) cursor: Option<String>,
+    /// Workspace lists only: project ids, comma-separated.
+    pub(crate) project: Option<String>,
+    /// Workspace lists only: items the caller follows.
+    #[serde(default)]
+    pub(crate) subscribed: bool,
 }
 
 pub const PAGE_DEFAULT: i64 = 1000;
@@ -90,21 +97,9 @@ fn decode_cursor(c: &str) -> ApiResult<(f64, i64)> {
     Ok((o, q.parse().map_err(|_| bad())?))
 }
 
-/// Pages of at most `limit` (default 1000) items in board order; the next page's cursor is in
-/// the `X-Next-Cursor` header (absent on the last page).
-pub async fn list(
-    State(state): State<AppState>,
-    CurrentUser(me): CurrentUser,
-    Path((slug, pid)): Path<(String, Uuid)>,
-    Query(q): Query<ListQuery>,
-) -> ApiResult<impl axum::response::IntoResponse> {
-    let ctx = load_project(&state, &slug, pid, &me).await?;
-    ctx.require(if q.archived {
-        ProjAction::ViewArchives
-    } else {
-        ProjAction::ViewWorkItems
-    })?;
-    let f = Filter {
+/// The filters shared by project and workspace lists (not paging).
+pub fn filter_from(q: &ListQuery) -> ApiResult<Filter> {
+    Ok(Filter {
         state_ids: ids(&q.state)?,
         state_groups: q
             .state_group
@@ -158,12 +153,39 @@ pub async fn list(
             .as_deref()
             .map(work_item::validate_date)
             .transpose()?,
-        search: q.q,
-        only_created_by: None,
-        subscribed_by: None,
-        drafts_of: None,
+        start_before: q
+            .start_before
+            .as_deref()
+            .map(work_item::validate_date)
+            .transpose()?,
+        start_after: q
+            .start_after
+            .as_deref()
+            .map(work_item::validate_date)
+            .transpose()?,
+        search: q.q.clone(),
+        ..Default::default()
+    })
+}
+
+/// Pages of at most `limit` (default 1000) items in board order; the next page's cursor is in
+/// the `X-Next-Cursor` header (absent on the last page).
+pub async fn list(
+    State(state): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path((slug, pid)): Path<(String, Uuid)>,
+    Query(q): Query<ListQuery>,
+) -> ApiResult<impl axum::response::IntoResponse> {
+    let ctx = load_project(&state, &slug, pid, &me).await?;
+    ctx.require(if q.archived {
+        ProjAction::ViewArchives
+    } else {
+        ProjAction::ViewWorkItems
+    })?;
+    let f = Filter {
         limit: Some(q.limit.unwrap_or(PAGE_DEFAULT).clamp(1, PAGE_MAX)),
         after: q.cursor.as_deref().map(decode_cursor).transpose()?,
+        ..filter_from(&q)?
     };
     let limit = f.limit.unwrap_or(PAGE_DEFAULT);
     let items = state.store.work_items(pid, &f).await?;

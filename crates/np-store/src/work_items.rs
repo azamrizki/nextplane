@@ -203,9 +203,15 @@ pub struct Filter {
     pub subscribed_by: Option<Uuid>,
     /// Drafts of this user instead of published items.
     pub drafts_of: Option<Uuid>,
+    pub start_before: Option<String>,
+    pub start_after: Option<String>,
     pub limit: Option<i64>,
     /// Keyset cursor: items after this (sort_order, sequence) in board order.
     pub after: Option<(f64, i64)>,
+    /// Newest first instead of board order (workspace views), with its own cursor: items
+    /// created before this (created_at, id).
+    pub newest_first: bool,
+    pub before: Option<(String, Uuid)>,
 }
 
 #[derive(Debug, Clone, Serialize, FromRow)]
@@ -744,10 +750,25 @@ impl Store {
 
     /// Work items of a project matching `f`, without descriptions, in board order.
     pub async fn work_items(&self, project: Uuid, f: &Filter) -> Result<Vec<WorkItem>> {
+        self.work_items_in(&[project], f).await
+    }
+
+    /// Work items of several projects matching `f`: in board order, or newest first with
+    /// `f.newest_first` (workspace views).
+    pub async fn work_items_in(&self, projects: &[Uuid], f: &Filter) -> Result<Vec<WorkItem>> {
+        if projects.is_empty() {
+            return Ok(Vec::new());
+        }
         let mut qb = QueryBuilder::<Sqlite>::new(format!(
-            "SELECT {COLS} FROM work_items w WHERE w.project_id = "
+            "SELECT {COLS} FROM work_items w WHERE w.project_id IN ("
         ));
-        qb.push_bind(project);
+        {
+            let mut sep = qb.separated(", ");
+            for p in projects {
+                sep.push_bind(*p);
+            }
+        }
+        qb.push(")");
         match f.drafts_of {
             Some(u) => {
                 qb.push(" AND w.is_draft = 1 AND w.created_by = ")
@@ -891,16 +912,35 @@ impl Store {
             }
             qb.push(")");
         }
-        if let Some((o, seq)) = f.after {
-            qb.push(" AND (w.sort_order > ")
-                .push_bind(o)
-                .push(" OR (w.sort_order = ")
-                .push_bind(o)
-                .push(" AND w.sequence < ")
-                .push_bind(seq)
-                .push("))");
+        if let Some(d) = &f.start_before {
+            qb.push(" AND w.start_date <= ").push_bind(d.clone());
         }
-        qb.push(" ORDER BY w.sort_order, w.sequence DESC");
+        if let Some(d) = &f.start_after {
+            qb.push(" AND w.start_date >= ").push_bind(d.clone());
+        }
+        if f.newest_first {
+            if let Some((at, id)) = &f.before {
+                qb.push(" AND (w.created_at < ")
+                    .push_bind(at.clone())
+                    .push(" OR (w.created_at = ")
+                    .push_bind(at.clone())
+                    .push(" AND w.id < ")
+                    .push_bind(*id)
+                    .push("))");
+            }
+            qb.push(" ORDER BY w.created_at DESC, w.id DESC");
+        } else {
+            if let Some((o, seq)) = f.after {
+                qb.push(" AND (w.sort_order > ")
+                    .push_bind(o)
+                    .push(" OR (w.sort_order = ")
+                    .push_bind(o)
+                    .push(" AND w.sequence < ")
+                    .push_bind(seq)
+                    .push("))");
+            }
+            qb.push(" ORDER BY w.sort_order, w.sequence DESC");
+        }
         if let Some(l) = f.limit {
             qb.push(" LIMIT ").push_bind(l);
         }

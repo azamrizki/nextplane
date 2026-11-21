@@ -6,6 +6,7 @@ import {
   CircleDot,
   Contrast,
   Boxes,
+  Briefcase,
   List,
   ListFilter,
   ListFilterPlus,
@@ -22,7 +23,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { PRIORITIES } from "../api/types";
+import { PRIORITIES, STATE_GROUPS, type Label, type Project, type ProjMember } from "../api/types";
 import { useI18n } from "../i18n";
 import { Popover } from "./Layout";
 import { Avatar } from "./Avatar";
@@ -111,29 +112,44 @@ type FilterKey = Exclude<keyof Filters, "q">;
 
 /** Applied filters as Plane-style condition pills ("Priority · Urgent, High ×") under the
  * header, with "Add filter" and "Clear filters". */
-export function FilterRow({ view, setView, ctx, extra }: { view: ViewState; setView: (p: Partial<ViewState>) => void; ctx: PropsCtx; extra?: ReactNode }) {
+/** Across projects (workspace views): pick projects and state groups instead of one project's
+ * states, cycles and modules; people and labels come from all those projects. */
+export interface WorkspaceScope {
+  projects: Project[];
+  members: ProjMember[];
+  labels: Label[];
+}
+
+export function FilterRow({ view, setView, ctx, extra, scope }: { view: ViewState; setView: (p: Partial<ViewState>) => void; ctx?: PropsCtx; extra?: ReactNode; scope?: WorkspaceScope }) {
   const { t } = useI18n();
+  const members = scope ? scope.members : (ctx?.members ?? []);
+  const labels = scope ? scope.labels : (ctx?.labels ?? []);
   const f = view.filters;
   const setF = (p: Partial<Filters>) => setView({ filters: { ...f, ...p } });
   const [adding, setAdding] = useState<FilterKey | null>(null);
   const [menu, setMenu] = useState(false);
   const closeMenu = useCallback(() => setMenu(false), []);
-  const people: Option[] = ctx.members.map((m) => ({ value: m.user_id, label: m.name || m.email, icon: <Avatar name={m.name} email={m.email} src={m.avatar} size={18} /> }));
+  const people: Option[] = members.map((m) => ({ value: m.user_id, label: m.name || m.email, icon: <Avatar name={m.name} email={m.email} src={m.avatar} size={18} /> }));
   const props: { key: FilterKey; label: string; icon: ReactNode; options: Option[]; single?: boolean; searchable?: boolean }[] = [
     { key: "priority", label: t("filter.priority"), icon: <SignalHigh />, options: PRIORITIES.map((p) => ({ value: p, label: t(`prio.${p}`), icon: <PriorityIcon p={p} /> })), searchable: false },
-    { key: "state", label: t("filter.state"), icon: <CircleDot />, options: ctx.states.map((s) => ({ value: s.id, label: s.name, icon: <StateIcon group={s.group} color={s.color} /> })) },
+    ...(scope
+      ? [
+          { key: "project" as const, label: t("filter.project"), icon: <Briefcase />, options: scope.projects.map((p) => ({ value: p.id, label: p.name, hint: p.identifier })) },
+          { key: "state_group" as const, label: t("filter.stateGroup"), icon: <CircleDot />, options: STATE_GROUPS.map((g) => ({ value: g, label: t(`group.${g}`), icon: <StateIcon group={g} color={`var(--group-${g})`} /> })), searchable: false },
+        ]
+      : [{ key: "state" as const, label: t("filter.state"), icon: <CircleDot />, options: (ctx?.states ?? []).map((s) => ({ value: s.id, label: s.name, icon: <StateIcon group={s.group} color={s.color} /> })) }]),
     { key: "assignee", label: t("filter.assignee"), icon: <UserRound />, options: [{ value: "none", label: t("noAssignee") }, ...people] },
-    { key: "label", label: t("filter.label"), icon: <Tag />, options: ctx.labels.map((l) => ({ value: l.id, label: l.name, icon: <Dot color={l.color} /> })) },
-    ...(ctx.project.feature_cycles && ctx.cycles
+    { key: "label", label: t("filter.label"), icon: <Tag />, options: labels.map((l) => ({ value: l.id, label: l.name, icon: <Dot color={l.color} /> })) },
+    ...(ctx && !scope && ctx.project.feature_cycles && ctx.cycles
       ? [{ key: "cycle" as const, label: t("filter.cycle"), icon: <Contrast />, options: [{ value: "none", label: t("noCycle") }, ...ctx.cycles.map((c) => ({ value: c.id, label: c.name, hint: t(`cyc.status.${c.status}`) }))] }]
       : []),
-    ...(ctx.project.feature_modules && ctx.modules
+    ...(ctx && !scope && ctx.project.feature_modules && ctx.modules
       ? [{ key: "module" as const, label: t("filter.module"), icon: <Boxes />, options: [{ value: "none", label: t("noModule") }, ...ctx.modules.map((m) => ({ value: m.id, label: m.name }))] }]
       : []),
     { key: "due", label: t("filter.due"), icon: <CalendarClock />, options: [{ value: "overdue", label: t("due.overdue") }, { value: "week", label: t("due.week") }], single: true, searchable: false },
     { key: "created_by", label: t("filter.created_by"), icon: <UserPen />, options: people },
   ];
-  const valueOf = (k: FilterKey): string[] => (k === "due" ? (f.due ? [f.due] : []) : (f[k] as string[]));
+  const valueOf = (k: FilterKey): string[] => (k === "due" ? (f.due ? [f.due] : []) : ((f[k] as string[] | undefined) ?? []));
   const set = (k: FilterKey, v: string[]) => (k === "due" ? setF({ due: (v[0] ?? "") as DueFilter }) : setF({ [k]: v } as Partial<Filters>));
   const applied = props.filter((p) => valueOf(p.key).length > 0 || adding === p.key);
   const free = props.filter((p) => !applied.includes(p));

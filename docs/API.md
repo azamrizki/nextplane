@@ -245,6 +245,9 @@ Workspace owners and admins: `POST /workspaces/{slug}/github` connects (or makes
 | POST | `/workspaces/{slug}/notifications/{nid}/{action}` | `read`, `unread`, `archive`, `unarchive`, `snooze` (`{until: "YYYY-MM-DD" or timestamp}`), `unsnooze` |
 | POST | `/workspaces/{slug}/notifications/read-all` | marks what the inbox shows (not snoozed ones) |
 | GET | `/workspaces/{slug}/my-work?kind=assigned\|created\|subscribed&include_closed=` | across the projects you joined |
+| GET | `/workspaces/{slug}/work-items` | workspace views: published, unarchived items of the live projects you are a member of and may read, newest first, each with `identifier` and `project_name`. Takes the project list's filters (`state_group`, `priority`, `assignee`, `unassigned`, `label`, `created_by`, `due_before`/`after`, `start_before`/`after`, `q`) plus `project` (ids, comma-separated) and `subscribed=true`; `archived=true` is refused (`400`). Pages of `limit` (default 1000) with `X-Next-Cursor` |
+| GET / POST | `/workspaces/{slug}/views` | workspace views: shared ones and your own (workspace guests: only their own). `POST {name, description?, is_shared? (default true), config}`, any workspace member |
+| PATCH / DELETE | `/workspaces/{slug}/views/{vid}` | `PATCH {name?, description?, is_shared?, config?}` by the owner only; `DELETE` by the owner or a workspace admin |
 | GET | `/workspaces/{slug}/drafts` | your drafts. Create one with `is_draft: true`; drafts are private, not listed, searched or counted, and notify nobody |
 | POST | `/workspaces/{slug}/projects/{id}/work-items/{wid}/publish` | publish your draft |
 | GET / PATCH | `/me/preferences` | `{email_notifications, email_enabled}` |

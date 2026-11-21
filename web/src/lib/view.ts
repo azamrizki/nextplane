@@ -19,6 +19,9 @@ export interface Filters {
   created_by: string[];
   cycle: string[];
   module: string[];
+  /** Workspace views: state groups and projects (states differ per project). */
+  state_group: string[];
+  project: string[];
   due: DueFilter;
   q: string;
 }
@@ -37,7 +40,7 @@ export interface ViewState {
   display: Record<DisplayKey, boolean>;
 }
 
-export const EMPTY_FILTERS: Filters = { state: [], priority: [], assignee: [], label: [], created_by: [], cycle: [], module: [], due: "", q: "" };
+export const EMPTY_FILTERS: Filters = { state: [], priority: [], assignee: [], label: [], created_by: [], cycle: [], module: [], state_group: [], project: [], due: "", q: "" };
 
 export const DEFAULT_VIEW: ViewState = {
   layout: "list",
@@ -50,7 +53,9 @@ export const DEFAULT_VIEW: ViewState = {
 };
 
 export function activeFilterCount(f: Filters): number {
-  return f.state.length + f.priority.length + f.assignee.length + f.label.length + f.created_by.length + f.cycle.length + f.module.length + (f.due ? 1 : 0);
+  return (
+    f.state.length + f.priority.length + f.assignee.length + f.label.length + f.created_by.length + f.cycle.length + f.module.length + (f.state_group?.length ?? 0) + (f.project?.length ?? 0) + (f.due ? 1 : 0)
+  );
 }
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -67,11 +72,16 @@ export function filtersToQuery(f: Filters, today = new Date()): string {
   if (f.created_by.length) p.set("created_by", f.created_by.join(","));
   if (f.cycle.length) p.set("cycle", f.cycle.join(","));
   if (f.module.length) p.set("module", f.module.join(","));
+  if (f.project?.length) p.set("project", f.project.join(","));
+  const groups = f.state_group ?? [];
+  if (groups.length) p.set("state_group", groups.join(","));
   if (f.due === "overdue") {
     const y = new Date(today);
     y.setDate(y.getDate() - 1);
     p.set("due_before", ymd(y));
-    p.set("state_group", "backlog,unstarted,started");
+    const open = ["backlog", "unstarted", "started"];
+    // Overdue means still open: within the chosen groups, if any.
+    p.set("state_group", (groups.length ? groups.filter((g) => open.includes(g)) : open).join(",") || "none");
   } else if (f.due === "week") {
     const end = new Date(today);
     end.setDate(end.getDate() + 7);

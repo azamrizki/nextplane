@@ -12,7 +12,7 @@ import { Dialog } from "./Dialog";
 import { emitShell, useShellEvent } from "../lib/shell";
 import { SEQUENCES } from "../lib/shortcuts";
 import { WsMark } from "./Avatar";
-import { Archive, Briefcase, Keyboard, ListTodo, Plus, Search, Settings, SunMoon, UserRound, UsersRound } from "lucide-react";
+import { Archive, Briefcase, Keyboard, Layers, ListTodo, Plus, Search, Settings, SunMoon, UserRound, UsersRound } from "lucide-react";
 
 interface Hit {
   kind: string;
@@ -88,6 +88,7 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
     const actions: Entry[] = [
       { id: "new", section: t("pal.actions"), label: t("pal.newItem"), hint: "N I", icon: <Plus />, run: () => { setOpen(false); emitShell("create-item"); } },
       { id: "projects", section: t("pal.actions"), label: t("pal.goProjects"), hint: "G P", icon: <Briefcase />, run: () => go(`/${ws.slug}/projects`) },
+      { id: "views", section: t("pal.actions"), label: t("wv.goViews"), hint: "G V", icon: <Layers />, run: () => go(`/${ws.slug}/views/all`) },
       { id: "members", section: t("pal.actions"), label: t("pal.goMembers"), icon: <UsersRound />, run: () => go(`/${ws.slug}/settings/members`) },
       { id: "settings", section: t("pal.actions"), label: t("pal.goSettings"), hint: "G S", icon: <Settings />, run: () => go(`/${ws.slug}/settings`) },
       { id: "profile", section: t("pal.actions"), label: t("pal.goProfile"), icon: <UserRound />, run: () => go(`/profile`) },

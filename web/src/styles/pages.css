@@ -493,3 +493,33 @@
   align-items: center;
   gap: 6px;
 }
+
+/* Workspace views (S3.7): the view tab strip ends with a "+"; the list page has a search box. */
+.view-tabs {
+  align-items: center;
+}
+.view-tabs a {
+  align-self: stretch;
+}
+.view-tabs-add {
+  margin-left: var(--space-1);
+  flex: none;
+}
+.views-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: var(--space-3) 0;
+  max-width: 360px;
+}
+.views-search svg {
+  position: absolute;
+  left: 9px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-faint);
+}
+.views-search .input {
+  padding-left: 30px;
+  width: 100%;
+}

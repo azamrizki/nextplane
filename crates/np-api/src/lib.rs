@@ -342,6 +342,18 @@ pub fn router(state: AppState, spa: Router) -> Router {
             patch(views::update).delete(views::remove),
         )
         .route("/workspaces/{slug}/my-work", get(views::my_work))
+        .route(
+            "/workspaces/{slug}/work-items",
+            get(views::workspace_items),
+        )
+        .route(
+            "/workspaces/{slug}/views",
+            get(views::ws_list).post(views::ws_create),
+        )
+        .route(
+            "/workspaces/{slug}/views/{vid}",
+            patch(views::ws_update).delete(views::ws_remove),
+        )
         .route("/workspaces/{slug}/notifications", get(inbox::list))
         .route("/workspaces/{slug}/notifications/count", get(inbox::count))
         .route(

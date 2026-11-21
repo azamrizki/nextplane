@@ -14,6 +14,7 @@ pub struct View {
     pub project_id: Option<Uuid>,
     pub owner_id: Uuid,
     pub name: String,
+    pub description: String,
     pub is_shared: bool,
     #[sqlx(json)]
     pub config: serde_json::Value,
@@ -21,7 +22,8 @@ pub struct View {
     pub updated_at: String,
 }
 
-const COLS: &str = "id, project_id, owner_id, name, is_shared, config, created_at, updated_at";
+const COLS: &str =
+    "id, project_id, owner_id, name, description, is_shared, config, created_at, updated_at";
 
 /// A work item with its project's identifier, for lists that span projects.
 #[derive(Debug, Clone, Serialize)]
@@ -108,6 +110,94 @@ impl Store {
         .await
         .map_err(db_err)?;
         self.view(project, id)
+            .await?
+            .ok_or_else(|| Error::not_found("view not found"))
+    }
+
+    /// Workspace views (no project) the user may see: shared ones and their own, or only their
+    /// own (workspace guests, as in Plane).
+    pub async fn workspace_views(&self, ws: Uuid, user: Uuid, own_only: bool) -> Result<Vec<View>> {
+        sqlx::query_as(&format!(
+            "SELECT {COLS} FROM views WHERE workspace_id = ? AND project_id IS NULL AND deleted_at IS NULL
+               AND (owner_id = ? OR (is_shared = 1 AND NOT ?))
+             ORDER BY created_at, id"
+        ))
+        .bind(ws)
+        .bind(user)
+        .bind(own_only)
+        .fetch_all(self.pool())
+        .await
+        .map_err(db_err)
+    }
+
+    pub async fn workspace_view(&self, ws: Uuid, id: Uuid) -> Result<Option<View>> {
+        sqlx::query_as(&format!(
+            "SELECT {COLS} FROM views WHERE id = ? AND workspace_id = ? AND project_id IS NULL AND deleted_at IS NULL"
+        ))
+        .bind(id)
+        .bind(ws)
+        .fetch_optional(self.pool())
+        .await
+        .map_err(db_err)
+    }
+
+    pub async fn create_workspace_view(
+        &self,
+        ws: Uuid,
+        owner: Uuid,
+        name: &str,
+        description: &str,
+        shared: bool,
+        config: &serde_json::Value,
+    ) -> Result<View> {
+        let id = new_id();
+        let now = now_ts();
+        sqlx::query(
+            "INSERT INTO views (id, workspace_id, project_id, owner_id, name, description, is_shared, config, created_at, updated_at)
+             VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(id)
+        .bind(ws)
+        .bind(owner)
+        .bind(name)
+        .bind(description)
+        .bind(shared)
+        .bind(config.to_string())
+        .bind(&now)
+        .bind(&now)
+        .execute(self.pool())
+        .await
+        .map_err(db_err)?;
+        self.workspace_view(ws, id)
+            .await?
+            .ok_or_else(|| Error::not_found("view not found"))
+    }
+
+    pub async fn update_workspace_view(
+        &self,
+        ws: Uuid,
+        id: Uuid,
+        name: Option<&str>,
+        description: Option<&str>,
+        shared: Option<bool>,
+        config: Option<&serde_json::Value>,
+    ) -> Result<View> {
+        sqlx::query(
+            "UPDATE views SET name = COALESCE(?, name), description = COALESCE(?, description),
+               is_shared = COALESCE(?, is_shared), config = COALESCE(?, config), updated_at = ?
+             WHERE id = ? AND workspace_id = ?",
+        )
+        .bind(name)
+        .bind(description)
+        .bind(shared)
+        .bind(config.map(|c| c.to_string()))
+        .bind(now_ts())
+        .bind(id)
+        .bind(ws)
+        .execute(self.pool())
+        .await
+        .map_err(db_err)?;
+        self.workspace_view(ws, id)
             .await?
             .ok_or_else(|| Error::not_found("view not found"))
     }

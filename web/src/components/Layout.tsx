@@ -18,6 +18,7 @@ import {
   Import,
   Inbox,
   Keyboard,
+  Layers,
   Link as LinkIcon,
   ListTodo,
   LogOut,
@@ -128,6 +129,7 @@ function TopBar({ ws, all }: { ws: MyWorkspace; all: MyWorkspace[] }) {
 function Sidebar({ ws }: { ws: MyWorkspace }) {
   const { t } = useI18n();
   const shell = useShell();
+  const { pathname } = useLocation();
   const base = `/${ws.slug}`;
   const [wsOpen, setWsOpen] = useState(() => localStorage.getItem("np.side.workspace") !== "0");
   const version = useQuery({ queryKey: ["version"], queryFn: () => get<{ version: string }>("/version"), staleTime: Infinity });
@@ -180,6 +182,11 @@ function Sidebar({ ws }: { ws: MyWorkspace }) {
               <NavLink to={`${base}/projects`} end className="side-link">
                 <Briefcase />
                 <span className="ellipsis">{t("nav.projects")}</span>
+              </NavLink>
+              {/* Opens All work items, and stays lit on every view (as in Plane). */}
+              <NavLink to={`${base}/views/all`} className={() => "side-link" + (pathname.startsWith(`${base}/views`) ? " active" : "")}>
+                <Layers />
+                <span className="ellipsis">{t("nav.views")}</span>
               </NavLink>
               {ws.role !== "guest" ? (
                 <NavLink to={`${base}/analytics`} className="side-link">
