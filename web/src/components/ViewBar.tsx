@@ -1,92 +1,233 @@
-import { useState, type ReactNode } from "react";
-import type { Priority } from "../api/types";
+import {
+  ArrowDownWideNarrow,
+  Calendar,
+  CalendarClock,
+  ChartGantt,
+  CircleDot,
+  Contrast,
+  Boxes,
+  List,
+  ListFilter,
+  ListFilterPlus,
+  Search,
+  Sheet,
+  SignalHigh,
+  SlidersHorizontal,
+  SquareKanban,
+  Tag,
+  UserRound,
+  UserPen,
+  X,
+  Plus,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+
 import { PRIORITIES } from "../api/types";
 import { useI18n } from "../i18n";
 import { Popover } from "./Layout";
 import { Avatar } from "./Avatar";
 import { Dot } from "./ColorPicker";
-import { Picker } from "./Picker";
+import { Picker, type Option } from "./Picker";
 import { PriorityIcon, StateIcon } from "./Props";
 import type { PropsCtx } from "./WorkItemProps";
-import { DISPLAY_KEYS, EMPTY_FILTERS, LAYOUTS, activeFilterCount, type DueFilter, type Filters, type GroupBy, type OrderBy, type ViewState } from "../lib/view";
+import { DEFAULT_VIEW, DISPLAY_KEYS, EMPTY_FILTERS, LAYOUTS, activeFilterCount, type DueFilter, type Filters, type GroupBy, type Layout, type OrderBy, type ViewState } from "../lib/view";
 
-export function ViewBar({ view, setView, ctx, views }: { view: ViewState; setView: (p: Partial<ViewState>) => void; ctx: PropsCtx; views?: ReactNode }) {
+const LAYOUT_ICON: Record<Layout, ReactNode> = {
+  list: <List />,
+  kanban: <SquareKanban />,
+  calendar: <Calendar />,
+  spreadsheet: <Sheet />,
+  gantt: <ChartGantt />,
+};
+// Plane's order: List, Board, Calendar, Table, Timeline.
+const LAYOUT_ORDER: Layout[] = ["list", "kanban", "calendar", "spreadsheet", "gantt"];
+
+/** The five layouts as one segmented control of icon tabs. */
+export function LayoutSwitcher({ view, setView }: { view: ViewState; setView: (p: Partial<ViewState>) => void }) {
   const { t } = useI18n();
-  const f = view.filters;
-  const setF = (p: Partial<Filters>) => setView({ filters: { ...f, ...p } });
-  const people = [...ctx.members.map((m) => ({ value: m.user_id, label: m.name || m.email, icon: <Avatar name={m.name} email={m.email} src={m.avatar} size={18} /> }))];
-  const n = activeFilterCount(f);
   return (
-    <div className="view-bar">
-      {views ?? null}
-      <input className="input view-search" placeholder={t("view.search")} aria-label={t("view.search")} value={f.q} onChange={(e) => setF({ q: e.target.value })} />
-      <div className="seg" role="tablist" aria-label={t("view.display")}>
-        {LAYOUTS.map((l) => (
-          <button key={l} role="tab" aria-selected={view.layout === l} aria-label={t(`view.${l}`)} title={t(`view.${l}`)} className={"layout-tab" + (view.layout === l ? " on" : "")} onClick={() => setView({ layout: l })}>
-            <LayoutIcon layout={l} />
-          </button>
-        ))}
-      </div>
-      <span className="grow" />
-      <Picker label={t("view.filterBy", { name: t("filter.state") })} className="btn btn-sm" multi value={f.state} onChange={(v) => setF({ state: v })}
-        options={ctx.states.map((s) => ({ value: s.id, label: s.name, icon: <StateIcon group={s.group} color={s.color} /> }))}
-        trigger={<>{t("filter.state")}{f.state.length ? <span className="count">{f.state.length}</span> : null}</>} align="right" />
-      <Picker label={t("view.filterBy", { name: t("filter.priority") })} className="btn btn-sm" multi searchable={false} value={f.priority} onChange={(v) => setF({ priority: v as Priority[] })}
-        options={PRIORITIES.map((p) => ({ value: p, label: t(`prio.${p}`), icon: <PriorityIcon p={p} /> }))}
-        trigger={<>{t("filter.priority")}{f.priority.length ? <span className="count">{f.priority.length}</span> : null}</>} align="right" />
-      <Picker label={t("view.filterBy", { name: t("filter.assignee") })} className="btn btn-sm" multi value={f.assignee} onChange={(v) => setF({ assignee: v })}
-        options={[{ value: "none", label: t("noAssignee") }, ...people]}
-        trigger={<>{t("filter.assignee")}{f.assignee.length ? <span className="count">{f.assignee.length}</span> : null}</>} align="right" />
-      <Picker label={t("view.filterBy", { name: t("filter.label") })} className="btn btn-sm" multi value={f.label} onChange={(v) => setF({ label: v })}
-        options={ctx.labels.map((l) => ({ value: l.id, label: l.name, icon: <Dot color={l.color} /> }))}
-        trigger={<>{t("filter.label")}{f.label.length ? <span className="count">{f.label.length}</span> : null}</>} align="right" />
-      {ctx.project.feature_cycles && ctx.cycles ? (
-        <Picker label={t("view.filterBy", { name: t("filter.cycle") })} className="btn btn-sm" multi value={f.cycle} onChange={(v) => setF({ cycle: v })}
-          options={[{ value: "none", label: t("noCycle") }, ...ctx.cycles.map((c) => ({ value: c.id, label: c.name, hint: t(`cyc.status.${c.status}`) }))]}
-          trigger={<>{t("filter.cycle")}{f.cycle.length ? <span className="count">{f.cycle.length}</span> : null}</>} align="right" />
-      ) : null}
-      {ctx.project.feature_modules && ctx.modules ? (
-        <Picker label={t("view.filterBy", { name: t("filter.module") })} className="btn btn-sm" multi value={f.module} onChange={(v) => setF({ module: v })}
-          options={[{ value: "none", label: t("noModule") }, ...ctx.modules.map((m) => ({ value: m.id, label: m.name }))]}
-          trigger={<>{t("filter.module")}{f.module.length ? <span className="count">{f.module.length}</span> : null}</>} align="right" />
-      ) : null}
-      <Picker label={t("view.filterBy", { name: t("filter.due") })} className="btn btn-sm" searchable={false} value={f.due ? [f.due] : []} allowClear={t("due.any")} onChange={(v) => setF({ due: (v[0] ?? "") as DueFilter })}
-        options={[{ value: "overdue", label: t("due.overdue") }, { value: "week", label: t("due.week") }]}
-        trigger={<>{f.due ? t(`due.${f.due}` as "due.overdue") : t("filter.due")}</>} align="right" />
-      <Picker label={t("view.filterBy", { name: t("filter.created_by") })} className="btn btn-sm" multi value={f.created_by} onChange={(v) => setF({ created_by: v })}
-        options={people} trigger={<>{t("filter.created_by")}{f.created_by.length ? <span className="count">{f.created_by.length}</span> : null}</>} align="right" />
-      {n ? <button className="btn btn-sm btn-ghost" onClick={() => setView({ filters: { ...EMPTY_FILTERS, q: f.q } })}>{t("view.clear")}</button> : null}
-      <DisplayMenu view={view} setView={setView} />
+    <div className="seg" role="tablist" aria-label={t("view.layout")}>
+      {LAYOUT_ORDER.filter((l) => LAYOUTS.includes(l)).map((l) => (
+        <button key={l} role="tab" aria-selected={view.layout === l} aria-label={t(`view.${l}`)} title={t(`view.${l}`)} className={"seg-tab" + (view.layout === l ? " on" : "")} onClick={() => setView({ layout: l })}>
+          {LAYOUT_ICON[l]}
+        </button>
+      ))}
     </div>
   );
 }
 
-function DisplayMenu({ view, setView }: { view: ViewState; setView: (p: Partial<ViewState>) => void }) {
+/** Funnel button: opens the filter row; accent-tinted while filters apply. */
+export function FiltersToggle({ open, onToggle, count }: { open: boolean; onToggle: () => void; count: number }) {
+  const { t } = useI18n();
+  const on = open || count > 0;
+  return (
+    <button className={"icon-btn bordered" + (on ? " accent" : "")} onClick={onToggle} aria-pressed={open} aria-label={count ? t("view.filtersN", { n: count }) : t("view.filters")} title={t("view.filters")}>
+      {count ? <ListFilterPlus /> : <ListFilter />}
+    </button>
+  );
+}
+
+/** A search box that starts as an icon and opens on click. */
+export function ExpandableSearch({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [open, setOpen] = useState(!!value);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (open) ref.current?.focus();
+  }, [open]);
+  if (!open && !value) {
+    return (
+      <button className="icon-btn" onClick={() => setOpen(true)} aria-label={label} title={label}>
+        <Search />
+      </button>
+    );
+  }
+  return (
+    <span className="expand-search">
+      <Search aria-hidden />
+      <input
+        ref={ref}
+        placeholder={label}
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => !value && setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            onChange("");
+            setOpen(false);
+          }
+        }}
+      />
+      {value ? (
+        <button className="icon-btn icon-btn-xs" onClick={() => (onChange(""), setOpen(false))} aria-label={label}>
+          <X />
+        </button>
+      ) : null}
+    </span>
+  );
+}
+
+type FilterKey = Exclude<keyof Filters, "q">;
+
+/** Applied filters as Plane-style condition pills ("Priority · Urgent, High ×") under the
+ * header, with "Add filter" and "Clear filters". */
+export function FilterRow({ view, setView, ctx, extra }: { view: ViewState; setView: (p: Partial<ViewState>) => void; ctx: PropsCtx; extra?: ReactNode }) {
+  const { t } = useI18n();
+  const f = view.filters;
+  const setF = (p: Partial<Filters>) => setView({ filters: { ...f, ...p } });
+  const [adding, setAdding] = useState<FilterKey | null>(null);
+  const [menu, setMenu] = useState(false);
+  const closeMenu = useCallback(() => setMenu(false), []);
+  const people: Option[] = ctx.members.map((m) => ({ value: m.user_id, label: m.name || m.email, icon: <Avatar name={m.name} email={m.email} src={m.avatar} size={18} /> }));
+  const props: { key: FilterKey; label: string; icon: ReactNode; options: Option[]; single?: boolean; searchable?: boolean }[] = [
+    { key: "priority", label: t("filter.priority"), icon: <SignalHigh />, options: PRIORITIES.map((p) => ({ value: p, label: t(`prio.${p}`), icon: <PriorityIcon p={p} /> })), searchable: false },
+    { key: "state", label: t("filter.state"), icon: <CircleDot />, options: ctx.states.map((s) => ({ value: s.id, label: s.name, icon: <StateIcon group={s.group} color={s.color} /> })) },
+    { key: "assignee", label: t("filter.assignee"), icon: <UserRound />, options: [{ value: "none", label: t("noAssignee") }, ...people] },
+    { key: "label", label: t("filter.label"), icon: <Tag />, options: ctx.labels.map((l) => ({ value: l.id, label: l.name, icon: <Dot color={l.color} /> })) },
+    ...(ctx.project.feature_cycles && ctx.cycles
+      ? [{ key: "cycle" as const, label: t("filter.cycle"), icon: <Contrast />, options: [{ value: "none", label: t("noCycle") }, ...ctx.cycles.map((c) => ({ value: c.id, label: c.name, hint: t(`cyc.status.${c.status}`) }))] }]
+      : []),
+    ...(ctx.project.feature_modules && ctx.modules
+      ? [{ key: "module" as const, label: t("filter.module"), icon: <Boxes />, options: [{ value: "none", label: t("noModule") }, ...ctx.modules.map((m) => ({ value: m.id, label: m.name }))] }]
+      : []),
+    { key: "due", label: t("filter.due"), icon: <CalendarClock />, options: [{ value: "overdue", label: t("due.overdue") }, { value: "week", label: t("due.week") }], single: true, searchable: false },
+    { key: "created_by", label: t("filter.created_by"), icon: <UserPen />, options: people },
+  ];
+  const valueOf = (k: FilterKey): string[] => (k === "due" ? (f.due ? [f.due] : []) : (f[k] as string[]));
+  const set = (k: FilterKey, v: string[]) => (k === "due" ? setF({ due: (v[0] ?? "") as DueFilter }) : setF({ [k]: v } as Partial<Filters>));
+  const applied = props.filter((p) => valueOf(p.key).length > 0 || adding === p.key);
+  const free = props.filter((p) => !applied.includes(p));
+  const n = activeFilterCount(f);
+  return (
+    <div className="filter-row">
+      <div className="filter-strip">
+        {applied.map((p) => {
+          const v = valueOf(p.key);
+          const names = v.map((x) => p.options.find((o) => o.value === x)?.label ?? x);
+          return (
+            <span key={p.key} className="filter-pill">
+              <span className="filter-pill-prop">
+                {p.icon}
+                {p.label}
+              </span>
+              <Picker
+                label={t("view.filterBy", { name: p.label })}
+                className="filter-pill-value"
+                multi={!p.single}
+                searchable={p.searchable ?? true}
+                value={v}
+                onChange={(nv) => set(p.key, nv)}
+                options={p.options}
+                autoOpen={adding === p.key}
+                onClosed={() => setAdding(null)}
+                trigger={<span className="ellipsis">{names.length ? names.join(", ") : t("view.pick")}</span>}
+              />
+              <button className="filter-pill-x" onClick={() => (set(p.key, []), setAdding(null))} aria-label={t("view.removeFilter", { name: p.label })}>
+                <X />
+              </button>
+            </span>
+          );
+        })}
+        {free.length ? (
+          <Popover
+            open={menu}
+            onClose={closeMenu}
+            trigger={
+              <button className="btn btn-sm btn-ghost" onClick={() => setMenu(!menu)} aria-haspopup="menu" aria-expanded={menu}>
+                <Plus />
+                {t("view.addFilter")}
+              </button>
+            }
+          >
+            <div className="menu" role="menu">
+              {free.map((p) => (
+                <button key={p.key} className="menu-item" role="menuitem" onClick={() => (setMenu(false), setAdding(p.key))}>
+                  {p.icon}
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </Popover>
+        ) : null}
+        <span className="grow" />
+        {extra ?? null}
+        {n ? (
+          <button className="btn btn-sm btn-ghost" onClick={() => setView({ filters: { ...EMPTY_FILTERS, q: f.q } })}>
+            {t("view.clear")}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Display: visible properties as toggle pills, then grouping, ordering and options. */
+export function DisplayMenu({ view, setView, compact }: { view: ViewState; setView: (p: Partial<ViewState>) => void; compact?: boolean }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const changed =
+    view.groupBy !== DEFAULT_VIEW.groupBy ||
+    view.orderBy !== DEFAULT_VIEW.orderBy ||
+    view.showSubItems !== DEFAULT_VIEW.showSubItems ||
+    view.showEmptyGroups !== DEFAULT_VIEW.showEmptyGroups ||
+    DISPLAY_KEYS.some((k) => view.display[k] !== DEFAULT_VIEW.display[k]);
+  const grouped = view.layout === "list" || view.layout === "kanban";
   return (
     <Popover
       open={open}
-      onClose={() => setOpen(false)}
-      trigger={<button className="btn btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("view.display")}</button>}
+      onClose={close}
+      right
+      trigger={
+        <button className={compact ? "icon-btn bordered" : "btn"} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={t("view.display")} style={{ position: "relative" }}>
+          <SlidersHorizontal />
+          {compact ? null : t("view.display")}
+          {changed ? <span className="dot-badge" aria-hidden /> : null}
+        </button>
+      }
     >
-      <div className="menu display-menu" style={{ right: 0 }}>
-        <label className="field">
-          <span className="small muted">{t("view.groupBy")}</span>
-          <select className="select select-inline" value={view.groupBy} onChange={(e) => setView({ groupBy: e.target.value as GroupBy })}>
-            {(["state", "priority", "assignee", "label", "none"] as GroupBy[]).map((g) => <option key={g} value={g}>{t(`groupBy.${g}`)}</option>)}
-          </select>
-        </label>
-        <label className="field">
-          <span className="small muted">{t("view.orderBy")}</span>
-          <select className="select select-inline" value={view.orderBy} onChange={(e) => setView({ orderBy: e.target.value as OrderBy })}>
-            {(["manual", "priority", "due_date", "created_at", "updated_at"] as OrderBy[]).map((o) => <option key={o} value={o}>{t(`orderBy.${o}`)}</option>)}
-          </select>
-        </label>
-        <label className="checkbox small"><input type="checkbox" checked={view.showSubItems} onChange={(e) => setView({ showSubItems: e.target.checked })} />{t("view.subItems")}</label>
-        <label className="checkbox small"><input type="checkbox" checked={view.showEmptyGroups} onChange={(e) => setView({ showEmptyGroups: e.target.checked })} />{t("view.emptyGroups")}</label>
-        <div className="menu-sep" />
-        <span className="small muted">{t("view.properties")}</span>
+      <div className="menu display-menu">
+        <div className="menu-label">{t("view.properties")}</div>
         <div className="toggle-chips">
           {DISPLAY_KEYS.map((k) => (
             <button key={k} type="button" className={"toggle-chip" + (view.display[k] ? " on" : "")} aria-pressed={view.display[k]} onClick={() => setView({ display: { ...view.display, [k]: !view.display[k] } })}>
@@ -94,21 +235,29 @@ function DisplayMenu({ view, setView }: { view: ViewState; setView: (p: Partial<
             </button>
           ))}
         </div>
+        {grouped ? (
+          <>
+            <div className="menu-sep" />
+            <label className="display-row">
+              <span className="grow">{t("view.groupBy")}</span>
+              <select className="select select-inline" value={view.groupBy} onChange={(e) => setView({ groupBy: e.target.value as GroupBy })}>
+                {(["state", "priority", "assignee", "label", "none"] as GroupBy[]).map((g) => <option key={g} value={g}>{t(`groupBy.${g}`)}</option>)}
+              </select>
+            </label>
+          </>
+        ) : null}
+        <label className="display-row">
+          <ArrowDownWideNarrow aria-hidden className="faint" />
+          <span className="grow">{t("view.orderBy")}</span>
+          <select className="select select-inline" value={view.orderBy} onChange={(e) => setView({ orderBy: e.target.value as OrderBy })}>
+            {(["manual", "priority", "due_date", "created_at", "updated_at"] as OrderBy[]).map((o) => <option key={o} value={o}>{t(`orderBy.${o}`)}</option>)}
+          </select>
+        </label>
+        <div className="menu-sep" />
+        <label className="menu-item checkbox-row"><input type="checkbox" checked={view.showSubItems} onChange={(e) => setView({ showSubItems: e.target.checked })} />{t("view.subItems")}</label>
+        {grouped ? <label className="menu-item checkbox-row"><input type="checkbox" checked={view.showEmptyGroups} onChange={(e) => setView({ showEmptyGroups: e.target.checked })} />{t("view.emptyGroups")}</label> : null}
       </div>
     </Popover>
   );
 }
 
-/** Small line icons for the layouts (decorative; the tab carries the name). */
-function LayoutIcon({ layout }: { layout: string }) {
-  const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const };
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
-      {layout === "list" ? <path {...p} d="M3 4h10M3 8h10M3 12h10" /> : null}
-      {layout === "kanban" ? <path {...p} d="M3 3v10M8 3v6M13 3v8" /> : null}
-      {layout === "spreadsheet" ? <path {...p} d="M2.5 3.5h11v9h-11zM2.5 7h11M6.5 3.5v9" /> : null}
-      {layout === "calendar" ? <path {...p} d="M2.5 4h11v9h-11zM2.5 7h11M5.5 2.5v3M10.5 2.5v3" /> : null}
-      {layout === "gantt" ? <path {...p} d="M3 4h6M5 8h7M3 12h4" /> : null}
-    </svg>
-  );
-}

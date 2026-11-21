@@ -1,22 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { IntakeTab } from "../components/IntakeTab";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Link, NavLink, Navigate, useNavigate, useParams, useSearchParams } from "react-router";
+import { ChartColumn, Plus } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { patch, post } from "../api/client";
 import type { Project, WorkItem } from "../api/types";
-import { Dialog } from "../components/Dialog";
-import { Editor, type EditorValue } from "../components/Editor";
+import { ProjectBar, type Crumb } from "../components/PageHeader";
+import { CreateItemDialog } from "../components/CreateItem";
 import { PriorityIcon, StateIcon } from "../components/Props";
 import { KanbanLayout, ListLayout } from "../components/Layouts";
 import { CalendarLayout, GanttLayout, SpreadsheetLayout } from "../components/MoreLayouts";
 import { SavedViews } from "../components/SavedViews";
 import { Picker } from "../components/Picker";
-import { ViewBar } from "../components/ViewBar";
+import { DisplayMenu, ExpandableSearch, FilterRow, FiltersToggle, LayoutSwitcher } from "../components/ViewBar";
 import { PRIORITIES } from "../api/types";
 import { activeFilterCount, filtersToQuery, groupItems, useViewState, type Group } from "../lib/view";
 import { ErrorAlert, FullPageSpinner } from "../components/ui";
 import { WorkItemDetail } from "../components/WorkItemDetail";
-import { AssigneesProp, CycleProp, ModulesProp, DateProp, EstimateProp, LabelsProp, PriorityProp, StateProp, type PropsCtx } from "../components/WorkItemProps";
+import type { PropsCtx } from "../components/WorkItemProps";
 import { useI18n } from "../i18n";
 import { errorText } from "../lib/errors";
 import { pcan } from "../lib/perm";
@@ -68,31 +68,11 @@ export interface Scope {
   query: string;
   defaults: Partial<WorkItem>;
   header: ReactNode;
+  /** Crumbs after the section, e.g. the cycle's name. */
+  crumbs?: Crumb[];
 }
 
-export function ProjectBar({ ctx, children }: { ctx: PropsCtx; children?: ReactNode }) {
-  const { t } = useI18n();
-  const ws = useWs();
-  const p = ctx.project;
-  const base = `/${ws.slug}/projects/${p.id}`;
-  return (
-    <div className="proj-bar">
-      <ProjectIcon p={p} size={22} />
-      <h1 className="proj-title">{p.name}</h1>
-      <nav className="proj-tabs" aria-label={p.name}>
-        <NavLink to={base} end className={({ isActive }) => (isActive ? "on" : "")}>{t("ptab.items")}</NavLink>
-        {p.feature_cycles ? <NavLink to={`${base}/cycles`} className={({ isActive }) => (isActive ? "on" : "")}>{t("ptab.cycles")}</NavLink> : null}
-        {p.feature_modules ? <NavLink to={`${base}/modules`} className={({ isActive }) => (isActive ? "on" : "")}>{t("ptab.modules")}</NavLink> : null}
-        {p.feature_pages ? <NavLink to={`${base}/pages`} className={({ isActive }) => (isActive ? "on" : "")}>{t("ptab.pages")}</NavLink> : null}
-        {p.feature_intake ? <IntakeTab slug={ws.slug} pid={p.id} to={`${base}/intake`} /> : null}
-        {pcan.viewWorkItems(p) ? <NavLink to={`${base}/analytics`} className={({ isActive }) => (isActive ? "on" : "")}>{t("ptab.analytics")}</NavLink> : null}
-      </nav>
-      <span className="grow" />
-      {children}
-      <Link to={`${base}/settings`} className="btn btn-sm btn-ghost">{t("nav.settings")}</Link>
-    </div>
-  );
-}
+export { ProjectBar } from "../components/PageHeader";
 
 export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) {
   const { t } = useI18n();
@@ -111,6 +91,7 @@ export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) 
   const peek = params.get("peek");
   const [creating, setCreating] = useState(() => params.get("new") === "1");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [filterRow, setFilterRow] = useState(false);
   useEffect(() => {
     if (params.get("new") === "1") {
       setCreating(true);
@@ -145,22 +126,43 @@ export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) 
   const groups = useMemo(() => groupItems(all, view.groupBy, ctx, view.orderBy, view.showEmptyGroups), [all, view.groupBy, view.orderBy, view.showEmptyGroups, ctx]);
   const onPatch = (id: string, body: Partial<WorkItem>) => update.mutate({ id, body });
   const quickAdd = (g: Group) => <QuickAdd ctx={ctx} group={g} defaults={scope?.defaults} />;
+  const [createDefaults, setCreateDefaults] = useState<Partial<WorkItem> | undefined>(undefined);
+  const onCreateIn = (g: Group) => {
+    setCreateDefaults({ ...scope?.defaults, ...groupDefaults(g) });
+    setCreating(true);
+  };
   const filtered = activeFilterCount(view.filters) > 0 || !!q.trim();
 
+  const nFilters = activeFilterCount(view.filters);
   return (
     <div className="proj-view" style={{ position: "relative" }}>
-      <ProjectBar ctx={ctx}>
+      <ProjectBar
+        ctx={ctx}
+        crumbs={scope?.crumbs}
+        extra={items.isSuccess && !scope?.crumbs ? <span className="badge count-chip" title={t("wi.countTip")}>{all.length}</span> : null}
+      >
+        {scope ? null : <SavedViews ctx={ctx} view={view} setView={setView} />}
+        <ExpandableSearch value={view.filters.q} onChange={(v) => setView({ filters: { ...view.filters, q: v } })} label={t("view.search")} />
+        <LayoutSwitcher view={view} setView={setView} />
+        <FiltersToggle open={filterRow} onToggle={() => setFilterRow((o) => !o)} count={nFilters} />
+        <DisplayMenu view={view} setView={setView} />
+        {pcan.viewWorkItems(p) && !scope ? (
+          <Link to={`/${ws.slug}/projects/${p.id}/analytics`} className="btn">
+            <ChartColumn />
+            {t("ptab.analytics")}
+          </Link>
+        ) : null}
         {pcan.createWorkItem(p) && !p.archived_at ? (
-          <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)} title="C">{t("wi.new")}</button>
+          <button className="btn btn-primary" onClick={() => setCreating(true)} title={`${t("wi.new")} (C)`}>{t("wi.add")}</button>
         ) : null}
       </ProjectBar>
       {scope?.header ?? null}
-      <ViewBar view={view} setView={setView} ctx={ctx} views={scope ? null : <SavedViews ctx={ctx} view={view} setView={setView} />} />
+      {filterRow || nFilters > 0 ? <FilterRow view={view} setView={setView} ctx={ctx} /> : null}
       {!ctx.editable ? <div className="alert alert-warning" style={{ margin: "var(--space-3) var(--space-4) 0" }}>{t("wi.readOnly")}</div> : null}
       <ErrorAlert message={update.isError ? errorText(update.error, t) : null} />
       {items.isSuccess && filtered && all.length === 0 ? <div className="empty">{t("view.noMatch")}</div> : null}
       {view.layout === "kanban" ? (
-        <KanbanLayout groups={groups} ctx={ctx} view={view} onOpen={setPeek} activeId={peek} onPatch={onPatch} quickAdd={quickAdd} />
+        <KanbanLayout groups={groups} ctx={ctx} view={view} onOpen={setPeek} activeId={peek} onPatch={onPatch} quickAdd={quickAdd} onCreateIn={onCreateIn} />
       ) : view.layout === "spreadsheet" ? (
         <SpreadsheetLayout items={all} ctx={ctx} view={view} onOpen={setPeek} activeId={peek} onPatch={onPatch} />
       ) : view.layout === "calendar" ? (
@@ -168,7 +170,7 @@ export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) 
       ) : view.layout === "gantt" ? (
         <GanttLayout items={all} ctx={ctx} view={view} onOpen={setPeek} activeId={peek} onPatch={onPatch} />
       ) : (
-        <ListLayout groups={groups} ctx={ctx} view={view} onOpen={setPeek} activeId={peek} onPatch={onPatch} quickAdd={quickAdd} selected={selected} setSelected={setSelected} />
+        <ListLayout groups={groups} ctx={ctx} view={view} onOpen={setPeek} activeId={peek} onPatch={onPatch} quickAdd={quickAdd} onCreateIn={onCreateIn} selected={selected} setSelected={setSelected} />
       )}
       {selected.size && view.layout === "list" ? <BulkBar ctx={ctx} ids={[...selected]} onDone={() => setSelected(new Set())} /> : null}
       {peek ? (
@@ -176,7 +178,7 @@ export function WorkItemsView({ ctx, scope }: { ctx: PropsCtx; scope?: Scope }) 
           <WorkItemDetail slug={ws.slug} ctx={ctx} id={peek} peek onClose={() => setPeek(null)} />
         </div>
       ) : null}
-      <CreateItemDialog open={creating} onClose={() => setCreating(false)} ctx={ctx} defaults={scope?.defaults} onCreated={(w) => setPeek(w.id)} />
+      {creating ? <CreateItemDialog slug={ws.slug} open={creating} onClose={() => (setCreating(false), setCreateDefaults(undefined))} ctx={ctx} defaults={createDefaults ?? scope?.defaults} onCreated={(w) => setPeek(w.id)} /> : null}
     </div>
   );
 }
@@ -221,6 +223,16 @@ function BulkBar({ ctx, ids, onDone }: { ctx: PropsCtx; ids: string[]; onDone: (
   );
 }
 
+/** Values a new item gets when created in a group. */
+function groupDefaults(group: Group): Partial<WorkItem> {
+  const b: Partial<WorkItem> = {};
+  if (group.kind === "state") b.state_id = group.key;
+  if (group.kind === "priority") b.priority = group.key as WorkItem["priority"];
+  if (group.kind === "assignee" && group.key !== "none") b.assignee_ids = [group.key];
+  if (group.kind === "label" && group.key !== "none") b.label_ids = [group.key];
+  return b;
+}
+
 function QuickAdd({ ctx, group, defaults }: { ctx: PropsCtx; group: Group; defaults?: Partial<WorkItem> }) {
   const { t } = useI18n();
   const ws = useWs();
@@ -230,6 +242,7 @@ function QuickAdd({ ctx, group, defaults }: { ctx: PropsCtx; group: Group; defau
   if (!open) {
     return (
       <button className="list-add" onClick={() => setOpen(true)} data-group={group.state?.name ?? group.key}>
+        <Plus aria-hidden />
         {t("wi.quickAdd")}
       </button>
     );
@@ -254,6 +267,7 @@ function QuickAdd({ ctx, group, defaults }: { ctx: PropsCtx; group: Group; defau
         create.mutate(body, { onError: () => setTitle((cur) => cur || String(body.title)) });
       }}
     >
+      <span className="list-key faint">{ctx.project.identifier}</span>
       <input
         className="inline-input"
         autoFocus
@@ -264,81 +278,9 @@ function QuickAdd({ ctx, group, defaults }: { ctx: PropsCtx; group: Group; defau
         onKeyDown={(e) => e.key === "Escape" && (setOpen(false), setTitle(""))}
         onBlur={() => !title && setOpen(false)}
       />
+      <span className="quick-hint">{t("wi.quickAddHint")}</span>
       {create.isError ? <span className="small" style={{ color: "var(--danger)" }}>{errorText(create.error, t)}</span> : null}
     </form>
-  );
-}
-
-function CreateItemDialog({ open, onClose, ctx, onCreated, defaults }: { open: boolean; onClose: () => void; ctx: PropsCtx; onCreated: (w: WorkItem) => void; defaults?: Partial<WorkItem> }) {
-  const { t } = useI18n();
-  const ws = useWs();
-  const create = useCreateItem(ws.slug, ctx.project.id);
-  const blank = (): WorkItem => ({
-    id: "", project_id: ctx.project.id, sequence: 0, title: "", state_id: ctx.states.find((s) => s.is_default)?.id ?? ctx.states[0]!.id,
-    priority: "none", start_date: null, due_date: null, estimate: null, parent_id: null, sort_order: 0, created_by: "", created_at: "",
-    updated_at: "", completed_at: null, archived_at: null, assignee_ids: ctx.project.default_assignee_id ? [ctx.project.default_assignee_id] : [], label_ids: [], sub_item_count: 0,
-    cycle_id: null, module_ids: [], ...defaults,
-  });
-  const [draft, setDraft] = useState<WorkItem>(blank);
-  const [desc, setDesc] = useState<EditorValue | null>(null);
-  const [more, setMore] = useState(false);
-  const [editorKey, setEditorKey] = useState(0);
-  const onPatch = (b: Partial<WorkItem>) => setDraft((d) => ({ ...d, ...b }));
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    // Which button submitted: state set in its onClick would not be visible yet here.
-    const asDraft = ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.dataset.draft === "1";
-    create.mutate(
-      {
-        is_draft: asDraft,
-        title: draft.title, state_id: draft.state_id, priority: draft.priority, assignee_ids: draft.assignee_ids, label_ids: draft.label_ids,
-        start_date: draft.start_date, due_date: draft.due_date, estimate: draft.estimate, cycle_id: draft.cycle_id ?? null, module_ids: draft.module_ids ?? [],
-        description_json: desc?.json ?? null, description_html: desc?.html ?? "",
-      },
-      {
-        onSuccess: (w) => {
-          setDraft(blank());
-          setDesc(null);
-          setEditorKey((k) => k + 1);
-          if (!more) {
-            onClose();
-            if (!w.is_draft) onCreated(w);
-          }
-        },
-      },
-    );
-  };
-  return (
-    <Dialog open={open} onClose={onClose} title={t("wi.new")} width={680}>
-      <form className="form" onSubmit={submit}>
-        <ErrorAlert message={create.isError ? errorText(create.error, t) : null} />
-        <input className="wi-title" style={{ fontSize: "var(--text-xl)" }} autoFocus placeholder={t("wi.titlePlaceholder")} aria-label={t("wi.title")} value={draft.title} onChange={(e) => onPatch({ title: e.target.value })} maxLength={255} required />
-        <div className="card">
-          <Editor key={editorKey} placeholder={t("wi.descriptionPlaceholder")} ariaLabel={t("wi.description")} onChange={setDesc} debounce={150} minHeight={140} />
-        </div>
-        <div className="chip-row">
-          <StateProp item={draft} ctx={ctx} onPatch={onPatch} />
-          <PriorityProp item={draft} ctx={ctx} onPatch={onPatch} />
-          <AssigneesProp item={draft} ctx={ctx} onPatch={onPatch} />
-          <LabelsProp item={draft} ctx={ctx} onPatch={onPatch} />
-          <DateProp item={draft} field="start_date" ctx={ctx} onPatch={onPatch} />
-          <DateProp item={draft} field="due_date" ctx={ctx} onPatch={onPatch} />
-          <EstimateProp item={draft} ctx={ctx} onPatch={onPatch} />
-          <CycleProp item={draft} ctx={ctx} onPatch={onPatch} />
-          <ModulesProp item={draft} ctx={ctx} onPatch={onPatch} />
-        </div>
-        <div className="row-flex">
-          <label className="checkbox small">
-            <input type="checkbox" checked={more} onChange={(e) => setMore(e.target.checked)} />
-            {t("wi.createMore")}
-          </label>
-          <span className="row-flex" style={{ gap: "var(--space-2)" }}>
-            <button className="btn" data-draft="1" disabled={create.isPending || !draft.title.trim()}>{t("draft.save")}</button>
-            <button className="btn btn-primary" disabled={create.isPending || !draft.title.trim()}>{t("wi.create")}</button>
-          </span>
-        </div>
-      </form>
-    </Dialog>
   );
 }
 

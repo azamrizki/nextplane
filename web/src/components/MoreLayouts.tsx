@@ -1,4 +1,5 @@
 // Spreadsheet, calendar and timeline (Gantt) layouts.
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useMemo, useRef, useState } from "react";
@@ -29,7 +30,7 @@ export function SpreadsheetLayout({ items, ctx, view, onOpen, activeId, onPatch 
   const v = useVirtualizer({ count: rows.length, getScrollElement: () => ref.current, estimateSize: () => 38, overscan: 15 });
   const cols = [
     ["key", t("col.key"), "80px"],
-    ["title", t("col.title"), "minmax(240px, 1fr)"],
+    ["title", t("col.title"), "360px"],
     ["state", t("wi.state"), "150px"],
     ["priority", t("wi.priority"), "130px"],
     ["assignees", t("wi.assignees"), "150px"],
@@ -112,9 +113,9 @@ export function CalendarLayout({ items, ctx, onOpen, onPatch }: Props) {
   return (
     <div className="cal">
       <div className="cal-bar">
-        <button className="icon-btn" aria-label={t("cal.prev")} onClick={() => shift(-1)}>‹</button>
+        <button className="icon-btn" aria-label={t("cal.prev")} onClick={() => shift(-1)}><ChevronLeft /></button>
         <b className="cal-month">{label}</b>
-        <button className="icon-btn" aria-label={t("cal.next")} onClick={() => shift(1)}>›</button>
+        <button className="icon-btn" aria-label={t("cal.next")} onClick={() => shift(1)}><ChevronRight /></button>
         <button className="btn btn-sm" onClick={() => setMonth(now.slice(0, 7))}>{t("cal.today")}</button>
         <span className="grow" />
         {noDue ? <span className="faint small">{t("cal.noDue", { n: noDue })}</span> : null}

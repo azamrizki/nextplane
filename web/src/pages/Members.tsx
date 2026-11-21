@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { UsersRound } from "lucide-react";
+import { WsSettingsFrame } from "../components/SettingsFrame";
 import { useState, type FormEvent } from "react";
 import { del, get, patch, post } from "../api/client";
 import type { Invite, InviteResult, WsMember, WsRole } from "../api/types";
@@ -50,15 +52,17 @@ export function MembersPage() {
 
   if (members.isLoading) return <FullPageSpinner />;
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1>{t("members.title")}</h1>
-        {can.invite(ws) ? (
+    <WsSettingsFrame
+      ws={ws}
+      crumbs={[{ icon: <UsersRound />, label: t("members.title") }]}
+      actions={
+        can.invite(ws) ? (
           <button className="btn btn-primary" onClick={() => setInviteOpen(true)}>
             {t("members.invite")}
           </button>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
       <ErrorAlert message={error} />
       <section className="card rows">
         {(members.data ?? []).map((m) => {
@@ -138,7 +142,7 @@ export function MembersPage() {
         confirmLabel={t("common.remove")}
         danger
       />
-    </div>
+    </WsSettingsFrame>
   );
 }
 

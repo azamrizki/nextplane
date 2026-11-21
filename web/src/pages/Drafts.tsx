@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FilePen } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
 import { Link } from "react-router";
 import { del, get, post } from "../api/client";
 import type { WorkItem } from "../api/types";
@@ -27,7 +29,7 @@ export function DraftsPage() {
   const rows = q.data ?? [];
   return (
     <div className="page page-wide">
-      <div className="page-head"><h1>{t("nav.drafts")}</h1></div>
+      <PageHeader crumbs={[{ icon: <FilePen />, label: t("nav.drafts") }]} />
       {q.isSuccess && rows.length === 0 ? <div className="card empty">{t("drafts.empty")}</div> : null}
       {rows.length ? (
         <div className="rows card">

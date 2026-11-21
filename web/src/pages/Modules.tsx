@@ -1,3 +1,4 @@
+import { ChevronDown, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
@@ -50,16 +51,13 @@ export function ModulesPage() {
   return (
     <div className="proj-view">
       <ProjectBar ctx={ctx}>
-        {pcan.createWorkItem(p) && !p.archived_at ? <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>{t("mod.new")}</button> : null}
+        <div className="seg" role="tablist">
+          <button role="tab" aria-selected={!archived} className={!archived ? "on" : ""} onClick={() => setArchived(false)}>{t("proj.active")}</button>
+          <button role="tab" aria-selected={archived} className={archived ? "on" : ""} onClick={() => setArchived(true)}>{t("proj.archived")}</button>
+        </div>
+        {pcan.createWorkItem(p) && !p.archived_at ? <button className="btn btn-primary" onClick={() => setCreating(true)}>{t("mod.new")}</button> : null}
       </ProjectBar>
       <div className="page page-wide">
-        <div className="page-head">
-          <h1>{t("mod.title")}</h1>
-          <div className="seg" role="tablist">
-            <button role="tab" aria-selected={!archived} className={!archived ? "on" : ""} onClick={() => setArchived(false)}>{t("proj.active")}</button>
-            <button role="tab" aria-selected={archived} className={archived ? "on" : ""} onClick={() => setArchived(true)}>{t("proj.archived")}</button>
-          </div>
-        </div>
         {list.isSuccess && mods.length === 0 ? <div className="card empty">{t("mod.empty")}</div> : null}
         <div className="proj-grid">
           {mods.map((m) => {
@@ -162,7 +160,7 @@ export function ModulePage() {
   if (!ctx || mod.isLoading) return <FullPageSpinner />;
   if (!mod.data) return <Navigate to=".." relative="path" replace />;
   const m = mod.data;
-  return <WorkItemsView key={m.id} ctx={ctx} scope={{ key: `module:${m.id}`, query: `module=${m.id}`, defaults: { module_ids: [m.id] }, header: <ModuleHeader ctx={ctx} m={m} /> }} />;
+  return <WorkItemsView key={m.id} ctx={ctx} scope={{ key: `module:${m.id}`, query: `module=${m.id}`, defaults: { module_ids: [m.id] }, header: <ModuleHeader ctx={ctx} m={m} />, crumbs: [{ label: m.name }] }} />;
 }
 
 function ModuleHeader({ ctx, m }: { ctx: PropsCtx; m: Module }) {
@@ -194,14 +192,12 @@ function ModuleHeader({ ctx, m }: { ctx: PropsCtx; m: Module }) {
   return (
     <div className="cycle-head">
       <div className="cycle-title">
-        <Link to=".." relative="path" className="faint small">{t("mod.title")}</Link>
-        <span className="faint small">›</span>
         <b>{m.name}</b>
         <ModuleStatusBadge status={m.status} />
         <span className="faint small">{m.start_date && m.target_date ? `${fmtDate(m.start_date, lang)} – ${fmtDate(m.target_date, lang)}` : ""}</span>
         {lead ? <span className="prop-inline small"><Avatar name={lead.name} email={lead.email} src={lead.avatar} size={18} />{lead.name || lead.email}</span> : null}
         <span className="grow" />
-        <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("cyc.progress")} {open ? "▴" : "▾"}</button>
+        <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("cyc.progress")} <ChevronDown className={open ? "rot180" : ""} /></button>
         {ctx.editable ? <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>{t("common.edit")}</button> : null}
         {ctx.editable ? <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(modulesPath(ws.slug, pid, m.id) + (m.archived_at ? "/unarchive" : "/archive")))}>{m.archived_at ? t("cyc.unarchive") : t("cyc.archive")}</button> : null}
         {pcan.deleteWorkItem(ctx.project, m.created_by === me.id) && !ctx.project.archived_at ? <button className="btn btn-sm btn-ghost" onClick={() => setConfirm(true)}>{t("common.delete")}</button> : null}
@@ -214,7 +210,7 @@ function ModuleHeader({ ctx, m }: { ctx: PropsCtx; m: Module }) {
           {(links.data ?? []).map((l) => (
             <span key={l.id} className="label-pill">
               <a href={l.url} target="_blank" rel="noopener noreferrer nofollow">{l.title || l.url}</a>
-              {ctx.editable ? <button className="link-btn" aria-label={t("common.remove")} onClick={() => act(() => del(`${modulesPath(ws.slug, pid, m.id)}/links/${l.id}`))}>✕</button> : null}
+              {ctx.editable ? <button className="link-btn" aria-label={t("common.remove")} onClick={() => act(() => del(`${modulesPath(ws.slug, pid, m.id)}/links/${l.id}`))}><X /></button> : null}
             </span>
           ))}
           {ctx.editable ? (

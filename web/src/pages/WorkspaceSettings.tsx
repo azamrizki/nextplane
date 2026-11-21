@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { WsSettingsFrame } from "../components/SettingsFrame";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { del, patch, post } from "../api/client";
@@ -53,10 +54,7 @@ export function WorkspaceSettingsPage() {
   };
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1>{t("ws.settings.title")}</h1>
-      </div>
+    <WsSettingsFrame ws={ws} crumbs={[{ label: t("ws.settings.general") }]}>
       <section className="card">
         <div className="card-head">{t("ws.settings.general")}</div>
         <form className="card-body form" onSubmit={onSubmit}>
@@ -177,6 +175,6 @@ export function WorkspaceSettingsPage() {
         danger
         busy={leave.isPending}
       />
-    </div>
+    </WsSettingsFrame>
   );
 }

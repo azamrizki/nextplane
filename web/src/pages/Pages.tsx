@@ -1,4 +1,5 @@
 // Project pages: a tree on the left, the live editor on the right (SPRINT S3.1).
+import { Lock } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, useNavigate, useParams } from "react-router";
@@ -118,7 +119,7 @@ export function PagesPage() {
                 >
                   <span className="page-link-title">{pg.title || t("pg.untitled")}</span>
                   {pg.access === "private" ? <span className="page-flag" title={t("pg.private")} aria-label={t("pg.private")}>◐</span> : null}
-                  {pg.locked_at ? <span className="page-flag" title={t("pg.lock")} aria-label={t("pg.lock")}>🔒</span> : null}
+                  {pg.locked_at ? <span className="page-flag" title={t("pg.lock")} aria-label={t("pg.lock")}><Lock /></span> : null}
                 </NavLink>
               </li>
             ))}

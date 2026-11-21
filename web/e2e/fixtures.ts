@@ -87,3 +87,15 @@ export async function login(page: import("@playwright/test").Page, hub: Hub, ema
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).not.toHaveURL(/\/login$/);
 }
+
+/** Opens the picker of a filter (Plane-style filter row): an applied one, or "Add filter". */
+export async function openFilter(page: import("@playwright/test").Page, prop: string) {
+  const applied = page.getByRole("button", { name: `Filter: ${prop}` });
+  if (await applied.count()) {
+    await applied.click();
+    return;
+  }
+  if (!(await page.locator(".filter-row").count())) await page.getByRole("button", { name: /^Filters/ }).click();
+  await page.getByRole("button", { name: "Add filter" }).click();
+  await page.getByRole("menuitem", { name: prop, exact: true }).click();
+}

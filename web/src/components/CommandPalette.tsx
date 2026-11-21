@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { get } from "../api/client";
 import type { MyWorkspace } from "../api/types";
@@ -8,7 +8,10 @@ import { useProjects } from "../lib/projects";
 import { useWorkspaces } from "../lib/queries";
 import { useTheme } from "../lib/theme";
 import { Dialog } from "./Dialog";
+import { emitShell, useShellEvent } from "../lib/shell";
+import { SEQUENCES } from "../lib/shortcuts";
 import { WsMark } from "./Avatar";
+import { Briefcase, Keyboard, ListTodo, Plus, Search, Settings, SunMoon, UserRound, UsersRound } from "lucide-react";
 
 interface Hit {
   kind: string;
@@ -61,6 +64,8 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
+  useShellEvent("palette", useCallback(() => { setQ(""); setOpen(true); }, []));
+  useShellEvent("shortcuts", useCallback(() => setHelp(true), []));
   useEffect(() => {
     const h = setTimeout(() => setDebounced(q.trim()), 150);
     return () => clearTimeout(h);
@@ -80,13 +85,13 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
     const match = (s: string) => !ql || s.toLowerCase().includes(ql);
     const out: Entry[] = [];
     const actions: Entry[] = [
-      ...(projectId ? [{ id: "new", section: t("pal.actions"), label: t("pal.newItem"), hint: "C", run: () => go(`/${ws.slug}/projects/${projectId}?new=1`) }] : []),
-      { id: "projects", section: t("pal.actions"), label: t("pal.goProjects"), run: () => go(`/${ws.slug}/projects`) },
-      { id: "members", section: t("pal.actions"), label: t("pal.goMembers"), run: () => go(`/${ws.slug}/settings/members`) },
-      { id: "settings", section: t("pal.actions"), label: t("pal.goSettings"), run: () => go(`/${ws.slug}/settings`) },
-      { id: "profile", section: t("pal.actions"), label: t("pal.goProfile"), run: () => go(`/profile`) },
-      { id: "theme", section: t("pal.actions"), label: t("pal.toggleTheme"), run: () => { setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"); setOpen(false); } },
-      { id: "keys", section: t("pal.actions"), label: t("pal.shortcuts"), hint: "?", run: () => { setOpen(false); setHelp(true); } },
+      { id: "new", section: t("pal.actions"), label: t("pal.newItem"), hint: "N I", icon: <Plus />, run: () => { setOpen(false); emitShell("create-item"); } },
+      { id: "projects", section: t("pal.actions"), label: t("pal.goProjects"), hint: "G P", icon: <Briefcase />, run: () => go(`/${ws.slug}/projects`) },
+      { id: "members", section: t("pal.actions"), label: t("pal.goMembers"), icon: <UsersRound />, run: () => go(`/${ws.slug}/settings/members`) },
+      { id: "settings", section: t("pal.actions"), label: t("pal.goSettings"), hint: "G S", icon: <Settings />, run: () => go(`/${ws.slug}/settings`) },
+      { id: "profile", section: t("pal.actions"), label: t("pal.goProfile"), icon: <UserRound />, run: () => go(`/profile`) },
+      { id: "theme", section: t("pal.actions"), label: t("pal.toggleTheme"), icon: <SunMoon />, run: () => { setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"); setOpen(false); } },
+      { id: "keys", section: t("pal.actions"), label: t("pal.shortcuts"), hint: "?", icon: <Keyboard />, run: () => { setOpen(false); setHelp(true); } },
     ];
     out.push(...actions.filter((a) => match(a.label)));
     for (const p of projects.data ?? []) {
@@ -99,6 +104,7 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
         out.push({
           id: `w:${h.work_item_id}`,
           section: t("pal.items"),
+          icon: <ListTodo />,
           label: h.title,
           hint: `${h.identifier}-${h.sequence}`,
           run: () => go(`/${ws.slug}/projects/${h.project_id}/work-items/${h.work_item_id}`),
@@ -134,9 +140,12 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
   let lastSection = "";
   return (
     <>
-      <Dialog open={open} onClose={() => setOpen(false)} title={t("pal.placeholder")} width={620}>
+      <Dialog open={open} onClose={() => setOpen(false)} title={t("pal.placeholder")} width={672} bare>
         <div className="palette" onKeyDown={onKey}>
-          <input className="input palette-input" autoFocus placeholder={t("pal.placeholder")} aria-label={t("pal.placeholder")} value={q} onChange={(e) => setQ(e.target.value)} role="combobox" aria-expanded="true" aria-controls="palette-list" />
+          <div className="palette-search">
+            <Search aria-hidden />
+            <input className="palette-input" autoFocus placeholder={t("pal.placeholder")} aria-label={t("pal.placeholder")} value={q} onChange={(e) => setQ(e.target.value)} role="combobox" aria-expanded="true" aria-controls="palette-list" />
+          </div>
           <div className="palette-list" id="palette-list" role="listbox" ref={listRef}>
             {entries.map((e, i) => {
               const head = e.section !== lastSection ? <div className="menu-label">{e.section}</div> : null;
@@ -147,27 +156,31 @@ export function CommandPalette({ ws }: { ws: MyWorkspace }) {
                   <button type="button" role="option" aria-selected={i === index} className={"menu-item" + (i === index ? " focused" : "")} onMouseEnter={() => setIndex(i)} onClick={e.run}>
                     {e.icon ?? null}
                     <span className="grow ellipsis">{e.label}</span>
-                    {e.hint ? <span className="faint small mono">{e.hint}</span> : null}
+                    {e.hint ? <kbd className="keycap">{e.hint}</kbd> : null}
                   </button>
                 </div>
               );
             })}
           </div>
-          <div className="faint small">{t("pal.hint")}</div>
+          <div className="palette-foot">{t("pal.hint")}</div>
         </div>
       </Dialog>
       <Dialog open={help} onClose={() => setHelp(false)} title={t("keys.title")}>
         <dl className="keys">
           {[
             ["Ctrl/⌘ K", t("keys.palette")],
+            ["Ctrl/⌘ B", t("keys.sidebar")],
+            ["Ctrl/⌘ /", t("keys.help")],
             ["C", t("keys.create")],
             ["Esc", t("keys.close")],
             ["X", t("keys.select")],
             ["Ctrl/⌘ Enter", t("keys.submit")],
-            ["?", t("keys.help")],
+            ...SEQUENCES.map((q) => [q.keys.toUpperCase().replace(" ", ` ${t("keys.then")} `), t(`keys.seq.${q.action}` as "keys.seq.home")]),
           ].map(([k, d]) => (
             <div key={k} className="keys-row">
-              <dt><kbd>{k}</kbd></dt>
+              <dt>{k!.split(` ${t("keys.then")} `).map((part, i) => (
+                <span key={i}>{i ? <span className="faint small"> {t("keys.then")} </span> : null}<kbd className="keycap">{part}</kbd></span>
+              ))}</dt>
               <dd>{d}</dd>
             </div>
           ))}

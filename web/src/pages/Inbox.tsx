@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCheck, Inbox as InboxIcon } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { get, post } from "../api/client";
@@ -68,15 +70,19 @@ export function InboxPage() {
   const rows = list.data ?? [];
   return (
     <div className="page page-wide">
-      <div className="page-head">
-        <h1>{t("nav.inbox")}</h1>
-        <div className="seg" role="tablist">
-          {(["unread", "all", "snoozed", "archived"] as Filter[]).map((f) => (
-            <button key={f} role="tab" aria-selected={filter === f} className={filter === f ? "on" : ""} onClick={() => setFilter(f)}>{t(`inbox.${f}`)}</button>
-          ))}
-        </div>
-        {filter === "unread" && rows.length ? <button className="btn btn-sm" onClick={() => readAll.mutate()}>{t("inbox.readAll")}</button> : null}
-      </div>
+      <PageHeader
+        crumbs={[{ icon: <InboxIcon />, label: t("nav.inbox") }]}
+        actions={
+          <>
+            {filter === "unread" && rows.length ? <button className="btn" onClick={() => readAll.mutate()}><CheckCheck />{t("inbox.readAll")}</button> : null}
+            <div className="seg" role="tablist">
+              {(["unread", "all", "snoozed", "archived"] as Filter[]).map((f) => (
+                <button key={f} role="tab" aria-selected={filter === f} className={filter === f ? "on" : ""} onClick={() => setFilter(f)}>{t(`inbox.${f}`)}</button>
+              ))}
+            </div>
+          </>
+        }
+      />
       {list.isSuccess && rows.length === 0 ? <div className="card empty">{t("inbox.empty")}</div> : null}
       {rows.length ? (
         <ol className="rows card inbox" aria-label={t("nav.inbox")}>

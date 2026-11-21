@@ -1,3 +1,4 @@
+import { KeyRound } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { del, get, post } from "../api/client";
@@ -23,7 +24,7 @@ function TokenRow({ tk, onRevoke }: { tk: Token; onRevoke?: () => void }) {
   const d = (s: string) => new Date(s).toLocaleDateString(lang === "id" ? "id-ID" : "en-US");
   return (
     <div className="row">
-      <span aria-hidden>🔑</span>
+      <KeyRound aria-hidden className="inline-icon" />
       <div className="row-main">
         <span>{tk.name}</span>
         <span className="faint small">

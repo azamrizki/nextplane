@@ -56,7 +56,7 @@ test("a guest asks, the admin accepts, the guest sees the outcome", async ({ pag
 
   // Ana sees the count, opens it and accepts.
   await page.goto(projectUrl + "/intake");
-  await expect(page.locator(".tab-count")).toHaveText("1");
+  await expect(page.locator(".sidebar .side-count")).toHaveText("1");
   await page.locator(".intake-row", { hasText: "Add CSV export" }).click();
   await expect(page.locator(".intake-detail")).toContainText("We need it for the monthly report.");
   if (shots) await page.screenshot({ path: `${shots}/intake.png` });

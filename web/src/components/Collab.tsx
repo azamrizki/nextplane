@@ -1,4 +1,5 @@
 // Comments, reactions, attachments, links and the subscribe button on a work item.
+import { Link as LinkIcon, Bell, BellOff, FileImage, FileText, SmilePlus, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { ApiError, del, get, patch, post } from "../api/client";
@@ -82,7 +83,7 @@ export function Reactions({ list, onToggle, canReact }: { list: Reaction[]; onTo
       ))}
       {canReact ? (
         <span className="popover-wrap">
-          <button type="button" className="reaction add" aria-label={t("react.add")} onClick={() => setOpen((o) => !o)}>☺+</button>
+          <button type="button" className="reaction add" aria-label={t("react.add")} onClick={() => setOpen((o) => !o)}><SmilePlus /></button>
           {open ? (
             <span className="popover emoji-pop" onMouseLeave={() => setOpen(false)}>
               {EMOJI.map((e) => (
@@ -256,12 +257,12 @@ export function Attachments({ slug, ctx, item }: { slug: string; ctx: PropsCtx; 
                   <img src={`/api/v1/files/${f.id}`} alt="" className="file-thumb" />
                 </button>
               ) : (
-                <span className="file-icon">{f.mime === "application/pdf" ? "📕" : "📄"}</span>
+                <span className="file-icon">{f.mime.startsWith("image/") ? <FileImage /> : <FileText />}</span>
               )}
               <a className="ellipsis grow" href={`/api/v1/files/${f.id}`} target="_blank" rel="noreferrer">{f.file_name}</a>
               <span className="faint small">{fmtSize(f.size)}</span>
               {pcan.deleteWorkItem(ctx.project, f.uploaded_by === me.id) && ctx.editable ? (
-                <button className="icon-btn" aria-label={t("common.delete")} onClick={async () => { try { await del(`${base}/${f.id}`); qc.invalidateQueries({ queryKey: key }); } catch (e) { setError(errorText(e, t)); } }}>✕</button>
+                <button className="icon-btn" aria-label={t("common.delete")} onClick={async () => { try { await del(`${base}/${f.id}`); qc.invalidateQueries({ queryKey: key }); } catch (e) { setError(errorText(e, t)); } }}><X /></button>
               ) : null}
             </div>
           ))}
@@ -318,9 +319,9 @@ export function Links({ slug, ctx, item }: { slug: string; ctx: PropsCtx; item: 
         <div className="rows card">
           {links.map((l) => (
             <div key={l.id} className="row">
-              <span aria-hidden>🔗</span>
+              <LinkIcon aria-hidden className="link-icon" />
               <a className="ellipsis grow" href={l.url} target="_blank" rel="noopener noreferrer nofollow">{l.title || l.url}</a>
-              {ctx.editable ? <button className="icon-btn" aria-label={t("common.remove")} onClick={async () => { await del(`${base}/${l.id}`); qc.invalidateQueries({ queryKey: key }); }}>✕</button> : null}
+              {ctx.editable ? <button className="icon-btn" aria-label={t("common.remove")} onClick={async () => { await del(`${base}/${l.id}`); qc.invalidateQueries({ queryKey: key }); }}><X /></button> : null}
             </div>
           ))}
         </div>
@@ -342,7 +343,8 @@ export function SubscribeButton({ slug, ctx, item }: { slug: string; ctx: PropsC
   });
   return (
     <button className="btn btn-sm btn-ghost" title={t("sub.hint")} onClick={() => toggle.mutate()} disabled={toggle.isPending || q.isLoading} aria-pressed={on}>
-      {on ? `🔔 ${t("sub.unsubscribe")}` : `🔕 ${t("sub.subscribe")}`}
+      {on ? <BellOff /> : <Bell />}
+      {on ? t("sub.unsubscribe") : t("sub.subscribe")}
     </button>
   );
 }

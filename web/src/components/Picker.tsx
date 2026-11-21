@@ -1,3 +1,4 @@
+import { Check, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useT } from "../i18n";
 
@@ -22,6 +23,9 @@ export function Picker({
   allowClear,
   searchable = true,
   align = "left",
+  autoOpen,
+  onClosed,
+  title,
 }: {
   label: string;
   options: Option[];
@@ -34,9 +38,19 @@ export function Picker({
   allowClear?: string;
   searchable?: boolean;
   align?: "left" | "right";
+  /** Open as soon as it mounts (e.g. a filter that was just added). */
+  autoOpen?: boolean;
+  onClosed?: () => void;
+  title?: string;
 }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpenRaw] = useState(!!autoOpen);
+  const setOpen = (o: boolean | ((x: boolean) => boolean)) =>
+    setOpenRaw((cur) => {
+      const next = typeof o === "function" ? o(cur) : o;
+      if (cur && !next) onClosed?.();
+      return next;
+    });
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
@@ -88,6 +102,7 @@ export function Picker({
         className={className}
         disabled={disabled}
         aria-label={label}
+        title={title}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={(e) => {
@@ -100,8 +115,13 @@ export function Picker({
       </button>
       {open ? (
         <div className={"popover" + (align === "right" ? " popover-right" : "")} onClick={(e) => e.stopPropagation()}>
-          <div className="menu" style={{ width: 240 }}>
-            {searchable ? <input className="menu-search" autoFocus placeholder={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("common.search")} /> : null}
+          <div className="menu picker-menu">
+            {searchable ? (
+              <div className="menu-search-row">
+                <Search aria-hidden />
+                <input className="menu-search" autoFocus placeholder={t("common.search")} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("common.search")} />
+              </div>
+            ) : null}
             <div role="listbox" aria-label={label} aria-multiselectable={multi} tabIndex={searchable ? -1 : 0} autoFocus={!searchable} style={{ outline: "none" }}>
               {shown.length === 0 ? <div className="menu-label">{t("common.noResults")}</div> : null}
               {shown.map((o, i) => {
@@ -116,10 +136,11 @@ export function Picker({
                     onMouseEnter={() => setFocus(i)}
                     onClick={() => pick(o.value)}
                   >
+                    {multi ? <span className={"menu-checkbox" + (on ? " on" : "")} aria-hidden>{on ? <Check /> : null}</span> : null}
                     {o.icon ?? null}
                     <span className="grow ellipsis">{o.label}</span>
                     {o.hint ? <span className="faint small">{o.hint}</span> : null}
-                    {on ? <span className="check">✓</span> : null}
+                    {multi ? null : on ? <Check className="menu-check" aria-hidden /> : null}
                   </button>
                 );
               })}

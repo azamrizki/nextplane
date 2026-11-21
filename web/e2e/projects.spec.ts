@@ -21,10 +21,11 @@ test("create a project and configure states, labels, estimates and features", as
   await expect(dlg.getByLabel("Identifier")).toHaveValue("MA");
   await dlg.getByLabel("Description (optional)").fill("The Android and iOS apps.");
   await dlg.getByRole("button", { name: "Create project" }).click();
-  await expect(page.getByRole("heading", { name: "Mobile App" })).toBeVisible();
-  await expect(page.locator(".sidebar").getByRole("link", { name: /Mobile App/ })).toBeVisible();
+  await expect(page.locator(".crumbs").getByRole("link", { name: "Mobile App" })).toBeVisible();
+  await expect(page.locator(".sidebar .side-project-toggle", { hasText: "Mobile App" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Settings" }).last().click();
+  await page.locator(".sidebar").getByRole("button", { name: "Mobile App actions" }).click();
+  await page.getByRole("menuitem", { name: "Settings" }).click();
   await page.getByRole("link", { name: "States" }).click();
   const started = page.locator(".group-head").filter({ has: page.getByText("Started", { exact: true }) });
   await started.getByRole("button", { name: "+ Add state" }).click();
@@ -74,8 +75,9 @@ test("a member sees public projects and joins; private stays hidden", async ({ p
   await expect(bob.getByText("Secret")).toHaveCount(0);
   if (shots) await bob.screenshot({ path: `${shots}/projects-list.png` });
   await bob.getByRole("button", { name: "Join" }).click();
-  await expect(bob.getByRole("heading", { name: "Mobile App" })).toBeVisible();
-  await bob.getByRole("link", { name: "Settings" }).last().click();
+  await expect(bob.locator(".crumbs").getByRole("link", { name: "Mobile App" })).toBeVisible();
+  await bob.locator(".sidebar").getByRole("button", { name: "Mobile App actions" }).click();
+  await bob.getByRole("menuitem", { name: "Settings" }).click();
   await expect(bob.getByLabel("Project name")).toBeDisabled();
   await bobCtx.close();
 });

@@ -1,4 +1,4 @@
-import { ADMIN, expect, login, test } from "./fixtures";
+import { ADMIN, expect, login, test, openFilter } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -58,7 +58,7 @@ test("create a cycle, add items, see progress and burn-down", async ({ page, hub
   // The work items page shows the cycle chip and filter.
   await page.goto(projectUrl);
   await expect(page.locator(".list-row")).toHaveCount(3);
-  await page.getByRole("button", { name: "Filter: Cycle" }).click();
+  await openFilter(page, "Cycle");
   await page.getByRole("option", { name: /No cycle/ }).click();
   await page.keyboard.press("Escape");
   await expect(page.locator(".list-row")).toHaveCount(0);

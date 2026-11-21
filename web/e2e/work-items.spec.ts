@@ -1,4 +1,4 @@
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, test, openFilter } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -119,7 +119,7 @@ test("kanban drag, filters and bulk edit", async ({ page, hub }) => {
   await page.goto(projectUrl);
 
   // Filters: priority Urgent leaves one item.
-  await page.getByRole("button", { name: "Filter: Priority" }).click();
+  await openFilter(page, "Priority");
   await page.getByRole("option", { name: "Urgent" }).click();
   await page.keyboard.press("Escape");
   await expect(page.locator(".list-row")).toHaveCount(1);
@@ -133,7 +133,7 @@ test("kanban drag, filters and bulk edit", async ({ page, hub }) => {
   await bar.getByRole("button", { name: "Priority" }).click();
   await page.getByRole("option", { name: "High" }).click();
   await bar.getByRole("button", { name: "Clear selection" }).click();
-  await page.getByRole("button", { name: "Filter: Priority" }).click();
+  await openFilter(page, "Priority");
   await page.getByRole("option", { name: "High" }).click();
   await page.keyboard.press("Escape");
   await expect(page.locator(".list-row")).toHaveCount(2);

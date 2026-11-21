@@ -1,4 +1,6 @@
 // Analytics (SPRINT S3.4): an overview (tiles, weekly trend, breakdowns) and custom charts
+import { ChartColumn } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
 // (any dimension, count or points, optionally segmented), for the workspace or one project.
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
@@ -75,9 +77,7 @@ export function AnalyticsPage() {
   if (ws.role === "guest") return <Navigate to={`/${ws.slug}`} replace />;
   return (
     <div className="page page-wide">
-      <div className="page-head">
-        <h1>{t("an.title")}</h1>
-      </div>
+      <PageHeader crumbs={[{ icon: <ChartColumn />, label: t("an.title") }]} />
       <AnalyticsView
         project={project || undefined}
         filters={

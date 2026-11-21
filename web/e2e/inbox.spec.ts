@@ -50,7 +50,8 @@ test("Bob is assigned and sees it live in his inbox", async ({ page, browser, hu
 
   await expect(bob.locator(".inbox-row", { hasText: "Review pricing page" })).toBeVisible({ timeout: 5000 });
   await expect(bob.locator(".inbox-row")).toContainText("Ana assigned you");
-  await expect(bob.locator(".side-count")).toHaveText("1");
+  await expect(bob.getByRole("link", { name: "Inbox 1 unread" })).toBeVisible();
+  await expect(bob.locator(".topbar-dot")).toBeVisible();
   if (shots) await bob.screenshot({ path: `${shots}/inbox.png` });
   await bob.locator(".inbox-open").first().click();
   await expect(bob).toHaveURL(/\/work-items\//);

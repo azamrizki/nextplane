@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { CalendarClock, CircleUserRound } from "lucide-react";
+import { PageHeader } from "../components/PageHeader";
 import { useState } from "react";
 import { Link } from "react-router";
 import { get } from "../api/client";
@@ -25,15 +27,19 @@ export function MyWorkPage() {
   const rows = q.data ?? [];
   return (
     <div className="page page-wide">
-      <div className="page-head">
-        <h1>{t("nav.myWork")}</h1>
-        <label className="checkbox small"><input type="checkbox" checked={closed} onChange={(e) => setClosed(e.target.checked)} />{t("mw.closed")}</label>
-        <div className="seg" role="tablist">
-          {(["assigned", "created", "subscribed"] as Kind[]).map((k) => (
-            <button key={k} role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{t(`mw.${k}`)}</button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        crumbs={[{ icon: <CircleUserRound />, label: t("nav.myWork") }]}
+        actions={
+          <>
+            <label className="switch-label"><input type="checkbox" role="switch" className="switch" checked={closed} onChange={(e) => setClosed(e.target.checked)} />{t("mw.closed")}</label>
+            <div className="seg" role="tablist">
+              {(["assigned", "created", "subscribed"] as Kind[]).map((k) => (
+                <button key={k} role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>{t(`mw.${k}`)}</button>
+              ))}
+            </div>
+          </>
+        }
+      />
       {q.isSuccess && rows.length === 0 ? <div className="card empty">{t("mw.empty")}</div> : null}
       {rows.length ? (
         <div className="rows card">
@@ -43,7 +49,7 @@ export function MyWorkPage() {
               <span className="mono faint small" style={{ width: 70 }}>{w.identifier}-{w.sequence}</span>
               <span className="grow ellipsis">{w.title}</span>
               <span className="faint small">{w.project_name}</span>
-              {w.due_date ? <span className={"small" + (isOverdue(w.due_date, w.completed_at) ? " overdue" : " faint")}>📅 {fmtDate(w.due_date, lang)}</span> : null}
+              {w.due_date ? <span className={"small" + (isOverdue(w.due_date, w.completed_at) ? " overdue" : " faint")}><CalendarClock className="inline-icon" /> {fmtDate(w.due_date, lang)}</span> : null}
             </Link>
           ))}
         </div>

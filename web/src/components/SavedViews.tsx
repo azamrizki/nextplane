@@ -1,3 +1,4 @@
+import { ChevronDown, Layers, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { del, get, patch, post } from "../api/client";
@@ -58,7 +59,9 @@ export function SavedViews({ ctx, view, setView }: { ctx: PropsCtx; view: ViewSt
         onClose={() => setOpen(false)}
         trigger={
           <button className="btn btn-sm" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu">
-            {active ? active.name : t("views.title")} ▾
+            <Layers />
+            {active ? active.name : t("views.title")}
+            <ChevronDown className="faint" />
           </button>
         }
       >
@@ -71,7 +74,7 @@ export function SavedViews({ ctx, view, setView }: { ctx: PropsCtx; view: ViewSt
                 <span className="faint small">{v.is_shared ? t("views.team") : t("views.mine")}</span>
               </button>
               {canEdit(v) ? (
-                <button className="icon-btn" aria-label={`${t("common.delete")}: ${v.name}`} onClick={() => { act(() => del(`${url}/${v.id}`)); if (active?.id === v.id) setActive(null); }}>✕</button>
+                <button className="icon-btn" aria-label={`${t("common.delete")}: ${v.name}`} onClick={() => { act(() => del(`${url}/${v.id}`)); if (active?.id === v.id) setActive(null); }}><X /></button>
               ) : null}
             </div>
           ))}

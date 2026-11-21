@@ -23,7 +23,8 @@ export interface Filters {
   q: string;
 }
 
-export const DISPLAY_KEYS = ["key", "priority", "assignees", "labels", "start_date", "due_date", "estimate", "sub_items"] as const;
+// Plane's order of the toggles in Display.
+export const DISPLAY_KEYS = ["key", "assignees", "start_date", "due_date", "labels", "priority", "state", "sub_items", "estimate", "modules", "cycle"] as const;
 export type DisplayKey = (typeof DISPLAY_KEYS)[number];
 
 export interface ViewState {
@@ -45,7 +46,7 @@ export const DEFAULT_VIEW: ViewState = {
   showSubItems: true,
   showEmptyGroups: true,
   filters: EMPTY_FILTERS,
-  display: { key: true, priority: true, assignees: true, labels: true, start_date: false, due_date: true, estimate: true, sub_items: true },
+  display: { key: true, priority: true, assignees: true, labels: true, start_date: false, due_date: true, estimate: true, sub_items: true, state: true, cycle: false, modules: false },
 };
 
 export function activeFilterCount(f: Filters): number {

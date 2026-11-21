@@ -18,7 +18,7 @@ NextPlane is a self-hosted project management tool for software teams: work item
 - Multi-tenant SaaS, billing, plans or seat limits.
 - Android and desktop clients. **Postponed until the web version is stable and final** (owner decision, 2026-11-20). The API is still designed so they can be built later (§13).
 - Horizontal scaling across several servers. One process on one machine.
-- Copying Plane's code, name, logo, wording or visual design (§2).
+- Copying Plane's code, CSS, icons, illustrations, name, logo or wording (§2). Its look and behaviour are followed on purpose, rebuilt with our own code (owner decision, 2026-11-21).
 
 ## 2. Relationship to Plane (license rule)
 
@@ -26,7 +26,8 @@ Plane is **AGPL-3.0**. NextPlane is a clean reimplementation:
 
 - **Allowed:** studying Plane's features, concepts, workflows and public API docs; using the same general concepts (work item, cycle, module, view, page, intake), which are common industry terms.
 - **Not allowed:** copying or translating Plane source code, its database schema files, UI components, CSS, icons, illustrations, text or branding.
-- Libraries Plane happens to use (React, Tiptap, Yjs…) may be used under their own licenses.
+- **Look and behaviour (owner decision, 2026-11-21):** the web app follows Plane's layout, interaction patterns and visual style (sidebar, headers, list/board anatomy, property chips, colors, sizes, shortcuts) so Plane users feel at home. It is rebuilt from a written description in our own code: values such as colors and sizes may match, but no Plane component, CSS, icon artwork, illustration, text, logo or name is copied.
+- Libraries Plane happens to use (React, Tiptap, Yjs, lucide icons…) may be used under their own licenses.
 - NextPlane's own license: **MIT** (same as NextBoard).
 
 ## 3. Core concepts

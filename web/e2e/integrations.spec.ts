@@ -90,7 +90,7 @@ test("webhooks: add one, send a test, see it delivered and signed", async ({ pag
   try {
     await login(page, hub);
     await page.goto(hub.url + "/acme/settings");
-    await page.getByRole("link", { name: /Webhooks/ }).click();
+    await page.locator(".settings-nav").getByRole("link", { name: "Webhooks" }).click();
     await page.getByLabel("Payload URL").fill(`http://127.0.0.1:${port}/hook`);
     await page.getByRole("button", { name: "Add webhook" }).click();
     const secret = await page.getByRole("textbox", { name: "Secret" }).inputValue();

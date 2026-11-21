@@ -22,6 +22,7 @@ The single place to see where NextPlane stands: which phase is active, which spr
 | 1 | MVP | S1.1 – S1.6 | ✅ Done (v0.1.0 released) | 60 / 60 |
 | 2 | Planning | S2.1 – S2.5 | ✅ Done | 29 / 29 |
 | 3 | Knowledge & insight | S3.1 – S3.5 | ✅ Done | 26 / 26 |
+| 3.5 | Familiar UI (Plane look and behaviour) | S3.6 | ✅ Done | 10 / 10 |
 | 4 | Clients (desktop, Android) | — | ⏸ Waiting for web v1 final | — |
 
 Status icons: ⏳ not started · 🚧 in progress · ✅ done · ⏸ on hold.
@@ -360,6 +361,29 @@ Found while testing: the setup link was printed before the server listened, so o
 - **Tests:** import/export, public board, webhooks (signature, filtering, payload, log, retry schedule, rotate) and GitHub integration tests; HMAC, key-finding and text-conversion unit tests; 5 e2e (CSV import and export, published board seen by a visitor, webhook test delivery verified with Node's crypto, signed GitHub pull request completing an item).
 - **Totals:** 117 Rust (+1 ignored perf), 27 Vitest, 46 Playwright.
 
+### S3.6 — Familiar UI: Plane's look and behaviour, our own code
+
+**Dates:** 2026-11-21 → 2026-11-21 · **Status:** ✅ · **Why:** the owner wants to feel at home coming from Plane (SPEC §2 updated: look and behaviour followed, nothing copied). Method: Plane's source was read only to write a prose spec of its patterns and values; the code here is written from that spec.
+
+- [x] Research: prose spec of Plane's tokens, shell, headers, dropdowns, icons, shortcuts, layouts, peek/detail, other pages (no code copied)
+- [x] Tokens: Plane-like neutral scale, primary blue, type sizes, radii, shadows, light and dark; icons from `lucide-react` (ISC)
+- [x] Shell: sidebar with workspace switcher, new work item + search, nav with icons, projects with expandable sub-navigation and a ⋯ menu, user menu, collapse
+- [x] Page header: breadcrumbs and an action cluster, used by every page
+- [x] Work items: layout switcher, Filters and Display dropdowns, applied-filter chips, primary "Add work item"
+- [x] List and board: group headers, row and card anatomy, property chips, state and priority icons redrawn
+- [x] Spreadsheet, calendar, timeline restyled to match
+- [x] Peek overview and work item page with a properties sidebar; create modal
+- [x] Other pages (projects, cycles, modules, pages, intake, inbox, analytics, settings) on the new header and patterns
+- [x] Shortcuts as in Plane, DESIGN.md rewritten, tests and e2e updated, screenshots reviewed in light and dark
+
+**Review:** Two research passes read Plane's repository (main, 2026-11-20) and wrote prose specs of its patterns and values; colour, type, radius and shadow values were read from Plane's published token package. The UI was then rewritten from those notes, so nothing of Plane's code, CSS, icon artwork, text or logo is in the repository (SPEC §2 and DESIGN.md updated). What changed:
+- **Look:** Inter and IBM Plex Mono (bundled, OFL), Plane's neutral scale and its current blue (`#006399` / `#2893cc`), 13 px body, 6 px control radius, 24/28/32 px control heights, its shadows, in light and dark (the chart palette re-validated on the new dark surface).
+- **Frame:** a top bar on the canvas (workspace switcher with Settings and Invite, a search that opens the palette, inbox with an unread dot, help, user menu), then a rounded panel with a 250 px sidebar (New work item, Home, Your work, Drafts, Workspace › Projects and Analytics, expandable projects with their sections and a ⋯ menu, version in the footer; `Ctrl/⌘B` hides it, an overlay on phones) and 48 px page headers with breadcrumbs and a project switcher.
+- **Work items:** the header carries views, search, the five-layout switcher, Filters (a row of joined filter pills with "Add filter"), Display (property pills, group, order, options), Analytics and "Add work item"; list rows and board cards follow Plane's anatomy and chip order, empty properties shrink to icon squares, columns collapse, group "+" opens the create modal with the group's value, rows and cards have a ⋯ menu.
+- **Detail:** the peek is a side panel over the content; the page has the five main properties as fields under the title and a slim properties panel with who and when; the create modal has a project picker (also from the sidebar and `N` then `I` on any page), chips with placeholders, "create more", Discard, Save as draft, Create.
+- **Elsewhere:** a home page with a greeting, counts, your open work and your projects; project cards with a colour band and logo tile; settings pages with a left menu; segmented controls; the palette at 672 px with icons and key caps; Plane's `G`/`N` key sequences.
+Found while testing: the title box in the detail view collapsed to 6 px inside the scrolling column (flex items shrink to their padding when they hide overflow). Emoji and text glyphs that served as icons were replaced with lucide icons throughout. Tests: 27 Vitest, 46 Playwright (updated for the new navigation: workspace menu, project ⋯ menu, filter row) plus a screenshot spec (`NEXTPLANE_SHOTS`) for design review; release binary 20.6 MB.
+
 ### Web v1 — owner review
 
 Phases 0–3 are done and v0.1.0 is released. These need the owner:
@@ -399,6 +423,7 @@ Phases 0–3 are done and v0.1.0 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | S3.6 done: the web app follows Plane's look and behaviour, rebuilt in our own code. |
 | 2026-11-21 | Repository made public; installer and updater checked against GitHub. |
 | 2026-11-21 | v0.1.0 tagged and released; phase 1 done (60/60). |
 | 2026-11-21 | Release check: retired macOS runners replaced, trial mode, version 0.1.0, installer and updater tested against a local release. |

@@ -50,7 +50,7 @@ test("a change by Bob appears for Ana without reloading", async ({ page, browser
   await bob.locator(".list-row", { hasText: "Payment page" }).click();
   await bob.getByRole("dialog").getByRole("button", { name: "Priority" }).click();
   await bob.getByRole("option", { name: "Urgent" }).click();
-  await expect(page.locator(".list-row", { hasText: "Payment page" }).locator('[aria-label="Priority"] svg rect[fill="var(--prio-urgent)"]')).toHaveCount(1, { timeout: 5000 });
+  await expect(page.locator(".list-row", { hasText: "Payment page" }).locator('[title="Priority: Urgent"]')).toHaveCount(1, { timeout: 5000 });
   await ctx.close();
 });
 

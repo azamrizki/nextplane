@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { Archive, ArchiveRestore, Boxes, CalendarPlus, Check, ChevronsRight, CircleCheck, Contrast, CornerLeftUp, Ellipsis, History, Link as LinkIcon, Maximize2, Tag, Trash2, Triangle, UserRound, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ApiError, get, post, del } from "../api/client";
 import type { Activity, Relation, RelationKind, WorkItem } from "../api/types";
@@ -12,6 +13,8 @@ import { itemsPath, keyOf, useActivity, useArchiveItem, useCreateItem, useDelete
 import { Avatar } from "./Avatar";
 import { Attachments, Comments, ItemReactions, Links, SubscribeButton, mentionPeople, useEditorUpload } from "./Collab";
 import { ConfirmDialog, Dialog } from "./Dialog";
+import { Popover } from "./Layout";
+import { ProjectBar } from "./PageHeader";
 import { Editor } from "./Editor";
 import { Picker } from "./Picker";
 import { StateIcon, fmtDate } from "./Props";
@@ -64,33 +67,68 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
   const fullUrl = `/${slug}/projects/${p.id}/work-items/${item.id}`;
   const parent = item.parent_id;
 
+  const canDelete = pcan.deleteWorkItem(p, item.created_by === me.id) && !p.archived_at;
+  const copy = async () => {
+    setCopied(await copyText(location.origin + fullUrl));
+    setTimeout(() => setCopied(false), 1500);
+  };
+  const actions = (
+    <>
+      <SubscribeButton slug={slug} ctx={ctx} item={item} />
+      <button className="icon-btn bordered" onClick={copy} aria-label={copied ? t("common.copied") : t("wi.copyLink")} title={copied ? t("common.copied") : t("wi.copyLink")}>
+        {copied ? <Check /> : <LinkIcon />}
+      </button>
+      {ctx.editable || canDelete ? (
+        <ItemActions
+          archived={!!item.archived_at}
+          onArchive={ctx.editable ? () => archive.mutate({ id: item.id, on: !item.archived_at }) : undefined}
+          onDelete={canDelete ? () => setConfirmDelete(true) : undefined}
+        />
+      ) : null}
+    </>
+  );
+  const props = <PropsBlock slug={slug} ctx={pctx} item={item} onPatch={onPatch} />;
+
   return (
     <div className={peek ? "wi wi-peek" : "wi"}>
-      <div className="wi-head">
-        <Link to={`/${slug}/projects/${p.id}`} className="faint small">{p.name}</Link>
-        <span className="faint small">›</span>
-        <span className="small mono">{key}</span>
-        {item.archived_at ? <span className="badge">{t("wi.archived")}</span> : null}
-        <span className="grow" />
-        <button className="btn btn-sm btn-ghost" onClick={async () => { setCopied(await copyText(location.origin + fullUrl)); setTimeout(() => setCopied(false), 1500); }}>
-          {copied ? t("common.copied") : t("wi.copyLink")}
-        </button>
-        <SubscribeButton slug={slug} ctx={ctx} item={item} />
-        {peek ? <Link className="btn btn-sm btn-ghost" to={fullUrl}>{t("wi.openFull")}</Link> : null}
-        {ctx.editable ? (
-          <button className="btn btn-sm btn-ghost" onClick={() => archive.mutate({ id: item.id, on: !item.archived_at })}>
-            {item.archived_at ? t("wi.unarchive") : t("wi.archive")}
-          </button>
-        ) : null}
-        {pcan.deleteWorkItem(p, item.created_by === me.id) && !p.archived_at ? (
-          <button className="btn btn-sm btn-ghost" onClick={() => setConfirmDelete(true)}>{t("common.delete")}</button>
-        ) : null}
-        {peek && onClose ? <button className="icon-btn" aria-label={t("common.close")} onClick={onClose}>✕</button> : null}
-      </div>
+      {peek ? (
+        <div className="wi-peek-head">
+          {onClose ? (
+            <button className="icon-btn" aria-label={t("common.close")} title={t("common.close")} onClick={onClose}>
+              <ChevronsRight />
+            </button>
+          ) : null}
+          <Link className="icon-btn" to={fullUrl} aria-label={t("wi.openFull")} title={t("wi.openFull")}>
+            <Maximize2 />
+          </Link>
+          <span className="grow" />
+          {actions}
+        </div>
+      ) : (
+        <ProjectBar ctx={ctx} crumbs={[{ label: key }]}>
+          {actions}
+        </ProjectBar>
+      )}
       <ErrorAlert message={update.isError && !conflict ? errorText(update.error, t) : archive.isError ? errorText(archive.error, t) : null} />
+      {item.archived_at ? (
+        <div className="wi-archived">
+          <Archive aria-hidden />
+          <span className="grow">{t("wi.archivedNote")}</span>
+          {ctx.editable ? <button className="btn btn-sm" onClick={() => archive.mutate({ id: item.id, on: false })}>{t("wi.unarchive")}</button> : null}
+        </div>
+      ) : null}
       <div className="wi-body">
         <div className="wi-main">
-          {parent ? <ParentLink slug={slug} ctx={ctx} parentId={parent} /> : null}
+          <div className="wi-crumb">
+            {parent ? (
+              <>
+                <ParentLink slug={slug} ctx={ctx} parentId={parent} />
+                <span className="faint">/</span>
+              </>
+            ) : null}
+            <span className="wi-key">{key}</span>
+            {item.archived_at ? <span className="badge badge-neutral">{t("wi.archived")}</span> : null}
+          </div>
           {conflict ? <div className="alert alert-warning">{t("wi.conflict")}</div> : null}
           {item.is_draft ? <DraftBanner slug={slug} ctx={ctx} item={item} /> : null}
           {item.in_intake ? (
@@ -100,37 +138,40 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
             </div>
           ) : null}
           <TitleInput value={item.title} editable={editable} onSave={(title) => onText({ title })} />
-          <Editor
-            key={editorKey}
-            initial={item.description_json ?? undefined}
-            initialHtml={item.description_html}
-            editable={editable}
-            placeholder={t("wi.descriptionPlaceholder")}
-            ariaLabel={t("wi.description")}
-            onChange={(v) => onText({ description_json: v.json, description_html: v.html })}
-            people={mentionPeople(ctx)}
-            onUpload={upload}
-          />
+          <div className="wi-meta" role="group" aria-label={t("wi.properties")}>
+            <StateProp item={item} ctx={pctx} onPatch={onPatch} />
+            <PriorityProp item={item} ctx={pctx} onPatch={onPatch} />
+            <AssigneesProp item={item} ctx={pctx} onPatch={onPatch} />
+            <DateProp item={item} field="start_date" ctx={pctx} onPatch={onPatch} />
+            <DateProp item={item} field="due_date" ctx={pctx} onPatch={onPatch} />
+          </div>
+          <div className="wi-desc">
+            <Editor
+              key={editorKey}
+              initial={item.description_json ?? undefined}
+              initialHtml={item.description_html}
+              editable={editable}
+              placeholder={t("wi.descriptionPlaceholder")}
+              ariaLabel={t("wi.description")}
+              onChange={(v) => onText({ description_json: v.json, description_html: v.html })}
+              people={mentionPeople(ctx)}
+              onUpload={upload}
+            />
+          </div>
           <ItemReactions slug={slug} ctx={ctx} item={item} />
           <SubItems slug={slug} ctx={pctx} item={item} />
           <Relations slug={slug} ctx={pctx} item={item} />
           <Attachments slug={slug} ctx={pctx} item={item} />
           <Links slug={slug} ctx={pctx} item={item} />
+          {peek ? <div className="wi-props-inline">{props}</div> : null}
           <ActivityFeed slug={slug} ctx={ctx} item={item} />
           <Comments slug={slug} ctx={ctx} item={item} />
         </div>
-        <aside className="wi-side" aria-label={t("wi.properties")}>
-          <Prop label={t("wi.state")}><StateProp item={item} ctx={pctx} onPatch={onPatch} /></Prop>
-          <Prop label={t("wi.priority")}><PriorityProp item={item} ctx={pctx} onPatch={onPatch} /></Prop>
-          <Prop label={t("wi.assignees")}><AssigneesProp item={item} ctx={pctx} onPatch={onPatch} /></Prop>
-          <Prop label={t("wi.labels")}><LabelsProp item={item} ctx={pctx} onPatch={onPatch} /></Prop>
-          <Prop label={t("wi.start")}><DateProp item={item} field="start_date" ctx={pctx} onPatch={onPatch} /></Prop>
-          <Prop label={t("wi.due")}><DateProp item={item} field="due_date" ctx={pctx} onPatch={onPatch} /></Prop>
-          {p.estimate_type !== "none" ? <Prop label={t("wi.estimate")}><EstimateProp item={item} ctx={pctx} onPatch={onPatch} /></Prop> : null}
-          {p.feature_modules ? <Prop label={t("wi.modules")}><ModulesProp item={item} ctx={pctx} onPatch={onPatch} /></Prop> : null}
-          {p.feature_cycles ? <Prop label={t("wi.cycle")}><CycleProp item={item} ctx={pctx} onPatch={onPatch} /></Prop> : null}
-          <Prop label={t("wi.parent")}><ParentProp slug={slug} ctx={pctx} item={item} onPatch={onPatch} /></Prop>
-        </aside>
+        {peek ? null : (
+          <aside className="wi-side" aria-label={t("wi.properties")}>
+            {props}
+          </aside>
+        )}
       </div>
       <ConfirmDialog
         open={confirmDelete}
@@ -148,12 +189,78 @@ export function WorkItemDetail({ slug, ctx, id, peek, onClose }: { slug: string;
   );
 }
 
-function Prop({ label, children }: { label: string; children: React.ReactNode }) {
+function Prop({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="wi-prop">
-      <span className="wi-prop-label">{label}</span>
+      <span className="wi-prop-label">
+        {icon}
+        <span className="ellipsis">{label}</span>
+      </span>
       <div className="wi-prop-value">{children}</div>
     </div>
+  );
+}
+
+/** Plane's slim properties panel: details, project structure, then who and when. */
+function PropsBlock({ slug, ctx, item, onPatch }: { slug: string; ctx: PropsCtx; item: WorkItem; onPatch: (b: Partial<WorkItem>) => void }) {
+  const { t, lang } = useI18n();
+  const p = ctx.project;
+  const creator = ctx.members.find((m) => m.user_id === item.created_by);
+  const when = (iso: string) => new Date(iso).toLocaleString(lang === "id" ? "id-ID" : "en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return (
+    <div className="wi-props">
+      <div className="wi-props-title">{t("wi.properties")}</div>
+      <div className="wi-props-group">
+        <Prop label={t("wi.labels")} icon={<Tag />}><LabelsProp item={item} ctx={ctx} onPatch={onPatch} /></Prop>
+        {p.estimate_type !== "none" ? <Prop label={t("wi.estimate")} icon={<Triangle />}><EstimateProp item={item} ctx={ctx} onPatch={onPatch} /></Prop> : null}
+        <Prop label={t("wi.parent")} icon={<CornerLeftUp />}><ParentProp slug={slug} ctx={ctx} item={item} onPatch={onPatch} /></Prop>
+      </div>
+      {p.feature_cycles || p.feature_modules ? (
+        <div className="wi-props-group">
+          {p.feature_cycles ? <Prop label={t("wi.cycle")} icon={<Contrast />}><CycleProp item={item} ctx={ctx} onPatch={onPatch} /></Prop> : null}
+          {p.feature_modules ? <Prop label={t("wi.modules")} icon={<Boxes />}><ModulesProp item={item} ctx={ctx} onPatch={onPatch} /></Prop> : null}
+        </div>
+      ) : null}
+      <div className="wi-audit">
+        <span><UserRound aria-hidden />{t("wi.createdBy", { name: creator ? creator.name || creator.email : "—" })}</span>
+        <span><CalendarPlus aria-hidden />{t("wi.createdOn", { when: when(item.created_at) })}</span>
+        <span><History aria-hidden />{t("wi.updatedOn", { when: when(item.updated_at) })}</span>
+        {item.completed_at ? <span><CircleCheck aria-hidden />{t("wi.completedOn", { when: when(item.completed_at) })}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function ItemActions({ archived, onArchive, onDelete }: { archived: boolean; onArchive?: () => void; onDelete?: () => void }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  return (
+    <Popover
+      open={open}
+      onClose={close}
+      right
+      trigger={
+        <button className="icon-btn bordered" onClick={() => setOpen(!open)} aria-label={t("wi.actions")} aria-haspopup="menu" aria-expanded={open}>
+          <Ellipsis />
+        </button>
+      }
+    >
+      <div className="menu" role="menu">
+        {onArchive ? (
+          <button className="menu-item" role="menuitem" onClick={() => (close(), onArchive())}>
+            {archived ? <ArchiveRestore /> : <Archive />}
+            {archived ? t("wi.unarchive") : t("wi.archive")}
+          </button>
+        ) : null}
+        {onDelete ? (
+          <button className="menu-item danger" role="menuitem" onClick={() => (close(), onDelete())}>
+            <Trash2 />
+            {t("common.delete")}
+          </button>
+        ) : null}
+      </div>
+    </Popover>
   );
 }
 
@@ -310,7 +417,7 @@ function Relations({ slug, ctx, item }: { slug: string; ctx: PropsCtx; item: Wor
                 <span className="mono faint small">{keyOf(r.item.identifier, r.item.sequence)}</span> {r.item.title}
               </Link>
               {ctx.editable ? (
-                <button className="icon-btn" aria-label={t("common.remove")} onClick={() => del<void>(`${itemsPath(slug, ctx.project.id, item.id)}/relations/${r.id}`).then(refresh, (e) => setError(errorText(e, t)))}>✕</button>
+                <button className="icon-btn" aria-label={t("common.remove")} onClick={() => del<void>(`${itemsPath(slug, ctx.project.id, item.id)}/relations/${r.id}`).then(refresh, (e) => setError(errorText(e, t)))}><X /></button>
               ) : null}
             </div>
           ))}

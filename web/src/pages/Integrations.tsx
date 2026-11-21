@@ -1,7 +1,9 @@
 // Workspace integrations for admins: webhooks and GitHub (SPRINT S3.5).
+import { WsSettingsFrame } from "../components/SettingsFrame";
+import { GitBranch, Webhook } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Link, Navigate } from "react-router";
+import { Navigate } from "react-router";
 import { del, get, patch, post } from "../api/client";
 import { ConfirmDialog } from "../components/Dialog";
 import { ErrorAlert, TextField } from "../components/ui";
@@ -51,11 +53,6 @@ function Copyable({ value, label }: { value: string; label: string }) {
   );
 }
 
-function Back() {
-  const { t } = useI18n();
-  const ws = useWs();
-  return <Link to={`/${ws.slug}/settings`} className="small">← {t("ws.settings.title")}</Link>;
-}
 
 export function WebhooksPage() {
   const { t } = useI18n();
@@ -82,11 +79,7 @@ export function WebhooksPage() {
     create.mutate();
   };
   return (
-    <div className="page">
-      <Back />
-      <div className="page-head">
-        <h1>{t("wh.title")}</h1>
-      </div>
+    <WsSettingsFrame ws={ws} crumbs={[{ icon: <Webhook />, label: t("wh.title") }]}>
       <p className="muted small">{t("wh.intro")}</p>
       {secret ? (
         <div className="alert alert-warning form">
@@ -125,7 +118,7 @@ export function WebhooksPage() {
       {(list.data ?? []).map((h) => (
         <HookCard key={h.id} hook={h} onSecret={(s) => setSecret({ id: h.id, secret: s })} />
       ))}
-    </div>
+    </WsSettingsFrame>
   );
 }
 
@@ -236,11 +229,7 @@ export function GithubPage() {
   const g = q.data;
   const err = connect.error ?? toggle.error ?? off.error;
   return (
-    <div className="page">
-      <Back />
-      <div className="page-head">
-        <h1>{t("gh.title")}</h1>
-      </div>
+    <WsSettingsFrame ws={ws} crumbs={[{ icon: <GitBranch />, label: t("gh.title") }]}>
       <p className="muted small">{t("gh.intro")}</p>
       <ErrorAlert message={err ? errorText(err, t) : null} />
       {g && !g.connected ? (
@@ -272,6 +261,6 @@ export function GithubPage() {
           </div>
         </section>
       ) : null}
-    </div>
+    </WsSettingsFrame>
   );
 }

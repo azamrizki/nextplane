@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
@@ -58,16 +59,13 @@ export function CyclesPage() {
   return (
     <div className="proj-view">
       <ProjectBar ctx={ctx}>
-        {pcan.createWorkItem(p) && !p.archived_at ? <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>{t("cyc.new")}</button> : null}
+        <div className="seg" role="tablist">
+          <button role="tab" aria-selected={!archived} className={!archived ? "on" : ""} onClick={() => setArchived(false)}>{t("proj.active")}</button>
+          <button role="tab" aria-selected={archived} className={archived ? "on" : ""} onClick={() => setArchived(true)}>{t("proj.archived")}</button>
+        </div>
+        {pcan.createWorkItem(p) && !p.archived_at ? <button className="btn btn-primary" onClick={() => setCreating(true)}>{t("cyc.new")}</button> : null}
       </ProjectBar>
       <div className="page page-wide">
-        <div className="page-head">
-          <h1>{t("cyc.title")}</h1>
-          <div className="seg" role="tablist">
-            <button role="tab" aria-selected={!archived} className={!archived ? "on" : ""} onClick={() => setArchived(false)}>{t("proj.active")}</button>
-            <button role="tab" aria-selected={archived} className={archived ? "on" : ""} onClick={() => setArchived(true)}>{t("proj.archived")}</button>
-          </div>
-        </div>
         {list.isSuccess && cycles.length === 0 ? <div className="card empty">{t("cyc.empty")}</div> : null}
         {ORDER.map((status) => {
           const inStatus = cycles.filter((c) => c.status === status);
@@ -149,7 +147,7 @@ export function CyclePage() {
     <WorkItemsView
       key={c.id}
       ctx={ctx}
-      scope={{ key: `cycle:${c.id}`, query: `cycle=${c.id}`, defaults: { cycle_id: c.id }, header: <CycleHeader ctx={ctx} c={c} /> }}
+      scope={{ key: `cycle:${c.id}`, query: `cycle=${c.id}`, defaults: { cycle_id: c.id }, header: <CycleHeader ctx={ctx} c={c} />, crumbs: [{ label: c.name }] }}
     />
   );
 }
@@ -189,13 +187,11 @@ function CycleHeader({ ctx, c }: { ctx: PropsCtx; c: Cycle }) {
   return (
     <div className="cycle-head">
       <div className="cycle-title">
-        <Link to=".." relative="path" className="faint small">{t("cyc.title")}</Link>
-        <span className="faint small">›</span>
         <b>{c.name}</b>
         <span className="badge">{t(`cyc.status.${c.status}`)}</span>
         <span className="faint small">{dates(c, lang, t)}</span>
         <span className="grow" />
-        <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("cyc.progress")} {open ? "▴" : "▾"}</button>
+        <button className="btn btn-sm btn-ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open}>{t("cyc.progress")} <ChevronDown className={open ? "rot180" : ""} /></button>
         {editable ? <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>{t("common.edit")}</button> : null}
         {editable && pr && pr.total_items > pr.completed_items && targets.length ? (
           <button className="btn btn-sm btn-ghost" onClick={() => setTransfer(true)}>{t("cyc.transfer")}</button>

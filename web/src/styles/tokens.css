@@ -1,14 +1,22 @@
-/* NextPlane design tokens (docs/DESIGN.md). Components use only these variables. */
+/* NextPlane design tokens (docs/DESIGN.md). Components use only these variables.
+   The values follow Plane's current look (owner decision 2026-11-21, SPEC §2); the names and
+   this file are our own. */
 :root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* Type steps: captions 11/12, body 13 (the UI default), 14 (titles in cards), headings up. */
   --text-xs: 11px;
-  --text-sm: 12.5px;
+  --text-sm: 12px;
+  --text-base: 13px;
   --text-md: 14px;
   --text-lg: 16px;
   --text-xl: 20px;
-  --text-2xl: 26px;
+  --text-2xl: 24px;
+  --weight-regular: 450;
+  --weight-medium: 500;
+  --weight-semibold: 600;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -17,62 +25,103 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-7: 48px;
+  --page-x: 22px;
 
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 10px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-full: 999px;
+
+  /* Control heights: xs 20, sm 24 (chips), md 28 (the workhorse), lg 32, xl 36. */
+  --ctl-xs: 20px;
+  --ctl-sm: 24px;
+  --ctl-md: 28px;
+  --ctl-lg: 32px;
+  --ctl-xl: 36px;
 
   --dur-fast: 90ms;
   --dur-med: 160ms;
+  --dur-slow: 300ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
 
-  --sidebar-w: 248px;
+  --sidebar-w: 250px;
+  --topbar-h: 44px;
   --header-h: 48px;
-
-  /* Priority and state-group colors are the same in both themes. */
-  --prio-urgent: #e5484d;
-  --prio-high: #f76b15;
-  --prio-medium: #e2a336;
-  --prio-low: #3e9bd8;
-  --prio-none: #8b8d98;
-  --group-backlog: #8b8d98;
-  --group-unstarted: #b9bbc6;
-  --group-started: #e2a336;
-  --group-completed: #30a46c;
-  --group-cancelled: #e5484d;
 }
 
 :root,
 [data-theme="light"] {
-  --bg: #ffffff;
-  --bg-subtle: #f8f9fa;
-  --bg-muted: #f1f3f5;
-  --bg-hover: #eceef0;
-  --bg-active: #e3e6e9;
-  --bg-overlay: rgba(17, 20, 24, 0.4);
-  --border: #e3e6e9;
-  --border-strong: #cdd1d5;
-  --text: #16191d;
-  --text-muted: #5b636b;
-  --text-faint: #8a9199;
-  --accent: #0e7c6b;
-  --accent-hover: #0a6a5b;
+  --canvas: #f2f2f3;
+  --bg: #ffffff; /* surface 1: pages, sidebar, panels */
+  --bg-subtle: #fcfcfc; /* surface 2 */
+  --layer-1: #f9f9f9; /* toolbars, group headers, board columns */
+  --layer-1-hover: #f2f2f3;
+  --layer-1-active: #eaebec;
+  --layer-2: #ffffff; /* cards, chips */
+  --layer-2-hover: #fcfcfc;
+  --layer-2-active: #f9f9f9;
+  --layer-3: #f2f2f3;
+  --bg-muted: #f2f2f3;
+  --bg-hover: rgb(9 11 11 / 4%); /* transparent rows */
+  --bg-pressed: rgb(9 11 11 / 6%);
+  --bg-active: rgb(9 11 11 / 8%);
+  --bg-overlay: rgb(9 11 11 / 40%);
+  --border: #eaebec; /* subtle */
+  --border-1: #e1e2e3; /* card and chip outline */
+  --border-strong: #d5d7d9;
+  --border-strong-1: #cacdcf;
+  --text: #0f0f10;
+  --text-secondary: #313435;
+  --text-muted: #494d50; /* tertiary */
+  --text-faint: #5d6265; /* placeholder */
+  --text-disabled: #9a9fa3;
+  --icon: #494d50;
+  --accent: #006399;
+  --accent-hover: #005685;
+  --accent-active: #003c5c;
   --accent-text: #ffffff;
-  --accent-soft: #e2f3ef;
-  --danger: #d6363c;
-  --danger-soft: #fdecec;
+  --accent-fg: #005685; /* accent as text on surfaces */
+  --accent-soft: #ebf8ff;
+  --accent-soft-hover: #d6f1ff;
+  --accent-soft-active: #b8e6ff;
+  --accent-border-soft: #d6f1ff;
+  --danger: #bf2c22;
+  --danger-hover: #a5261d;
+  --danger-fg: #a5261d;
+  --danger-soft: #fbeae9;
+  --danger-soft-hover: #f8dedc;
+  --warning-fg: #9a5b00;
   --warning-soft: #fdf3dc;
-  --success: #2a8a5b;
-  --focus: #0e7c6b66;
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.1), 0 1px 3px rgba(16, 24, 40, 0.06);
-  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.18);
+  --success: #3b9c4d;
+  --success-soft: #e8f5ea;
+  --focus: rgb(0 99 153 / 35%);
+  --tooltip-bg: #1d1f20;
+  --tooltip-fg: #ffffff;
+  --shadow-sm: 0px 1px 2px -1px rgb(41 47 61 / 6%), 0px 1px 3px 0px rgb(41 47 61 / 5%);
+  --shadow-raised: 0px 2px 4px -1px rgb(41 47 61 / 4%), 0px 4px 6px -1px rgb(41 47 61 / 5%);
+  --shadow-md: 0px 10px 10px -5px rgb(41 47 61 / 4%), 0px 10px 40px -5px rgb(41 47 61 / 8%), 0 0 0 1px rgb(41 47 61 / 2%);
+  --shadow-lg: 0px 10px 10px -10px rgb(41 47 61 / 4%), 0px 30px 60px -12px rgb(41 47 61 / 14%);
+  --shadow-side: -10px 0px 30px -5px rgb(41 47 61 / 4%), -5px 0px 80px -5px rgb(41 47 61 / 6%);
+
+  /* Priority and state-group colors. */
+  --prio-urgent: #c0221f;
+  --prio-high: #c2410c;
+  --prio-medium: #c2760c;
+  --prio-low: #2563eb;
+  --prio-none: #7e858e;
+  --prio-unlit: #cfd3d8;
+  --group-backlog: #848890;
+  --group-unstarted: #6a6e76;
+  --group-started: #ce8509;
+  --group-completed: #3b9c4d;
+  --group-cancelled: #76829d;
+
   /* Chart series, validated with the dataviz palette checks (light surface #ffffff). */
   --chart-remaining: #0b9a80;
   --chart-ideal: #6250d6;
-  --chart-grid: #eceef0;
-  --chart-axis: #cdd1d5;
+  --chart-grid: #eaebec;
+  --chart-axis: #d5d7d9;
   /* Categorical series in fixed order (dataviz reference palette, validated on #ffffff:
      all checks pass; slots 3-5 are under 3:1, so charts always carry a legend, tooltips
      and a table view). Slot 1 is also the single hue of one-series bars. */
@@ -89,35 +138,71 @@
 }
 
 [data-theme="dark"] {
-  --bg: #121417;
-  --bg-subtle: #171a1d;
-  --bg-muted: #1d2125;
-  --bg-hover: #23282d;
-  --bg-active: #2b3137;
-  --bg-overlay: rgba(0, 0, 0, 0.55);
-  --border: #2a2f35;
-  --border-strong: #3a4148;
-  --text: #e9ecef;
-  --text-muted: #a3abb3;
-  --text-faint: #6f7881;
-  --accent: #23a68f;
-  --accent-hover: #2bb89f;
-  --accent-text: #06120f;
-  --accent-soft: #10302a;
-  --danger: #f2555a;
-  --danger-soft: #3a1a1b;
+  --canvas: #0f0f10;
+  --bg: #141415;
+  --bg-subtle: #181a1b;
+  --layer-1: #181a1b;
+  --layer-1-hover: #1d1f20;
+  --layer-1-active: #222425;
+  --layer-2: #1d1f20;
+  --layer-2-hover: #222425;
+  --layer-2-active: #2c2e30;
+  --layer-3: #222425;
+  --bg-muted: #222425;
+  --bg-hover: rgb(255 255 255 / 5%);
+  --bg-pressed: rgb(255 255 255 / 7%);
+  --bg-active: rgb(255 255 255 / 10%);
+  --bg-overlay: rgb(0 0 0 / 60%);
+  --border: #222425;
+  --border-1: #2c2e30;
+  --border-strong: #36393a;
+  --border-strong-1: #45484a;
+  --text: #e4e6e7;
+  --text-secondary: #cacdce;
+  --text-muted: #afb3b6;
+  --text-faint: #959a9d;
+  --text-disabled: #5d6265;
+  --icon: #afb3b6;
+  --accent: #2893cc;
+  --accent-hover: #4ca9dc;
+  --accent-active: #6ebae2;
+  --accent-text: #fafafa;
+  --accent-fg: #4ca9dc;
+  --accent-soft: #0a2533;
+  --accent-soft-hover: #0f374d;
+  --accent-soft-active: #16506f;
+  --accent-border-soft: #0f374d;
+  --danger: #db3e33;
+  --danger-hover: #bf2c22;
+  --danger-fg: #eea5a0;
+  --danger-soft: #3c0e0b;
+  --danger-soft-hover: #4e120e;
+  --warning-fg: #e6b45c;
   --warning-soft: #362b12;
-  --success: #3fb47a;
-  --focus: #23a68f80;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.6);
-  /* Chart series, validated against the dark surface #121417. */
+  --success: #4fb062;
+  --success-soft: #13291a;
+  --focus: rgb(40 147 204 / 45%);
+  --tooltip-bg: #e4e6e7;
+  --tooltip-fg: #141415;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-raised: 0 2px 6px rgb(0 0 0 / 45%);
+  --shadow-md: 0 10px 30px -5px rgb(0 0 0 / 60%), 0 0 0 1px rgb(255 255 255 / 3%);
+  --shadow-lg: 0 30px 60px -12px rgb(0 0 0 / 70%);
+  --shadow-side: -10px 0 40px -5px rgb(0 0 0 / 55%);
+
+  --prio-urgent: #e7413c;
+  --prio-high: #f97d2e;
+  --prio-medium: #c99b45;
+  --prio-low: #7cb0ff;
+  --prio-none: #858c95;
+  --prio-unlit: #45484a;
+
+  /* Chart series, validated against the dark surface. */
   --chart-remaining: #199e70;
   --chart-ideal: #9085e9;
-  --chart-grid: #23282d;
-  --chart-axis: #3a4148;
-  /* The same eight hues stepped for the dark surface #121417 (all checks pass). */
+  --chart-grid: #222425;
+  --chart-axis: #36393a;
+  /* The same eight hues stepped for the dark surface (all checks pass). */
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;

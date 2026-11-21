@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useT } from "../i18n";
 
@@ -8,7 +9,9 @@ export function Dialog({
   title,
   children,
   footer,
-  width = 440,
+  width = 480,
+  lead,
+  bare,
 }: {
   open: boolean;
   onClose: () => void;
@@ -16,6 +19,10 @@ export function Dialog({
   children: ReactNode;
   footer?: ReactNode;
   width?: number;
+  /** Controls shown before the title, e.g. a project picker. */
+  lead?: ReactNode;
+  /** No header row (the title stays as the accessible name). */
+  bare?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const t = useT();
@@ -29,7 +36,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={"dialog" + (bare ? " dialog-bare" : "")}
       style={{ width }}
       onCancel={(e) => {
         e.preventDefault();
@@ -40,13 +47,14 @@ export function Dialog({
       }}
       aria-label={title}
     >
-      <div className="dialog-head">
-        <h2>{title}</h2>
-        <button className="icon-btn" onClick={onClose} aria-label={t("common.close")}>
-          ✕
+      {bare ? null : <div className="dialog-head">
+        {lead ?? null}
+        <h2 className={lead ? "dialog-title-sub" : undefined}>{title}</h2>
+        <button className="icon-btn icon-btn-sm dialog-close" onClick={onClose} aria-label={t("common.close")}>
+          <X />
         </button>
-      </div>
-      <div className="dialog-body">{children}</div>
+      </div>}
+      {bare ? children : <div className="dialog-body">{children}</div>}
       {footer ? <div className="dialog-foot">{footer}</div> : null}
     </dialog>
   );

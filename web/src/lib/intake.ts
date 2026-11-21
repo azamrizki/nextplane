@@ -18,8 +18,8 @@ export const useIntake = (slug: string, pid: string, view: IntakeViewName, enabl
   useQuery({ queryKey: iq.list(slug, pid, view), queryFn: () => get<IntakeEntry[]>(`${intakePath(slug, pid)}?view=${view}`), enabled });
 export const useIntakeEntry = (slug: string, pid: string, id: string) =>
   useQuery({ queryKey: iq.one(slug, pid, id), queryFn: () => get<IntakeEntry>(intakePath(slug, pid, id)), enabled: !!id });
-export const useIntakeCount = (slug: string, pid: string) =>
-  useQuery({ queryKey: iq.count(slug, pid), queryFn: () => get<{ open: number }>(`${intakePath(slug, pid)}/count`) });
+export const useIntakeCount = (slug: string, pid: string, enabled = true) =>
+  useQuery({ queryKey: iq.count(slug, pid), queryFn: () => get<{ open: number }>(`${intakePath(slug, pid)}/count`), enabled });
 
 /** Whether `me` may still change a request (mirrors the server's rule). */
 export function mayEditIntake(e: IntakeEntry, me: string, isAdmin: boolean, projectArchived: boolean): boolean {

@@ -1,4 +1,4 @@
-import { ADMIN, expect, login, test } from "./fixtures";
+import { ADMIN, expect, login, test, openFilter } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -82,7 +82,7 @@ test("save a view and apply it; my work", async ({ page, hub }) => {
   await login(page, hub);
   await page.goto(projectUrl);
   await page.getByRole("tab", { name: "List" }).click();
-  await page.getByRole("button", { name: "Filter: Priority" }).click();
+  await openFilter(page, "Priority");
   await page.getByRole("option", { name: "Urgent" }).click();
   await page.keyboard.press("Escape");
   await page.getByRole("tab", { name: "Board" }).click();
@@ -98,7 +98,7 @@ test("save a view and apply it; my work", async ({ page, hub }) => {
   await expect(page.getByRole("tab", { name: "Board" })).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".board-card")).toHaveCount(1);
 
-  await page.getByRole("link", { name: "My work" }).click();
+  await page.getByRole("link", { name: "Your work" }).click();
   await expect(page.locator(".row", { hasText: "Design review" })).toBeVisible();
   await page.getByRole("tab", { name: "Created" }).click();
   await expect(page.locator(".row-link")).toHaveCount(3);

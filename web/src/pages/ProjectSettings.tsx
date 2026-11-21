@@ -1,7 +1,10 @@
+import { X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ProjectBar } from "../components/PageHeader";
+import { ProjectSettingsNav, SettingsLayout } from "../components/SettingsFrame";
 import { DataTab, PublishTab } from "./ProjectData";
 import { useState, type FormEvent } from "react";
-import { NavLink, Navigate, useNavigate, useParams } from "react-router";
+import { Navigate, useNavigate, useParams } from "react-router";
 import { del, patch, post } from "../api/client";
 import type { EstimateType, Label, Project, ProjRole, StateGroup, WfState, WsMember } from "../api/types";
 import { STATE_GROUPS } from "../api/types";
@@ -31,20 +34,10 @@ export function ProjectSettingsPage() {
   if (!project.data) return <Navigate to={`/${ws.slug}/projects`} replace />;
   const p = project.data;
   if (!p.my_role) return <Navigate to={`/${ws.slug}/projects/${p.id}`} replace />;
-  const base = `/${ws.slug}/projects/${p.id}/settings`;
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1>{t("proj.settings")}</h1>
-        <span className="faint">{p.name}</span>
-      </div>
-      <nav className="tabs">
-        {TABS.map((k) => (
-          <NavLink key={k} to={k === "general" ? base : `${base}/${k}`} end className={({ isActive }) => (isActive ? "active" : "")}>
-            {t(`proj.tab.${k}`)}
-          </NavLink>
-        ))}
-      </nav>
+    <div className="proj-view">
+      <ProjectBar ctx={{ project: p }} crumbs={[{ label: t(`proj.tab.${tab as Tab}`) }]} />
+      <SettingsLayout nav={<ProjectSettingsNav tabs={TABS} />}>
       {tab === "general" ? <General p={p} /> : null}
       {tab === "members" ? <Members p={p} /> : null}
       {tab === "states" ? <States p={p} /> : null}
@@ -53,6 +46,7 @@ export function ProjectSettingsPage() {
       {tab === "features" ? <Features p={p} /> : null}
       {tab === "data" ? <DataTab p={p} /> : null}
       {tab === "publish" ? <PublishTab p={p} /> : null}
+      </SettingsLayout>
     </div>
   );
 }
@@ -391,7 +385,7 @@ function States({ p }: { p: Project }) {
                       <>
                         <button className="icon-btn" aria-label={t("common.moveUp")} disabled={i === 0} onClick={() => upd.mutate({ id: s.id, body: { sort_order: before(inGroup, i) } })}>↑</button>
                         <button className="icon-btn" aria-label={t("common.moveDown")} disabled={i === inGroup.length - 1} onClick={() => upd.mutate({ id: s.id, body: { sort_order: after(inGroup, i) } })}>↓</button>
-                        <button className="icon-btn" aria-label={t("common.delete")} disabled={s.is_default} onClick={() => { setError(null); remove.mutate(s.id); }}>✕</button>
+                        <button className="icon-btn" aria-label={t("common.delete")} disabled={s.is_default} onClick={() => { setError(null); remove.mutate(s.id); }}><X /></button>
                       </>
                     ) : null}
                   </div>
@@ -501,7 +495,7 @@ function Labels({ p }: { p: Project }) {
           <div className="row" key={l.id} style={{ paddingLeft: l.parent_id ? 40 : undefined }}>
             <input type="color" value={l.color.length === 7 ? l.color : "#888888"} disabled={!editable} className="color-input" aria-label={t("proj.cover")} onChange={(e) => upd.mutate({ id: l.id, body: { color: e.target.value } })} />
             <input className="inline-input" defaultValue={l.name} disabled={!editable} aria-label={t("label.name")} onBlur={(e) => e.target.value.trim() && e.target.value !== l.name && upd.mutate({ id: l.id, body: { name: e.target.value } })} />
-            {editable ? <button className="icon-btn" aria-label={t("common.delete")} onClick={() => remove.mutate(l.id)}>✕</button> : null}
+            {editable ? <button className="icon-btn" aria-label={t("common.delete")} onClick={() => remove.mutate(l.id)}><X /></button> : null}
           </div>
         ))}
       </section>
