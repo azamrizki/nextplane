@@ -365,7 +365,7 @@ Found while testing: the setup link was printed before the server listened, so o
 Phases 0–3 are done and v0.1.0 is released. These need the owner:
 
 1. **Declare web v1 final** (or list changes). That starts phase 4 (desktop, Android).
-2. **Git:** ✅ the repository is `azamrizki/nextplane` (private, first push 2026-11-21; CI added an empty `web/dist` for its Rust job). ✅ `v0.1.0` released. Open: making the repository public — `install.sh` downloads from it, which needs a public repository.
+2. **Git:** ✅ `azamrizki/nextplane`, public since 2026-11-21 (history checked first: no secrets, no `.env`, keys or databases, commits carry no email); `v0.1.0` released.
 3. **Lint:** ✅ `rustfmt` and `clippy` installed from the distro (1.93); `cargo fmt --check` and `cargo clippy --all-targets -D warnings` pass.
 4. **Rust version:** `yrs` is pinned to 0.26 because 0.27+ needs a newer compiler than 1.93; with rustup the pin can go.
 5. **Behaviour to confirm** (the open ones follow Plane's documented rules today):
@@ -381,7 +381,7 @@ Phases 0–3 are done and v0.1.0 is released. These need the owner:
    4. Open analytics.
    5. Import a CSV, then publish the board.
    6. Add a webhook (for example to a request bin) and connect a test GitHub repository.
-7. **Release check (2026-11-21):** the release workflow had two runners GitHub retired in November 2026 (`macos-13`, `macos-14`) and would have failed on the tag; it now uses `macos-15-intel` and `macos-15`, newer actions (Node 24), and a manual trial mode that builds every target, checks the Linux builds are static, starts each binary on a fresh data folder and fetches its health, version and web page, without publishing. The crate version was still `0.1.0-dev`, so a `v0.1.0` binary would have kept asking `nextplane update` for itself; it is `0.1.0` now and a tag that does not match the crate version stops the release. `install.sh` (also piped into `sh`) and `nextplane update` were run against a local copy of a release: install, wrong checksum (nothing installed or changed), `--check`, update with `nextplane.old` kept. `update` now restarts the service only if the service runs the binary it replaced. Against GitHub itself both need the repository to be public (or a token, not built).
+7. **Release check (2026-11-21):** the release workflow had two runners GitHub retired in November 2026 (`macos-13`, `macos-14`) and would have failed on the tag; it now uses `macos-15-intel` and `macos-15`, newer actions (Node 24), and a manual trial mode that builds every target, checks the Linux builds are static, starts each binary on a fresh data folder and fetches its health, version and web page, without publishing. The crate version was still `0.1.0-dev`, so a `v0.1.0` binary would have kept asking `nextplane update` for itself; it is `0.1.0` now and a tag that does not match the crate version stops the release. `install.sh` (also piped into `sh`) and `nextplane update` were run against a local copy of a release: install, wrong checksum (nothing installed or changed), `--check`, update with `nextplane.old` kept. `update` now restarts the service only if the service runs the binary it replaced. Once the repository was public, both were run against GitHub with no login: `curl … install.sh | sh` installed the v0.1.0 release, `nextplane update --check` found v0.1.0 and `update` answered "already up to date".
 
 ## Phase 4 — Clients
 
@@ -399,6 +399,7 @@ Phases 0–3 are done and v0.1.0 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | Repository made public; installer and updater checked against GitHub. |
 | 2026-11-21 | v0.1.0 tagged and released; phase 1 done (60/60). |
 | 2026-11-21 | Release check: retired macOS runners replaced, trial mode, version 0.1.0, installer and updater tested against a local release. |
 | 2026-11-21 | Contributors co-edit every project page (D7, owner's decision). |
