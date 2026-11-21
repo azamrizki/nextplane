@@ -17,6 +17,8 @@ nextplane logs        # shows the one-time setup link (valid 30 minutes)
 
 The installer checks the release's SHA-256, puts `nextplane` in `~/.local/bin` and starts a user service (systemd on Linux, a LaunchAgent on macOS). Open the setup link, create the admin account, then your first workspace. Lost the link? `nextplane setup-link`.
 
+Options: `sh -s -- --version=v0.1.0` for a given release, `--no-service` to only install the binary. Mirrors: `NEXTPLANE_DOWNLOAD_BASE` (a folder with the archives and `SHA256SUMS`) for the installer, `NEXTPLANE_UPDATE_API` and `NEXTPLANE_UPDATE_REPO` for `nextplane update`.
+
 | Default | Value |
 |---|---|
 | Address | `http://127.0.0.1:12313` (plain HTTP on this machine) |
@@ -25,7 +27,7 @@ The installer checks the release's SHA-256, puts `nextplane` in `~/.local/bin` a
 
 ### Build from source
 
-Needs Rust (stable) and Node.js 22+.
+Needs Rust (stable) and Node.js 22+ (CI uses 24).
 
 ```sh
 make build              # web app + release binary → bin/nextplane
@@ -65,7 +67,7 @@ Who may do what is listed in [docs/PERMISSIONS.md](docs/PERMISSIONS.md).
 | `nextplane status` / `logs [-f]` | Is it running; the service log. |
 | `nextplane backup <file.tar.gz>` | Database, uploads and `config.toml` in one archive, safe while running. The archive holds your secrets; keep it private. |
 | `nextplane restore <file.tar.gz>` | Only while stopped. Asks for confirmation, backs up the current state first and moves the replaced files to `backups/replaced-*`. |
-| `nextplane update [--version vX.Y.Z]` | Download a release, verify its checksum, swap the binary (the previous one stays as `nextplane.old`), restart the service. |
+| `nextplane update [--version vX.Y.Z] [--check]` | Download a release, verify its checksum, swap the binary (the previous one stays as `nextplane.old`) and restart the service if it runs this binary. |
 | `nextplane admin reset-password <email>` | Print a one-time reset link. |
 
 The running server also writes a daily copy of the database to `backups/daily-YYYY-MM-DD.db` (the newest 14 are kept) and backs up the database before every schema migration.

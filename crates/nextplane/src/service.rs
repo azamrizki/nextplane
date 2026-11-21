@@ -140,6 +140,28 @@ pub fn install(data: &Path, dry: bool, no_start: bool) -> Result<()> {
     Ok(())
 }
 
+/// Whether the installed user service starts `binary`, so replacing it needs a restart.
+pub fn service_runs(binary: &Path) -> bool {
+    let Ok(home) = home() else { return false };
+    let p = plan(&home, Path::new(""), cfg!(target_os = "macos"));
+    std::fs::read_to_string(&p.service_file).is_ok_and(|t| file_runs(&t, binary))
+}
+
+/// Whether a systemd unit or LaunchAgent text starts `binary` (symlinks resolved).
+fn file_runs(text: &str, binary: &Path) -> bool {
+    let real = |p: &Path| std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    let want = real(binary);
+    let systemd = text
+        .lines()
+        .filter_map(|l| l.strip_prefix("ExecStart="))
+        .filter_map(|r| r.split_whitespace().next());
+    let launchd = text
+        .split("<array><string>")
+        .nth(1)
+        .and_then(|r| r.split("</string>").next());
+    systemd.chain(launchd).any(|b| real(Path::new(b)) == want)
+}
+
 pub fn uninstall(data: &Path, dry: bool) -> Result<()> {
     let home = home()?;
     let p = plan(&home, data, cfg!(target_os = "macos"));
@@ -253,5 +275,13 @@ mod tests {
                 .ends_with("Library/LaunchAgents/id.nextplane.plist")
         );
         assert!(m.service_text.contains("<string>serve</string>"));
+        let bin = Path::new("/home/u/.local/bin/nextplane");
+        assert!(file_runs(&p.service_text, bin));
+        assert!(file_runs(
+            &m.service_text.replace("/Users/u", "/home/u"),
+            bin
+        ));
+        assert!(!file_runs(&p.service_text, Path::new("/tmp/dev/nextplane")));
+        assert!(!file_runs("", bin));
     }
 }

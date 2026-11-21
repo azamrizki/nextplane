@@ -29,7 +29,10 @@ case "$(uname -m)" in
 esac
 ASSET="nextplane-$OS-$ARCH.tar.gz"
 
-if [ -n "$VERSION" ]; then
+# NEXTPLANE_DOWNLOAD_BASE: a folder holding the archives and SHA256SUMS (a mirror or a test).
+if [ -n "${NEXTPLANE_DOWNLOAD_BASE:-}" ]; then
+  BASE="${NEXTPLANE_DOWNLOAD_BASE%/}"
+elif [ -n "$VERSION" ]; then
   BASE="https://github.com/$REPO/releases/download/$VERSION"
 else
   BASE="https://github.com/$REPO/releases/latest/download"

@@ -196,7 +196,7 @@ Found while testing: the first conflict design compared the whole item's `update
 - [x] Performance check: 100k seeded work items, list/kanban/filter < 200 ms server time (worst 41 ms; `cargo test -p np-store --release --test perf -- --ignored`)
 - [x] Playwright e2e for the main flows against a throwaway instance
 - [x] README with quick start
-- [~] Tag `v0.1.0` — the repository exists since 2026-11-21 (`azamrizki/nextplane`); the tag waits for the owner's go-ahead (pushing it runs the release workflow)
+- [~] Tag `v0.1.0` — the repository exists since 2026-11-21 (`azamrizki/nextplane`); the crate version is `0.1.0` and the release workflow passed a trial run; the tag waits for the owner's go-ahead (pushing it publishes the release)
 
 **Review:** Shipped: `install`/`uninstall` (systemd user unit, LaunchAgent, `--dry-run`), `status`, `logs`, `admin reset-password`; a run lock so a second server or a restore cannot touch a data folder in use; daily database copy (newest 14 `daily-*.db` kept, nothing else touched) plus the backup before every migration; `backup` (database, uploads, config in one `.tar.gz`, safe while running); `restore` (refused while running, verifies the archive and its schema, asks for confirmation, writes a fresh backup first and moves replaced files to `backups/replaced-*` instead of deleting); `update` with SHA-256 check and `nextplane.old`; `install.sh`, release workflow, `deploy/` (systemd, nginx, Caddy), README, LICENSE.
 Tests: 83 Rust + 1 performance test, 18 Vitest, 19 Playwright.
@@ -381,7 +381,7 @@ Phases 0–3 are done except the two owner-blocked phase 1 tasks. These need the
    4. Open analytics.
    5. Import a CSV, then publish the board.
    6. Add a webhook (for example to a request bin) and connect a test GitHub repository.
-7. **Not exercised yet:** `install.sh`, the release workflow and `nextplane update` against a real GitHub release — they need the repository.
+7. **Release check (2026-11-21):** the release workflow had two runners GitHub retired in November 2026 (`macos-13`, `macos-14`) and would have failed on the tag; it now uses `macos-15-intel` and `macos-15`, newer actions (Node 24), and a manual trial mode that builds every target, checks the Linux builds are static, starts each binary on a fresh data folder and fetches its health, version and web page, without publishing. The crate version was still `0.1.0-dev`, so a `v0.1.0` binary would have kept asking `nextplane update` for itself; it is `0.1.0` now and a tag that does not match the crate version stops the release. `install.sh` (also piped into `sh`) and `nextplane update` were run against a local copy of a release: install, wrong checksum (nothing installed or changed), `--check`, update with `nextplane.old` kept. `update` now restarts the service only if the service runs the binary it replaced. Against GitHub itself both need the repository to be public (or a token, not built).
 
 ## Phase 4 — Clients
 
@@ -399,6 +399,7 @@ Phases 0–3 are done except the two owner-blocked phase 1 tasks. These need the
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | Release check: retired macOS runners replaced, trial mode, version 0.1.0, installer and updater tested against a local release. |
 | 2026-11-21 | Contributors co-edit every project page (D7, owner's decision). |
 | 2026-11-21 | fmt/clippy pass done; pushed to `azamrizki/nextplane`. |
 | 2026-11-21 | S3.5 done; phase 3 done; web v1 feature-complete, owner review list added. |

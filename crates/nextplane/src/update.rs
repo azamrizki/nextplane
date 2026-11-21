@@ -12,6 +12,13 @@ pub fn repo() -> String {
     std::env::var("NEXTPLANE_UPDATE_REPO").unwrap_or_else(|_| "azamrizki/nextplane".into())
 }
 
+/// The GitHub API address; `NEXTPLANE_UPDATE_API` points it at a mirror or a test server.
+pub fn api_base() -> String {
+    std::env::var("NEXTPLANE_UPDATE_API")
+        .map(|v| v.trim_end_matches('/').to_string())
+        .unwrap_or_else(|_| "https://api.github.com".into())
+}
+
 pub fn asset_name() -> Result<String> {
     let os = match std::env::consts::OS {
         "linux" => "linux",
@@ -77,10 +84,10 @@ pub async fn run(version: Option<String>, check_only: bool) -> Result<()> {
     let client = reqwest::Client::builder()
         .user_agent("nextplane-updater")
         .build()?;
-    let repo = repo();
+    let (base, repo) = (api_base(), repo());
     let api = match &version {
-        Some(v) => format!("https://api.github.com/repos/{repo}/releases/tags/{v}"),
-        None => format!("https://api.github.com/repos/{repo}/releases/latest"),
+        Some(v) => format!("{base}/repos/{repo}/releases/tags/{v}"),
+        None => format!("{base}/repos/{repo}/releases/latest"),
     };
     let rel: serde_json::Value = client
         .get(&api)
@@ -137,7 +144,15 @@ pub async fn run(version: Option<String>, check_only: bool) -> Result<()> {
         target.display(),
         old.display()
     );
-    if !cfg!(target_os = "macos") {
+    // Only the service that runs this very binary is restarted.
+    if !crate::service::service_runs(&target) {
+        println!("restart NextPlane to run the new version");
+    } else if cfg!(target_os = "macos") {
+        println!(
+            "restart the service to run the new version: launchctl kickstart -k gui/$(id -u)/{}",
+            crate::service::LABEL
+        );
+    } else {
         let st = std::process::Command::new("systemctl")
             .args(["--user", "try-restart", crate::service::UNIT])
             .status();
