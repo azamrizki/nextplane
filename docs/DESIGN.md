@@ -59,6 +59,10 @@ All tokens live in `web/src/styles/tokens.css` as CSS variables. Values follow P
 
 `.btn` (secondary look; `-primary`, `-danger`, `-danger-outline`, `-ghost`, `-sm` 24, `-lg` 32, `-block`), `.icon-btn` (+ `-sm`, `-xs`, `.bordered`), `.seg` (segmented control), `.menu` / `.menu-item` (32 px rows), `Picker` (searchable combobox with checks), `Dialog` (header, body, footer with Cancel then primary; `bare` for the palette), `.badge`, `.card`, `.switch`, `.keycap`. React wrappers in `web/src/components/ui.tsx`.
 
+**Layers.** Every menu, picker and small popup (`Popover`, `Picker`, the mention menu) floats in a layer of its own (`Floating.tsx`): rendered outside the page (into `body`, or into the open modal dialog it belongs to), in fixed position next to its trigger, flipped above when there is more room there, kept inside the window, and only as tall as the room it has (the menu scrolls). No board column, list row, chip row, panel, dialog body or sidebar can cut one off. Toasts are a manual popover in the browser's top layer, so they show above modal dialogs. Do not position a menu with `position: absolute` inside a scrolling container. Crowded page headers (four or more actions) turn secondary buttons into icons below 860 px (they keep their names as tooltips), and breadcrumbs end in "…" instead of disappearing.
+
+**UI audit.** `NEXTPLANE_AUDIT=<folder> npx playwright test -c e2e/playwright.config.ts audit` opens every menu and picker where it lives, at 1280×800 and 1024×600, and checks with `elementFromPoint` that each is fully on screen and not covered; it also flags pages wider than the window. `NEXTPLANE_AUDIT_ALL=1` keeps a screenshot of every case.
+
 ## Screenshots
 
 `NEXTPLANE_SHOTS=<folder> npx playwright test -c e2e/playwright.config.ts shots` seeds a throwaway server and photographs the main screens in light and dark for review.

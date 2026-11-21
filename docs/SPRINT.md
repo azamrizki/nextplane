@@ -2,7 +2,7 @@
 
 The single place to see where NextPlane stands: which phase is active, which sprint runs, and which tasks are done. Scope and decisions live in [SPEC.md](SPEC.md); this file tracks progress only.
 
-**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (v0.2.0 released 2026-11-21)
+**Last updated:** 2026-11-22 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (v0.2.0 released 2026-11-21)
 
 ## How to use this file
 
@@ -453,6 +453,7 @@ Phases 0–3.6 are done and v0.2.0 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-22 | Layering fixes (owner's report: a board card's picker cut off by its column): menus and pickers float in their own layer, toasts show above dialogs, crowded headers collapse button labels, comment actions in a ⋯ menu; a UI audit spec (59 popups, 25 pages, two window sizes) finds nothing left. |
 | 2026-11-21 | v0.2.0 released (minor: S3.7 adds features), at the owner's go-ahead; commits now follow Conventional Commits as in NextBoard. CI's newer clippy caught one lint the local one missed (fixed before tagging). The Linux amd64 download matched `SHA256SUMS`, reports 0.2.0 and migrates a fresh data folder. |
 | 2026-11-21 | S3.7 done: archives, automations, workspace views, home widgets, profiles, sign-in providers, AI and Unsplash, exports and board interactions. |
 | 2026-11-21 | S3.7 started: Plane Community Edition parity (eight features). |
