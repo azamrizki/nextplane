@@ -104,3 +104,15 @@ name = "Google"                              # "Sign in with Google"
 | [docs/PERMISSIONS.md](docs/PERMISSIONS.md) | Roles and the permission matrix |
 | [docs/API.md](docs/API.md) | HTTP API, tokens, realtime |
 | [docs/DESIGN.md](docs/DESIGN.md) | Design tokens and UI rules |
+
+## Contributing
+
+Run `make test` (and `make lint` when Rust changed) before you push; CI runs the same checks on every push to `main`.
+
+Commits use [Conventional Commits](https://www.conventionalcommits.org/), one change per commit:
+
+- The subject is `type(scope): what now works`, in plain words and from the user's side, lowercase, no full stop: `fix(board): a collapsed column keeps its count`, `feat(views): workspace views across projects`.
+- Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `ci`, `chore`, `revert`. The scope is the area (`api`, `web`, `board`, `pages`, `release`, …) and may be left out.
+- The body says what was wrong or missing and what happens now, wrapped at 72 columns; a feature lists its parts as bullets and names any API change with its section in `docs/API.md`.
+- The version follows the commits since the last tag: `fix:`, `perf:` and `revert:` give a patch release, `feat:` a minor one, and the others none. Until 1.0, a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) also gives a minor release.
+- Commits carry the author's GitHub noreply address and no co-author trailers for tools.
