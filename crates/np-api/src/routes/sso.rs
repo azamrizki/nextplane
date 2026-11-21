@@ -113,14 +113,15 @@ pub async fn callback(
 
 // ---- Providers the instance admin turns on ---------------------------------------------------
 
-async fn usable(state: &AppState, key: &str) -> Result<Provider, Response> {
+/// A provider that is set up and on, or why not (shown on the login page).
+async fn usable(state: &AppState, key: &str) -> Result<Provider, String> {
     match providers::find(&state.store, key).await {
         Ok(Some(p)) if p.usable() => Ok(p),
-        Ok(Some(p)) => Err(fail(&format!(
+        Ok(Some(p)) => Err(format!(
             "sign-in with {} is not set up on this server",
             p.name()
-        ))),
-        _ => Err(fail("there is no such sign-in provider")),
+        )),
+        _ => Err("there is no such sign-in provider".into()),
     }
 }
 
@@ -133,7 +134,7 @@ pub async fn oauth_start(
 ) -> Response {
     let p = match usable(&state, &key).await {
         Ok(p) => p,
-        Err(r) => return r,
+        Err(msg) => return fail(&msg),
     };
     if limited(&state, &ip) {
         return fail("too many attempts, try again later");
@@ -178,7 +179,7 @@ pub async fn oauth_callback(
 ) -> Response {
     let p = match usable(&state, &key).await {
         Ok(p) => p,
-        Err(r) => return r,
+        Err(msg) => return fail(&msg),
     };
     let redirect = redirect_uri(&state, &headers, Some(p.key));
     let (code, next, verifier, nonce) = match begin_callback(&state, p.key, q) {
