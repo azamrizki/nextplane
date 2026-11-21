@@ -106,7 +106,7 @@ pub fn parse_path(path: &str) -> Option<(String, Option<Uuid>, Option<Uuid>, Str
                     "github" => "integration",
                     "notifications" | "read-all" => "subscription",
                     // One person's own things: nobody else needs to hear about them.
-                    "home" | "quick-links" | "recents" | "stickies" => "personal",
+                    "home" | "quick-links" | "recents" | "stickies" | "exports" => "personal",
                     _ => area.as_str(),
                 }
                 .to_string();

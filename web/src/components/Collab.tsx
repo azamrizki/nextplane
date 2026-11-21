@@ -19,6 +19,9 @@ import type { PropsCtx } from "./WorkItemProps";
 export interface Comment {
   id: string;
   author_id: string;
+  author_name: string;
+  /** Shown on the project's public board. */
+  is_public: boolean;
   body_json: unknown;
   body_html: string;
   created_at: string;
@@ -156,7 +159,8 @@ export function Comments({ slug, ctx, item }: { slug: string; ctx: PropsCtx; ite
               <Avatar name={m?.name ?? ""} email={m?.email} src={m?.avatar} size={24} />
               <div className="comment-body">
                 <div className="comment-head">
-                  <b>{m ? m.name || m.email : "—"}</b>
+                  <b>{m ? m.name || m.email : c.author_name || "—"}</b>
+                  {c.is_public ? <span className="badge badge-neutral" title={t("cm.makePrivate")}>{t("cm.public")}</span> : null}
                   <span className="faint small">{new Date(c.created_at).toLocaleString(lang === "id" ? "id-ID" : "en-US", { dateStyle: "medium", timeStyle: "short" })}</span>
                   {c.edited_at ? <span className="faint small">({t("comments.edited")})</span> : null}
                   <span className="grow" />
@@ -164,6 +168,9 @@ export function Comments({ slug, ctx, item }: { slug: string; ctx: PropsCtx; ite
                   {mine && canComment ? <button className="btn btn-sm btn-ghost" onClick={() => act(() => del(`${base}/${c.id}`))}>{t("common.delete")}</button> : null}
                   {ctx.project.my_role === "admin" && !ctx.project.archived_at ? (
                     <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(`${base}/${c.id}/${c.hidden_at ? "unhide" : "hide"}`))}>{c.hidden_at ? t("comments.unhide") : t("comments.hide")}</button>
+                  ) : null}
+                  {(ctx.project.is_published || c.is_public) && (mine ? canComment : ctx.project.my_role === "admin") && !ctx.project.archived_at ? (
+                    <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(`${base}/${c.id}/public`, { public: !c.is_public }))}>{c.is_public ? t("cm.makePrivate") : t("cm.makePublic")}</button>
                   ) : null}
                 </div>
                 {c.hidden_at ? (

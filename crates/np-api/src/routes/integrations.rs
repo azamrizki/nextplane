@@ -43,6 +43,21 @@ fn token_ok(t: &str) -> bool {
 pub struct Published {
     enabled: bool,
     path: Option<String>,
+    /// What visitors who sign in may do (S3.7).
+    comments: bool,
+    reactions: bool,
+    votes: bool,
+}
+
+async fn published(state: &AppState, pid: Uuid, token: Option<String>) -> ApiResult<Published> {
+    let (comments, reactions, votes) = state.store.board_settings(pid).await?;
+    Ok(Published {
+        enabled: token.is_some(),
+        path: token.map(|t| format!("/p/{t}")),
+        comments,
+        reactions,
+        votes,
+    })
 }
 
 pub async fn publish_settings(
@@ -53,18 +68,19 @@ pub async fn publish_settings(
     let c = load_project(&state, &slug, pid, &me).await?;
     c.require(ProjAction::EditSettings)?;
     let t = state.store.public_board_token(pid).await?;
-    Ok(Json(Published {
-        enabled: t.is_some(),
-        path: t.map(|t| format!("/p/{t}")),
-    }))
+    Ok(Json(published(&state, pid, t).await?))
 }
 
 #[derive(Deserialize)]
 pub struct EnableReq {
-    enabled: bool,
+    enabled: Option<bool>,
+    comments: Option<bool>,
+    reactions: Option<bool>,
+    votes: Option<bool>,
 }
 
-/// Publishing always makes a new link; the old one stops working.
+/// Publishing always makes a new link; the old one stops working. The settings for comments,
+/// reactions and votes change without touching the link.
 pub async fn set_publish(
     State(state): State<AppState>,
     CurrentUser(me): CurrentUser,
@@ -73,18 +89,27 @@ pub async fn set_publish(
 ) -> ApiResult<Json<Published>> {
     let c = load_project(&state, &slug, pid, &me).await?;
     c.require_write(ProjAction::EditSettings)?;
-    let token = req.enabled.then(link_token);
-    state.store.set_public_board(pid, token.as_deref()).await?;
-    Ok(Json(Published {
-        enabled: token.is_some(),
-        path: token.map(|t| format!("/p/{t}")),
-    }))
+    state
+        .store
+        .set_board_settings(pid, req.comments, req.reactions, req.votes)
+        .await?;
+    let token = match req.enabled {
+        Some(on) => {
+            let token = on.then(link_token);
+            state.store.set_public_board(pid, token.as_deref()).await?;
+            token
+        }
+        None => state.store.public_board_token(pid).await?,
+    };
+    Ok(Json(published(&state, pid, token).await?))
 }
 
 #[derive(Serialize)]
 pub struct Board {
     workspace: String,
     project: Value,
+    /// What visitors who sign in may do.
+    allow: Value,
     states: Vec<Value>,
     labels: Vec<Value>,
     items: Vec<PublicItem>,
@@ -129,9 +154,11 @@ pub async fn public_board(
         .map(|l| json!({ "id": l.id, "name": l.name, "color": l.color }))
         .collect();
     let items = state.store.public_items(pid, 2000).await?;
+    let (comments, reactions, votes) = state.store.board_settings(pid).await?;
     Ok(Json(Board {
         workspace,
         project: json!({ "name": name, "identifier": identifier }),
+        allow: json!({ "comments": comments, "reactions": reactions, "votes": votes }),
         states,
         labels,
         items,
@@ -141,16 +168,302 @@ pub async fn public_board(
 pub async fn public_item(
     State(state): State<AppState>,
     ClientIp(ip): ClientIp,
+    headers: HeaderMap,
     Path((token, seq)): Path<(String, i64)>,
-) -> ApiResult<Json<PublicItem>> {
-    let (_, pid, _, _) = board_home(&state, &ip, &token).await?;
-    Ok(Json(
-        state
-            .store
-            .public_item(pid, seq)
-            .await?
-            .ok_or_else(|| Error::not_found("work item not found"))?,
-    ))
+) -> ApiResult<Json<BoardItem>> {
+    let b = board(&state, &ip, &token).await?;
+    let me = crate::auth::peek_user_id(&state, &headers).await;
+    Ok(Json(board_item_out(&state, &b, seq, me).await?))
+}
+
+// ---- visitors' comments, reactions and votes (S3.7) ---------------------------------------
+
+const BOARD_WRITES: Limit = Limit {
+    max: 60,
+    window: std::time::Duration::from_secs(10 * 60),
+};
+
+#[derive(Serialize)]
+pub struct Tally {
+    emoji: String,
+    count: usize,
+    mine: bool,
+}
+
+#[derive(Serialize)]
+pub struct Votes {
+    up: usize,
+    down: usize,
+    /// Your vote: 1, -1 or 0.
+    mine: i64,
+}
+
+#[derive(Serialize)]
+pub struct BoardComment {
+    id: Uuid,
+    author_name: String,
+    author_avatar: Option<String>,
+    body_html: String,
+    created_at: String,
+    edited: bool,
+    mine: bool,
+    reactions: Vec<Tally>,
+}
+
+#[derive(Serialize)]
+pub struct BoardItem {
+    #[serde(flatten)]
+    item: PublicItem,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reactions: Option<Vec<Tally>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    votes: Option<Votes>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    comments: Option<Vec<BoardComment>>,
+}
+
+fn tally(list: Vec<np_store::collab::ReactionCount>, me: Option<Uuid>) -> Vec<Tally> {
+    list.into_iter()
+        .map(|r| Tally {
+            count: r.user_ids.len(),
+            mine: me.is_some_and(|m| r.user_ids.contains(&m)),
+            emoji: r.emoji,
+        })
+        .collect()
+}
+
+async fn board(state: &AppState, ip: &str, token: &str) -> ApiResult<np_store::board::BoardInfo> {
+    board_home(state, ip, token).await?;
+    Ok(state
+        .store
+        .board_info(token)
+        .await?
+        .ok_or_else(|| Error::not_found("this board does not exist or is no longer public"))?)
+}
+
+async fn board_item(state: &AppState, b: &np_store::board::BoardInfo, seq: i64) -> ApiResult<Uuid> {
+    Ok(state
+        .store
+        .board_item_id(b.project_id, seq)
+        .await?
+        .ok_or_else(|| Error::not_found("work item not found"))?)
+}
+
+/// One item of a board with what visitors may see of comments, reactions and votes.
+async fn board_item_out(
+    state: &AppState,
+    b: &np_store::board::BoardInfo,
+    seq: i64,
+    me: Option<Uuid>,
+) -> ApiResult<BoardItem> {
+    let item = state
+        .store
+        .public_item(b.project_id, seq)
+        .await?
+        .ok_or_else(|| Error::not_found("work item not found"))?;
+    let wid = board_item(state, b, seq).await?;
+    let reactions = if b.reactions {
+        Some(tally(state.store.reactions("work_item", wid).await?, me))
+    } else {
+        None
+    };
+    let votes = if b.votes {
+        let v = state.store.votes(wid).await?;
+        Some(Votes {
+            up: v.iter().filter(|x| x.1 > 0).count(),
+            down: v.iter().filter(|x| x.1 < 0).count(),
+            mine: v.iter().find(|x| Some(x.0) == me).map(|x| x.1).unwrap_or(0),
+        })
+    } else {
+        None
+    };
+    let comments = if b.comments {
+        let mut out = Vec::new();
+        for c in state.store.public_comments(wid).await? {
+            out.push(BoardComment {
+                reactions: if b.reactions {
+                    tally(state.store.reactions("comment", c.id).await?, me)
+                } else {
+                    Vec::new()
+                },
+                mine: Some(c.author_id) == me,
+                edited: c.edited_at.is_some(),
+                id: c.id,
+                author_name: c.author_name,
+                author_avatar: c.author_avatar,
+                body_html: c.body_html,
+                created_at: c.created_at,
+            });
+        }
+        Some(out)
+    } else {
+        None
+    };
+    Ok(BoardItem {
+        item,
+        reactions,
+        votes,
+        comments,
+    })
+}
+
+/// Open screens and webhooks hear about a visitor's comment, reaction or vote.
+fn announce(state: &AppState, b: &np_store::board::BoardInfo, wid: Uuid, area: &str, action: &str, me: Uuid) {
+    state.events.publish(Event {
+        workspace: b.workspace_slug.clone(),
+        workspace_id: Some(b.workspace_id),
+        project_id: Some(b.project_id),
+        work_item_id: Some(wid),
+        area: area.into(),
+        method: "POST".into(),
+        action: action.into(),
+        actor: Some(me),
+        client: None,
+    });
+}
+
+/// Signed in, the feature on, and not too fast.
+async fn may_write(state: &AppState, b: &np_store::board::BoardInfo, me: &User, allowed: bool, what: &str) -> ApiResult<()> {
+    if !allowed {
+        return Err(Error::bad_request(format!("{what} are turned off on this board")).into());
+    }
+    if me.is_bot {
+        return Err(Error::forbidden("bots cannot do this").into());
+    }
+    state
+        .limiter
+        .check(&format!("board-write:{}", me.id), BOARD_WRITES)?;
+    let _ = b;
+    Ok(())
+}
+
+pub async fn board_comment(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    CurrentUser(me): CurrentUser,
+    Path((token, seq)): Path<(String, i64)>,
+    Json(req): Json<super::collab::CommentReq>,
+) -> ApiResult<(StatusCode, Json<BoardItem>)> {
+    let b = board(&state, &ip, &token).await?;
+    may_write(&state, &b, &me, b.comments, "comments").await?;
+    let wid = board_item(&state, &b, seq).await?;
+    let (json, html) = super::collab::clean_comment(req)?;
+    let c = state.store.add_comment(wid, me.id, json.as_deref(), &html).await?;
+    state.store.set_comment_public(c.id, true).await?;
+    state.store.notify_comment(wid, me.id, c.id, &[]).await?;
+    announce(&state, &b, wid, "comment", "created", me.id);
+    Ok((StatusCode::CREATED, Json(board_item_out(&state, &b, seq, Some(me.id)).await?)))
+}
+
+/// Your own comment on a board: edit or delete.
+async fn own_board_comment(
+    state: &AppState,
+    b: &np_store::board::BoardInfo,
+    seq: i64,
+    cid: Uuid,
+    me: &User,
+) -> ApiResult<Uuid> {
+    let wid = board_item(state, b, seq).await?;
+    let c = state
+        .store
+        .comment(wid, cid)
+        .await?
+        .filter(|c| c.is_public)
+        .ok_or_else(|| Error::not_found("comment not found"))?;
+    if c.author_id != me.id {
+        return Err(Error::forbidden("only its author can change a comment").into());
+    }
+    Ok(wid)
+}
+
+pub async fn board_edit_comment(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    CurrentUser(me): CurrentUser,
+    Path((token, seq, cid)): Path<(String, i64, Uuid)>,
+    Json(req): Json<super::collab::CommentReq>,
+) -> ApiResult<Json<BoardItem>> {
+    let b = board(&state, &ip, &token).await?;
+    may_write(&state, &b, &me, b.comments, "comments").await?;
+    let wid = own_board_comment(&state, &b, seq, cid, &me).await?;
+    let (json, html) = super::collab::clean_comment(req)?;
+    state.store.edit_comment(cid, json.as_deref(), &html).await?;
+    announce(&state, &b, wid, "comment", "updated", me.id);
+    Ok(Json(board_item_out(&state, &b, seq, Some(me.id)).await?))
+}
+
+pub async fn board_delete_comment(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    CurrentUser(me): CurrentUser,
+    Path((token, seq, cid)): Path<(String, i64, Uuid)>,
+) -> ApiResult<Json<BoardItem>> {
+    let b = board(&state, &ip, &token).await?;
+    may_write(&state, &b, &me, b.comments, "comments").await?;
+    let wid = own_board_comment(&state, &b, seq, cid, &me).await?;
+    state.store.delete_comment(cid).await?;
+    announce(&state, &b, wid, "comment", "deleted", me.id);
+    Ok(Json(board_item_out(&state, &b, seq, Some(me.id)).await?))
+}
+
+#[derive(Deserialize)]
+pub struct BoardReactReq {
+    emoji: String,
+    /// A comment of the item instead of the item itself.
+    comment_id: Option<Uuid>,
+}
+
+pub async fn board_react(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    CurrentUser(me): CurrentUser,
+    Path((token, seq)): Path<(String, i64)>,
+    Json(req): Json<BoardReactReq>,
+) -> ApiResult<Json<BoardItem>> {
+    let b = board(&state, &ip, &token).await?;
+    may_write(&state, &b, &me, b.reactions, "reactions").await?;
+    let wid = board_item(&state, &b, seq).await?;
+    let emoji = super::collab::clean_emoji(&req.emoji)?;
+    match req.comment_id {
+        Some(cid) => {
+            state
+                .store
+                .comment(wid, cid)
+                .await?
+                .filter(|c| c.is_public && c.hidden_at.is_none())
+                .ok_or_else(|| Error::not_found("comment not found"))?;
+            state.store.toggle_reaction("comment", cid, me.id, &emoji).await?;
+        }
+        None => {
+            state.store.toggle_reaction("work_item", wid, me.id, &emoji).await?;
+        }
+    }
+    announce(&state, &b, wid, "reaction", "updated", me.id);
+    Ok(Json(board_item_out(&state, &b, seq, Some(me.id)).await?))
+}
+
+#[derive(Deserialize)]
+pub struct VoteReq {
+    /// 1 (up), -1 (down) or 0 (take your vote back).
+    value: i64,
+}
+
+pub async fn board_vote(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    CurrentUser(me): CurrentUser,
+    Path((token, seq)): Path<(String, i64)>,
+    Json(req): Json<VoteReq>,
+) -> ApiResult<Json<BoardItem>> {
+    let b = board(&state, &ip, &token).await?;
+    may_write(&state, &b, &me, b.votes, "votes").await?;
+    if !matches!(req.value, -1..=1) {
+        return Err(Error::bad_request("a vote is 1, -1 or 0").into());
+    }
+    let wid = board_item(&state, &b, seq).await?;
+    state.store.set_vote(wid, me.id, req.value).await?;
+    announce(&state, &b, wid, "reaction", "updated", me.id);
+    Ok(Json(board_item_out(&state, &b, seq, Some(me.id)).await?))
 }
 
 // ---- webhooks ----------------------------------------------------------------------------

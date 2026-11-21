@@ -12,6 +12,8 @@ pub struct Comment {
     pub id: Uuid,
     pub work_item_id: Uuid,
     pub author_id: Uuid,
+    /// The author's name, also for people outside the project (public board visitors).
+    pub author_name: String,
     #[sqlx(skip)]
     pub body_json: Option<serde_json::Value>,
     #[serde(skip)]
@@ -20,6 +22,8 @@ pub struct Comment {
     pub created_at: String,
     pub edited_at: Option<String>,
     pub hidden_at: Option<String>,
+    /// Shown on the project's public board (S3.7).
+    pub is_public: bool,
     #[sqlx(skip)]
     pub reactions: Vec<ReactionCount>,
 }
@@ -67,7 +71,9 @@ pub struct NewFile {
     pub path: String,
 }
 
-const C_COLS: &str = "id, work_item_id, author_id, body_json AS body_json_raw, body_html, created_at, edited_at, hidden_at";
+const C_COLS: &str = "id, work_item_id, author_id,
+    (SELECT COALESCE(NULLIF(u.name, ''), u.email) FROM users u WHERE u.id = comments.author_id) AS author_name,
+    body_json AS body_json_raw, body_html, created_at, edited_at, hidden_at, is_public";
 
 impl Store {
     // ---- comments -----------------------------------------------------------------------

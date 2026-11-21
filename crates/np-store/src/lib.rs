@@ -13,6 +13,7 @@ use time::OffsetDateTime;
 
 pub mod analytics;
 pub mod automations;
+pub mod board;
 pub mod collab;
 pub mod home;
 pub mod cycles;

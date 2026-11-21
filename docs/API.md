@@ -103,6 +103,7 @@ Base: `/workspaces/{slug}/projects/{id}/work-items`.
 | PATCH | `` | contributor+ | bulk: `{ids: [...], state_id?, priority?, assignee_ids?, label_ids?, start_date?, due_date?, estimate?}` |
 | GET / PATCH / DELETE | `/{wid}` | commenter+ / contributor+ / owner of the item or admin | `PATCH` any create field plus `sort_order` and `expected_updated_at` (see below) |
 | POST | `/{wid}/archive`, `/{wid}/unarchive` | contributor+ | only items in a completed or cancelled state are archived (`400` otherwise). An archived item is read-only: `PATCH`, also in bulk, answers `409` until it is restored; it can still be deleted |
+| POST | `/{wid}/comments/{cid}/public` | the comment's author (commenter+) or a project admin | `{public}` shows the comment on the project's public board or takes it off; comments carry `is_public` and `author_name` |
 | GET | `/{wid}/activity` | commenter+ | one row per change: `{actor_id, actor_name, actor_is_bot, verb, field, old_value, new_value, created_at}` |
 | GET / POST | `/{wid}/relations` | commenter+ / contributor+ | `POST {kind: blocks|blocked_by|relates_to|duplicate_of, work_item_id}` → all relations from this item's side |
 | DELETE | `/{wid}/relations/{rid}` | contributor+ | |
@@ -215,9 +216,13 @@ Base: `/workspaces/{slug}/projects/{id}`.
 
 | Method | Path | Who | What |
 |---|---|---|---|
-| GET / POST | `/workspaces/{slug}/projects/{id}/publish` | project admin | `{enabled, path}`; `POST {enabled}` — publishing always makes a new link (`/p/<token>`) |
-| GET | `/api/v1/public/boards/{token}` | anyone | `{workspace, project{name, identifier}, states, labels, items[{sequence, title, state_id, priority, start_date, due_date, estimate, label_ids}]}`: open items only (no archived, drafts or intake), 2,000 at most. No people, comments or files |
-| GET | `/api/v1/public/boards/{token}/items/{sequence}` | anyone | one item with `description_html` |
+| GET / POST | `/workspaces/{slug}/projects/{id}/publish` | project admin | `{enabled, path, comments, reactions, votes}`; `POST {enabled?, comments?, reactions?, votes?}` — publishing (`enabled: true`) always makes a new link (`/p/<token>`); the three switches (all off at first) change without touching the link |
+| GET | `/api/v1/public/boards/{token}` | anyone | `{workspace, project{name, identifier}, allow{comments, reactions, votes}, states, labels, items[{sequence, title, state_id, priority, start_date, due_date, estimate, label_ids}]}`: open items only (no archived, drafts or intake), 2,000 at most. No people or files |
+| GET | `/api/v1/public/boards/{token}/items/{sequence}` | anyone | one item with `description_html`, and where the board allows them `reactions[{emoji, count, mine}]`, `votes{up, down, mine}` and `comments[{id, author_name, author_avatar, body_html, created_at, edited, mine, reactions}]` (newest first; only comments marked public). `mine` is about the signed-in caller, if any |
+| POST | `/api/v1/public/boards/{token}/items/{sequence}/comments` | anyone signed in | `{body_html, body_json?}` adds a public comment (subscribers hear of it); answers the item as above. `400` when comments are off |
+| PATCH / DELETE | `/api/v1/public/boards/{token}/items/{sequence}/comments/{cid}` | its author | edit or delete your board comment |
+| POST | `/api/v1/public/boards/{token}/items/{sequence}/reactions` | anyone signed in | `{emoji, comment_id?}` toggles your reaction on the item or one of its public comments |
+| POST | `/api/v1/public/boards/{token}/items/{sequence}/votes` | anyone signed in | `{value: 1, -1 or 0}`: one vote per person, `0` takes it back. Board writes are limited to 60 per 10 minutes per person and make realtime events and webhooks like the app's |
 
 ### Webhooks
 
@@ -252,6 +257,8 @@ Workspace owners and admins: `POST /workspaces/{slug}/github` connects (or makes
 | GET | `/workspaces/{slug}/work-items` | workspace views: published, unarchived items of the live projects you are a member of and may read, newest first, each with `identifier` and `project_name`. Takes the project list's filters (`state_group`, `priority`, `assignee`, `unassigned`, `label`, `created_by`, `due_before`/`after`, `start_before`/`after`, `q`) plus `project` (ids, comma-separated), `subscribed=true` (you follow them) and `subscriber` (a person's id: they follow them); `archived=true` is refused (`400`). Pages of `limit` (default 1000) with `X-Next-Cursor` |
 | GET / POST | `/workspaces/{slug}/views` | workspace views: shared ones and your own (workspace guests: only their own). `POST {name, description?, is_shared? (default true), config}`, any workspace member |
 | PATCH / DELETE | `/workspaces/{slug}/views/{vid}` | `PATCH {name?, description?, is_shared?, config?}` by the owner only; `DELETE` by the owner or a workspace admin |
+| GET / POST | `/workspaces/{slug}/exports?page=` | members and admins (not guests) | your previous exports, newest first, ten a page: `[{id, format, project_ids, items, created_at}]`. `POST {format: csv\|json\|xlsx, project_ids?}` records one (no ids: every live project where you are a contributor or admin; others are `400`) |
+| GET | `/workspaces/{slug}/exports/{id}/download` | the exporter | the file, made now: one CSV or JSON for all the projects (rows carry `Project` and `Project key`), or an XLSX with a sheet per project. Archived items are included; drafts and intake requests are not |
 | GET | `/workspaces/{slug}/home/widgets` | your home widgets `[{key, is_enabled, sort_order}]`, highest `sort_order` first; `key` is `quick_links`, `recents` or `stickies` |
 | PATCH | `/workspaces/{slug}/home/widgets/{key}` | `{is_enabled?, sort_order?}` → the list |
 | GET / POST | `/workspaces/{slug}/quick-links` | your quick links, newest first; `POST {url, title?}` (`example.com` becomes `http://example.com`; only http(s); the same address twice is `409`) |

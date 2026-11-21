@@ -1025,3 +1025,62 @@
   justify-content: space-between;
   gap: var(--space-2);
 }
+
+/* Public board: visitors' votes, reactions and comments (S3.7) */
+.board-interactions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+.vote-group {
+  display: inline-flex;
+  gap: 4px;
+}
+.vote-group .btn svg {
+  width: 14px;
+  height: 14px;
+}
+.vote-group .btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--layer-2));
+}
+.board-comments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.board-comments h3 {
+  margin: 0;
+  font-size: var(--text-base);
+}
+.board-composer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.board-composer .textarea {
+  width: 100%;
+}
+.emoji-menu {
+  display: grid;
+  grid-template-columns: repeat(6, 32px);
+  padding: 4px;
+}
+.emoji-menu .menu-item {
+  justify-content: center;
+  padding: 0;
+}
+.pub-allow {
+  margin: var(--space-2) 0;
+}
+.exports-table td,
+.exports-table th {
+  white-space: nowrap;
+}
+.exports-table td.ellipsis {
+  max-width: 260px;
+}

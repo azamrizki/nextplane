@@ -42,6 +42,8 @@ pub struct Project {
     pub close_in: i64,
     /// The cancelled state that auto-close moves items to.
     pub close_state_id: Option<Uuid>,
+    /// It has a public board (S3.7: comments can then be made public).
+    pub is_published: bool,
 }
 
 /// `EstimateType` as stored text.
@@ -60,7 +62,7 @@ const P_COLS: &str = "p.id, p.workspace_id, p.identifier, p.name, p.description,
     p.cover_credit, p.lead_id,
     p.default_assignee_id, p.is_private, p.estimate_type, p.estimate_values, p.feature_cycles, p.feature_modules,
     p.feature_pages, p.feature_intake, p.created_by, p.created_at, p.archived_at, p.archive_in, p.close_in,
-    p.close_state_id";
+    p.close_state_id, p.public_board_token IS NOT NULL AS is_published";
 
 /// A project with the caller's explicit membership role (if any).
 #[derive(Debug, Clone, Serialize, FromRow)]

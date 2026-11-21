@@ -1,3 +1,4 @@
+import { ExportsPage } from "./pages/Exports";
 import { Toaster } from "./components/Toaster";
 import { MemberProfilePage } from "./pages/MemberProfile";
 import { StickiesPage } from "./pages/Stickies";
@@ -83,6 +84,7 @@ export const routes = [
           { path: "settings/members", element: <MembersPage /> },
           { path: "settings/webhooks", element: <WebhooksPage /> },
           { path: "settings/github", element: <GithubPage /> },
+          { path: "settings/exports", element: <ExportsPage /> },
           { path: "projects", element: <ProjectsPage /> },
           { path: "projects/:projectId", element: <ProjectHomePage /> },
           { path: "projects/:projectId/settings", element: <ProjectSettingsPage /> },

@@ -423,6 +423,26 @@ pub fn router(state: AppState, spa: Router) -> Router {
             get(integrations::public_item),
         )
         .route(
+            "/public/boards/{token}/items/{seq}/comments",
+            post(integrations::board_comment),
+        )
+        .route(
+            "/public/boards/{token}/items/{seq}/comments/{cid}",
+            patch(integrations::board_edit_comment).delete(integrations::board_delete_comment),
+        )
+        .route(
+            "/public/boards/{token}/items/{seq}/reactions",
+            post(integrations::board_react),
+        )
+        .route(
+            "/public/boards/{token}/items/{seq}/votes",
+            post(integrations::board_vote),
+        )
+        .route(
+            "/workspaces/{slug}/projects/{id}/work-items/{wid}/comments/{cid}/public",
+            post(collab::set_comment_public),
+        )
+        .route(
             "/workspaces/{slug}/webhooks",
             get(integrations::hooks).post(integrations::create_hook),
         )
@@ -468,6 +488,14 @@ pub fn router(state: AppState, spa: Router) -> Router {
         .route(
             "/workspaces/{slug}/projects/{id}/import",
             post(transfer::import),
+        )
+        .route(
+            "/workspaces/{slug}/exports",
+            get(transfer::ws_exports).post(transfer::ws_export),
+        )
+        .route(
+            "/workspaces/{slug}/exports/{id}/download",
+            get(transfer::ws_export_download),
         )
         .route("/workspaces/{slug}/analytics", get(analytics::breakdown))
         .route(

@@ -110,6 +110,8 @@ export interface Project {
   /** An uploaded image or an Unsplash photo, with the photographer's credit for Unsplash. */
   cover_image?: string | null;
   cover_credit?: { name: string; url: string } | null;
+  /** It has a public board. */
+  is_published?: boolean;
   lead_id: string | null;
   default_assignee_id: string | null;
   is_private: boolean;

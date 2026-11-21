@@ -1,4 +1,4 @@
-import { Bot, Boxes, Building2, CircleDot, Database, GitBranch, Settings, Share2, Tag, ToggleLeft, Triangle, UsersRound, Webhook, Workflow } from "lucide-react";
+import { Bot, Boxes, Building2, FileDown, CircleDot, Database, GitBranch, Settings, Share2, Tag, ToggleLeft, Triangle, UsersRound, Webhook, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import { NavLink, useParams } from "react-router";
 import type { MyWorkspace } from "../api/types";
@@ -35,6 +35,12 @@ export function WsSettingsFrame({ ws, crumbs, actions, children }: { ws: MyWorks
               <NavLink to={`${base}/members`} className="side-link">
                 <UsersRound />
                 {t("members.title")}
+              </NavLink>
+            ) : null}
+            {ws.role !== "guest" ? (
+              <NavLink to={`${base}/exports`} className="side-link">
+                <FileDown />
+                {t("ex.title")}
               </NavLink>
             ) : null}
             {can.editWorkspace(ws) ? (

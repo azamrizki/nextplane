@@ -80,7 +80,7 @@ pub struct CommentReq {
     body_html: String,
 }
 
-fn clean_comment(req: CommentReq) -> ApiResult<(Option<String>, String)> {
+pub(crate) fn clean_comment(req: CommentReq) -> ApiResult<(Option<String>, String)> {
     let (json, html) = richtext::clean_body(req.body_json, &req.body_html)?;
     if richtext::plain_text(&html).is_empty() && !html.contains("<img") {
         return Err(Error::bad_request("a comment cannot be empty").into());
@@ -191,6 +191,30 @@ pub async fn unhide_comment(
     set_hidden(state, me, slug, pid, wid, cid, false).await
 }
 
+#[derive(Deserialize)]
+pub struct PublicReq {
+    public: bool,
+}
+
+/// Shows a comment on the project's public board, or takes it off (S3.7, as in Plane): its
+/// author or a project admin.
+pub async fn set_comment_public(
+    State(state): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path((slug, pid, wid, cid)): Path<(String, Uuid, Uuid, Uuid)>,
+    Json(req): Json<PublicReq>,
+) -> ApiResult<Json<Comment>> {
+    let ctx = item_ctx(&state, &me, &slug, pid, wid).await?;
+    let c = load_comment(&state, wid, cid).await?;
+    if c.author_id != me.id {
+        ctx.require_write(ProjAction::HideComment)?;
+    } else {
+        ctx.require_write(ProjAction::Comment)?;
+    }
+    state.store.set_comment_public(cid, req.public).await?;
+    Ok(Json(load_comment(&state, wid, cid).await?))
+}
+
 // ---- reactions --------------------------------------------------------------------------
 
 #[derive(Deserialize)]
@@ -198,7 +222,7 @@ pub struct ReactReq {
     emoji: String,
 }
 
-fn clean_emoji(e: &str) -> ApiResult<String> {
+pub(crate) fn clean_emoji(e: &str) -> ApiResult<String> {
     let e = e.trim();
     if e.is_empty()
         || e.chars().count() > 8

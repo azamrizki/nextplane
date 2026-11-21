@@ -486,3 +486,225 @@ mod tests {
         assert_eq!(guess("Story Points"), Some("estimate"));
     }
 }
+
+// ---- Workspace exports (S3.7, as in Plane's workspace settings › Exports) -------------------
+
+use np_core::perm::{self as perm_rules, ProjRole, WsRole};
+use np_store::projects::Project;
+use np_store::transfer::{ExportEntry, ExportRow};
+
+/// Live projects where you may export: those you are a member of as contributor or admin.
+async fn exportable(state: &AppState, slug: &str, me: &User) -> ApiResult<(np_store::workspaces::MyWorkspace, Vec<Project>)> {
+    let ws = super::workspaces::load(state, slug, me).await?;
+    if ws.role == WsRole::Guest {
+        return Err(Error::forbidden("guests cannot export work items").into());
+    }
+    let list = state
+        .store
+        .workspace_projects(ws.workspace.id, me.id, false)
+        .await?
+        .into_iter()
+        .filter(|r| {
+            r.member_role.0.is_some()
+                && perm_rules::effective_proj_role(ws.role, r.member_role.0)
+                    .is_some_and(|role| role >= ProjRole::Contributor)
+        })
+        .map(|r| r.project)
+        .collect();
+    Ok((ws, list))
+}
+
+fn row_cells(r: &ExportRow) -> Vec<String> {
+    let o = |v: &Option<String>| v.clone().unwrap_or_default();
+    vec![
+        r.key.clone(),
+        safe_cell(&r.title),
+        r.state.clone(),
+        r.state_group.clone(),
+        r.priority.clone(),
+        r.assignees.clone(),
+        safe_cell(&r.labels),
+        safe_cell(&o(&r.cycle)),
+        safe_cell(&r.modules),
+        o(&r.start_date),
+        o(&r.due_date),
+        o(&r.estimate),
+        o(&r.parent),
+        r.created_by.clone(),
+        r.created_at.clone(),
+        r.updated_at.clone(),
+        o(&r.completed_at),
+        safe_cell(&html_to_text(&r.description_html)),
+        o(&r.archived_at),
+    ]
+}
+
+/// One file for all the projects: CSV and JSON rows carry their project; XLSX has a sheet per
+/// project. Archived items are included; drafts and intake requests are not.
+async fn build_export(state: &AppState, projects: &[Project], format: &str) -> ApiResult<(Vec<u8>, &'static str, &'static str, i64)> {
+    let mut all: Vec<(&Project, Vec<ExportRow>)> = Vec::new();
+    for p in projects {
+        all.push((p, state.store.export_items(p.id).await?));
+    }
+    let count = all.iter().map(|(_, r)| r.len() as i64).sum();
+    let fail = |e: String| {
+        tracing::error!(error = %e, "export failed");
+        Error::internal()
+    };
+    let mut head: Vec<&str> = CSV_HEAD.to_vec();
+    head.push("Archived at");
+    Ok(match format {
+        "csv" => {
+            let mut w = csv::Writer::from_writer(Vec::new());
+            let mut h = vec!["Project", "Project key"];
+            h.extend(&head);
+            w.write_record(&h).map_err(|e| fail(e.to_string()))?;
+            for (p, rows) in &all {
+                for r in rows {
+                    let mut cells = vec![safe_cell(&p.name), p.identifier.clone()];
+                    cells.extend(row_cells(r));
+                    w.write_record(&cells).map_err(|e| fail(e.to_string()))?;
+                }
+            }
+            let mut out = "\u{feff}".as_bytes().to_vec();
+            out.extend(w.into_inner().map_err(|e| fail(e.to_string()))?);
+            (out, "text/csv; charset=utf-8", "csv", count)
+        }
+        "json" => {
+            let list: Vec<serde_json::Value> = all
+                .iter()
+                .flat_map(|(p, rows)| {
+                    rows.iter().map(|r| {
+                        let mut v = serde_json::to_value(r).unwrap_or_default();
+                        v["project"] = serde_json::json!(p.name);
+                        v["project_identifier"] = serde_json::json!(p.identifier);
+                        v
+                    })
+                })
+                .collect();
+            (
+                serde_json::to_vec_pretty(&list).map_err(|e| fail(e.to_string()))?,
+                "application/json",
+                "json",
+                count,
+            )
+        }
+        "xlsx" => {
+            let names = crate::xlsx::sheet_names(&all.iter().map(|(p, _)| p.name.clone()).collect::<Vec<_>>());
+            let sheets: Vec<crate::xlsx::Sheet> = all
+                .iter()
+                .zip(names)
+                .map(|((_, rows), name)| {
+                    let mut grid: Vec<Vec<crate::xlsx::Cell>> = vec![head.iter().map(|h| (*h).into()).collect()];
+                    for r in rows {
+                        let mut cells: Vec<crate::xlsx::Cell> = row_cells(r).into_iter().map(Into::into).collect();
+                        // Estimates that are numbers stay numbers.
+                        if let Some(n) = r.estimate.as_deref().and_then(|e| e.parse::<f64>().ok()) {
+                            cells[11] = crate::xlsx::Cell::Number(n);
+                        }
+                        grid.push(cells);
+                    }
+                    crate::xlsx::Sheet { name, rows: grid }
+                })
+                .collect();
+            (
+                crate::xlsx::workbook(&sheets),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "xlsx",
+                count,
+            )
+        }
+        _ => return Err(Error::bad_request("format is csv, json or xlsx").into()),
+    })
+}
+
+#[derive(Deserialize)]
+pub struct WsExportReq {
+    format: String,
+    /// Empty: every project you may export.
+    #[serde(default)]
+    project_ids: Vec<Uuid>,
+}
+
+/// `POST /workspaces/{slug}/exports`: records the export and answers with it; the file comes
+/// from its `download` link.
+pub async fn ws_export(
+    State(state): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(slug): Path<String>,
+    Json(req): Json<WsExportReq>,
+) -> ApiResult<(StatusCode, Json<ExportEntry>)> {
+    let (ws, mine) = exportable(&state, &slug, &me).await?;
+    if !matches!(req.format.as_str(), "csv" | "json" | "xlsx") {
+        return Err(Error::bad_request("format is csv, json or xlsx").into());
+    }
+    let mut ids = req.project_ids.clone();
+    ids.sort();
+    ids.dedup();
+    if let Some(bad) = ids.iter().find(|id| !mine.iter().any(|p| p.id == **id)) {
+        return Err(Error::bad_request(format!("you cannot export project {bad}")).into());
+    }
+    let chosen: Vec<Project> = mine
+        .into_iter()
+        .filter(|p| ids.is_empty() || ids.contains(&p.id))
+        .collect();
+    if chosen.is_empty() {
+        return Err(Error::bad_request("there is no project to export").into());
+    }
+    let mut items = 0;
+    for p in &chosen {
+        items += state.store.export_items(p.id).await?.len() as i64;
+    }
+    let e = state
+        .store
+        .add_export(ws.workspace.id, me.id, &req.format, &ids, items)
+        .await?;
+    Ok((StatusCode::CREATED, Json(e)))
+}
+
+#[derive(Deserialize)]
+pub struct ExportsQuery {
+    page: Option<i64>,
+}
+
+/// Your previous exports, newest first, ten a page.
+pub async fn ws_exports(
+    State(state): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path(slug): Path<String>,
+    Query(q): Query<ExportsQuery>,
+) -> ApiResult<Json<Vec<ExportEntry>>> {
+    let (ws, _) = exportable(&state, &slug, &me).await?;
+    let page = q.page.unwrap_or(1).max(1);
+    Ok(Json(state.store.exports(ws.workspace.id, me.id, 10, (page - 1) * 10).await?))
+}
+
+/// The file of an export, made now from the projects it names that you may still export.
+pub async fn ws_export_download(
+    State(state): State<AppState>,
+    CurrentUser(me): CurrentUser,
+    Path((slug, id)): Path<(String, Uuid)>,
+) -> ApiResult<Response> {
+    let (ws, mine) = exportable(&state, &slug, &me).await?;
+    let e = state
+        .store
+        .export_entry(ws.workspace.id, me.id, id)
+        .await?
+        .ok_or_else(|| Error::not_found("export not found"))?;
+    let chosen: Vec<Project> = mine
+        .into_iter()
+        .filter(|p| e.project_ids.is_empty() || e.project_ids.contains(&p.id))
+        .collect();
+    let (body, ctype, ext, _) = build_export(&state, &chosen, &e.format).await?;
+    let mut res = (StatusCode::OK, body).into_response();
+    res.headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static(ctype));
+    let day = e.created_at.get(..10).unwrap_or("export");
+    if let Ok(v) = HeaderValue::from_str(&format!(
+        "attachment; filename=\"{}-work-items-{day}.{ext}\"",
+        ws.workspace.slug
+    )) {
+        res.headers_mut().insert(header::CONTENT_DISPOSITION, v);
+    }
+    Ok(res)
+}

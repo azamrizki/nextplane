@@ -180,8 +180,16 @@ export function PublishTab({ p }: { p: Project }) {
   const base = `${projectPath(ws.slug, p.id)}/publish`;
   const key = ["publish", ws.slug, p.id];
   const admin = pcan.editSettings(p);
-  const q = useQuery({ queryKey: key, queryFn: () => get<{ enabled: boolean; path: string | null }>(base), enabled: admin });
-  const set = useMutation({ mutationFn: (enabled: boolean) => post<{ enabled: boolean; path: string | null }>(base, { enabled }), onSuccess: (v) => qc.setQueryData(key, v) });
+  type Pub = { enabled: boolean; path: string | null; comments: boolean; reactions: boolean; votes: boolean };
+  const q = useQuery({ queryKey: key, queryFn: () => get<Pub>(base), enabled: admin });
+  const set = useMutation({ mutationFn: (enabled: boolean) => post<Pub>(base, { enabled }), onSuccess: (v) => qc.setQueryData(key, v) });
+  // Visitors' comments, reactions and votes: switches flip at once, then the answer confirms.
+  const [flip, setFlip] = useState<Partial<Pub>>({});
+  const allow = useMutation({
+    mutationFn: (body: Partial<Pub>) => post<Pub>(base, body),
+    onSuccess: (v) => qc.setQueryData(key, v),
+    onSettled: () => setFlip({}),
+  });
   const [copied, setCopied] = useState(false);
   const url = q.data?.path ? `${location.origin}${q.data.path}` : "";
   return (
@@ -206,6 +214,28 @@ export function PublishTab({ p }: { p: Project }) {
                 {copied ? t("in.copied") : t("in.copy")}
               </button>
             </div>
+            <div className="rows card pub-allow">
+              {(["comments", "reactions", "votes"] as const).map((k) => (
+                <label key={k} className="row checkbox">
+                  <div className="row-main">
+                    <b>{t(`pub.allow.${k}`)}</b>
+                    <span className="muted small">{t(`pub.allow.${k}Hint`)}</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    className="switch"
+                    aria-label={t(`pub.allow.${k}`)}
+                    checked={flip[k] ?? q.data?.[k] ?? false}
+                    onChange={(e) => {
+                      setFlip((f) => ({ ...f, [k]: e.target.checked }));
+                      allow.mutate({ [k]: e.target.checked });
+                    }}
+                  />
+                </label>
+              ))}
+            </div>
+            <p className="muted small">{t("pub.signInNote")}</p>
             <div className="page-actions">
               <button className="btn btn-sm" onClick={() => set.mutate(true)}>{t("pub.renew")}</button>
               <button className="btn btn-sm btn-ghost danger-text" onClick={() => set.mutate(false)}>{t("pub.disable")}</button>
