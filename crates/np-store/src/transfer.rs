@@ -100,7 +100,12 @@ impl Store {
             .ok_or_else(|| np_core::Error::not_found("export not found"))
     }
 
-    pub async fn export_entry(&self, ws: Uuid, user: Uuid, id: Uuid) -> Result<Option<ExportEntry>> {
+    pub async fn export_entry(
+        &self,
+        ws: Uuid,
+        user: Uuid,
+        id: Uuid,
+    ) -> Result<Option<ExportEntry>> {
         sqlx::query_as(
             "SELECT id, format, project_ids, items, created_at FROM exports WHERE id = ? AND workspace_id = ? AND user_id = ?",
         )
@@ -113,7 +118,13 @@ impl Store {
     }
 
     /// Your own exports in the workspace, newest first (as in Plane).
-    pub async fn exports(&self, ws: Uuid, user: Uuid, limit: i64, offset: i64) -> Result<Vec<ExportEntry>> {
+    pub async fn exports(
+        &self,
+        ws: Uuid,
+        user: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<ExportEntry>> {
         sqlx::query_as(
             "SELECT id, format, project_ids, items, created_at FROM exports WHERE workspace_id = ? AND user_id = ?
              ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?",

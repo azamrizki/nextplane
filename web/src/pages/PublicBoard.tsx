@@ -60,6 +60,7 @@ interface PItem {
 interface Board {
   workspace: string;
   project: { name: string; identifier: string };
+  allow?: { comments: boolean; reactions: boolean; votes: boolean };
   states: PState[];
   labels: PLabel[];
   items: PItem[];
@@ -104,7 +105,7 @@ export function PublicBoardPage() {
       <header className="pb-head">
         <div>
           <h1>{b.project.name}</h1>
-          <span className="faint small">{b.workspace} · {t("pb.readOnly")}</span>
+          <span className="faint small">{b.workspace} · {b.allow && (b.allow.comments || b.allow.reactions || b.allow.votes) ? t("pb.public") : t("pb.readOnly")}</span>
         </div>
         <div className="row-wrap">
           <input className="input" type="search" placeholder={t("pb.search")} aria-label={t("pb.search")} value={search} onChange={(e) => setSearch(e.target.value)} />

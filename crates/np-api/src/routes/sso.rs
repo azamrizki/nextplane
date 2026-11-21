@@ -82,7 +82,14 @@ pub async fn start(
     if limited(&state, &ip) {
         return fail("too many attempts, try again later");
     }
-    oidc_start(&state, &cfg, &redirect_uri(&state, &headers, None), "oidc", q.next.as_deref()).await
+    oidc_start(
+        &state,
+        &cfg,
+        &redirect_uri(&state, &headers, None),
+        "oidc",
+        q.next.as_deref(),
+    )
+    .await
 }
 
 pub async fn callback(
@@ -109,7 +116,10 @@ pub async fn callback(
 async fn usable(state: &AppState, key: &str) -> Result<Provider, Response> {
     match providers::find(&state.store, key).await {
         Ok(Some(p)) if p.usable() => Ok(p),
-        Ok(Some(p)) => Err(fail(&format!("sign-in with {} is not set up on this server", p.name()))),
+        Ok(Some(p)) => Err(fail(&format!(
+            "sign-in with {} is not set up on this server",
+            p.name()
+        ))),
         _ => Err(fail("there is no such sign-in provider")),
     }
 }
@@ -316,7 +326,8 @@ async fn oidc_identity(
         ok = ok || oidc::verified(&info.email_verified);
         name = name.or(info.name);
     }
-    let email = email.ok_or_else(|| anyhow::anyhow!("the provider did not share an email address"))?;
+    let email =
+        email.ok_or_else(|| anyhow::anyhow!("the provider did not share an email address"))?;
     if !ok {
         anyhow::bail!("the provider has not verified this email address");
     }
@@ -370,7 +381,12 @@ async fn github_identity(
             .bearer_auth(&at)
             .header(reqwest::header::ACCEPT, "application/vnd.github+json")
     };
-    let user: GithubUser = get("/user".into()).send().await?.error_for_status()?.json().await?;
+    let user: GithubUser = get("/user".into())
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
     let emails: Vec<GithubEmail> = get("/user/emails".into())
         .send()
         .await?
@@ -383,9 +399,14 @@ async fn github_identity(
         .ok_or_else(|| anyhow::anyhow!("your primary GitHub email address is not verified"))?
         .email;
     if !p.org.is_empty() {
-        let r = get(format!("/orgs/{}/memberships/{}", p.org, user.login)).send().await?;
+        let r = get(format!("/orgs/{}/memberships/{}", p.org, user.login))
+            .send()
+            .await?;
         if !r.status().is_success() {
-            anyhow::bail!("only members of the {} organization on GitHub may sign in", p.org);
+            anyhow::bail!(
+                "only members of the {} organization on GitHub may sign in",
+                p.org
+            );
         }
     }
     Ok((email, user.name.unwrap_or(user.login)))

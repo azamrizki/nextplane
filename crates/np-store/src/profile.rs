@@ -53,7 +53,11 @@ const LIVE: &str = " AND w.deleted_at IS NULL AND w.archived_at IS NULL AND w.is
 
 impl Store {
     /// Per project: what `user` created, is assigned, and of that, what is open or completed.
-    pub async fn profile_numbers(&self, projects: &[Uuid], user: Uuid) -> Result<Vec<ProjectNumbers>> {
+    pub async fn profile_numbers(
+        &self,
+        projects: &[Uuid],
+        user: Uuid,
+    ) -> Result<Vec<ProjectNumbers>> {
         if projects.is_empty() {
             return Ok(Vec::new());
         }
@@ -97,7 +101,12 @@ impl Store {
     }
 
     /// Items assigned to `user`, counted by `state group` or by `priority`.
-    pub async fn profile_assigned_by(&self, projects: &[Uuid], user: Uuid, by_priority: bool) -> Result<Vec<Count>> {
+    pub async fn profile_assigned_by(
+        &self,
+        projects: &[Uuid],
+        user: Uuid,
+        by_priority: bool,
+    ) -> Result<Vec<Count>> {
         if projects.is_empty() {
             return Ok(Vec::new());
         }
@@ -141,7 +150,8 @@ impl Store {
         in_projects(&mut qb, projects);
         qb.push(" AND w.deleted_at IS NULL AND w.is_draft = 0");
         if let Some(d) = day {
-            qb.push(" AND a.created_at LIKE ").push_bind(format!("{d}%"));
+            qb.push(" AND a.created_at LIKE ")
+                .push_bind(format!("{d}%"));
         }
         if let Some((at, id)) = before {
             qb.push(" AND (a.created_at < ")
@@ -152,7 +162,8 @@ impl Store {
                 .push_bind(id)
                 .push("))");
         }
-        qb.push(" ORDER BY a.created_at DESC, a.id DESC LIMIT ").push_bind(limit);
+        qb.push(" ORDER BY a.created_at DESC, a.id DESC LIMIT ")
+            .push_bind(limit);
         qb.build_query_as()
             .fetch_all(self.pool())
             .await

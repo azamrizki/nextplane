@@ -56,7 +56,11 @@ pub struct Profile {
     projects: Option<Vec<ProjectRow>>,
 }
 
-async fn person(state: &AppState, ws: Uuid, uid: Uuid) -> ApiResult<np_store::workspaces::WsMember> {
+async fn person(
+    state: &AppState,
+    ws: Uuid,
+    uid: Uuid,
+) -> ApiResult<np_store::workspaces::WsMember> {
     state
         .store
         .workspace_members(ws)
@@ -138,7 +142,11 @@ pub struct ActivityOut {
 
 fn cursor_of(e: &ActivityEntry) -> String {
     use base64::Engine;
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(format!("{}|{}", e.created_at, e.id.simple()))
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(format!(
+        "{}|{}",
+        e.created_at,
+        e.id.simple()
+    ))
 }
 
 fn parse_cursor(c: &str) -> ApiResult<(String, Uuid)> {
@@ -181,7 +189,11 @@ pub async fn activity(
         .map(|p| (p.id, (p.identifier.clone(), p.name.clone())))
         .collect();
     let ids: Vec<Uuid> = projects.iter().map(|p| p.id).collect();
-    let limit = if csv { 10_000 } else { q.limit.unwrap_or(100).clamp(1, 500) };
+    let limit = if csv {
+        10_000
+    } else {
+        q.limit.unwrap_or(100).clamp(1, 500)
+    };
     let rows = state
         .store
         .user_activity(
@@ -193,13 +205,22 @@ pub async fn activity(
         )
         .await?;
     if csv {
-        return Ok(csv_response(&me, &m, &names, &rows, date.as_deref().unwrap_or("")));
+        return Ok(csv_response(
+            &me,
+            &m,
+            &names,
+            &rows,
+            date.as_deref().unwrap_or(""),
+        ));
     }
-    let next = (rows.len() as i64 == limit).then(|| rows.last().map(cursor_of)).flatten();
+    let next = (rows.len() as i64 == limit)
+        .then(|| rows.last().map(cursor_of))
+        .flatten();
     let out: Vec<ActivityOut> = rows
         .into_iter()
         .map(|entry| {
-            let (identifier, project_name) = names.get(&entry.project_id).cloned().unwrap_or_default();
+            let (identifier, project_name) =
+                names.get(&entry.project_id).cloned().unwrap_or_default();
             ActivityOut {
                 entry,
                 identifier,
@@ -222,7 +243,16 @@ fn csv_response(
     day: &str,
 ) -> Response {
     let mut w = csv::Writer::from_writer(vec![0xEF, 0xBB, 0xBF]);
-    let _ = w.write_record(["Actor", "Work item", "Project", "When", "Action", "Field", "Old value", "New value"]);
+    let _ = w.write_record([
+        "Actor",
+        "Work item",
+        "Project",
+        "When",
+        "Action",
+        "Field",
+        "Old value",
+        "New value",
+    ]);
     // Cells that a spreadsheet would read as a formula are prefixed (as the project export does).
     let safe = |s: &str| {
         if s.starts_with(['=', '+', '-', '@', '\t', '\r']) {
@@ -231,7 +261,11 @@ fn csv_response(
             s.to_string()
         }
     };
-    let who = if m.name.is_empty() { m.email.clone() } else { m.name.clone() };
+    let who = if m.name.is_empty() {
+        m.email.clone()
+    } else {
+        m.name.clone()
+    };
     for r in rows {
         let (key, project) = names.get(&r.project_id).cloned().unwrap_or_default();
         let _ = w.write_record([

@@ -201,10 +201,9 @@ async fn set_archived(
     c.require_write(ProjAction::EditCycleOrModule)?;
     let m = load(&state, pid, id).await?;
     if on && m.archived_at.is_none() && !matches!(m.status.as_str(), "completed" | "cancelled") {
-        return Err(Error::bad_request(
-            "only completed or cancelled modules can be archived",
-        )
-        .into());
+        return Err(
+            Error::bad_request("only completed or cancelled modules can be archived").into(),
+        );
     }
     state.store.set_module_archived(id, on).await?;
     Ok(Json(load(&state, pid, id).await?))

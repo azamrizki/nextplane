@@ -144,7 +144,13 @@ impl Store {
         }
     }
 
-    pub async fn add_quick_link(&self, ws: Uuid, user: Uuid, url: &str, title: &str) -> Result<QuickLink> {
+    pub async fn add_quick_link(
+        &self,
+        ws: Uuid,
+        user: Uuid,
+        url: &str,
+        title: &str,
+    ) -> Result<QuickLink> {
         let id = new_id();
         let now = now_ts();
         sqlx::query(
@@ -260,7 +266,9 @@ impl Store {
         let like = query.map(str::trim).filter(|q| !q.is_empty()).map(|q| {
             format!(
                 "%{}%",
-                q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+                q.replace('\\', "\\\\")
+                    .replace('%', "\\%")
+                    .replace('_', "\\_")
             )
         });
         sqlx::query_as(&format!(
@@ -330,7 +338,13 @@ impl Store {
         self.sticky(ws, user, id).await
     }
 
-    pub async fn update_sticky(&self, ws: Uuid, user: Uuid, id: Uuid, p: &StickyPatch) -> Result<Sticky> {
+    pub async fn update_sticky(
+        &self,
+        ws: Uuid,
+        user: Uuid,
+        id: Uuid,
+        p: &StickyPatch,
+    ) -> Result<Sticky> {
         self.sticky(ws, user, id).await?;
         let (set_body, json, html, text) = match &p.body {
             Some((j, h, t)) => (true, j.clone(), h.clone(), t.clone()),

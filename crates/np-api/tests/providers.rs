@@ -67,22 +67,42 @@ async fn sign_in(t: &common::TestApp, f: &Fake, p: &str, email: &str) -> (String
     let go = |uri: String| {
         let app = t.app.clone();
         async move {
-            tower::ServiceExt::oneshot(app, Request::get(uri).header(header::HOST, "localhost:12313").body(Body::empty()).unwrap())
-                .await
-                .unwrap()
+            tower::ServiceExt::oneshot(
+                app,
+                Request::get(uri)
+                    .header(header::HOST, "localhost:12313")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap()
         }
     };
     let res = go(format!("/api/v1/auth/oauth/{p}/start?next=/acme")).await;
-    let loc = res.headers()[header::LOCATION].to_str().unwrap().to_string();
+    let loc = res.headers()[header::LOCATION]
+        .to_str()
+        .unwrap()
+        .to_string();
     assert!(loc.starts_with(&f.base), "{loc}");
     let url = reqwest::Url::parse(&loc).unwrap();
     let q: std::collections::HashMap<_, _> = url.query_pairs().into_owned().collect();
-    assert_eq!(q["redirect_uri"], format!("http://localhost:12313/api/v1/auth/oauth/{p}/callback"));
+    assert_eq!(
+        q["redirect_uri"],
+        format!("http://localhost:12313/api/v1/auth/oauth/{p}/callback")
+    );
     if let Some(n) = q.get("nonce") {
         *f.nonce.lock().unwrap() = n.clone();
     }
-    let res = go(format!("/api/v1/auth/oauth/{p}/callback?code=c0de&state={}", q["state"])).await;
-    let location = res.headers().get(header::LOCATION).map(|v| v.to_str().unwrap().to_string()).unwrap_or_default();
+    let res = go(format!(
+        "/api/v1/auth/oauth/{p}/callback?code=c0de&state={}",
+        q["state"]
+    ))
+    .await;
+    let location = res
+        .headers()
+        .get(header::LOCATION)
+        .map(|v| v.to_str().unwrap().to_string())
+        .unwrap_or_default();
     let cookie = res
         .headers()
         .get(header::SET_COOKIE)
@@ -98,10 +118,19 @@ async fn admins_set_up_providers_and_people_sign_in_with_them() {
     let a = t.get("/api/v1/admin/auth", Some(&ana)).await.body;
     assert_eq!(a["password_enabled"], true);
     assert_eq!(a["providers"].as_array().unwrap().len(), 4);
-    assert_eq!(a["providers"][2]["callback_url"], "http://localhost/api/v1/auth/oauth/gitlab/callback");
+    assert_eq!(
+        a["providers"][2]["callback_url"],
+        "http://localhost/api/v1/auth/oauth/gitlab/callback"
+    );
     // Not before it is set up; secrets are never sent back.
     assert_eq!(
-        t.patch("/api/v1/admin/auth", json!({ "providers": { "github": { "enabled": true } } }), Some(&ana)).await.status,
+        t.patch(
+            "/api/v1/admin/auth",
+            json!({ "providers": { "github": { "enabled": true } } }),
+            Some(&ana)
+        )
+        .await
+        .status,
         StatusCode::BAD_REQUEST
     );
     let r = t
@@ -116,19 +145,31 @@ async fn admins_set_up_providers_and_people_sign_in_with_them() {
         .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
     assert!(!r.body.to_string().contains("lab-secret"));
-    assert_eq!(r.body["providers"][2]["host"], f.base, "trailing slash dropped");
+    assert_eq!(
+        r.body["providers"][2]["host"], f.base,
+        "trailing slash dropped"
+    );
     assert_eq!(r.body["providers"][2]["has_secret"], true);
     let info = t.get("/api/v1/instance", None).await.body;
-    assert_eq!(info["providers"], json!([{ "key": "github", "name": "GitHub" }, { "key": "gitlab", "name": "GitLab" }]));
+    assert_eq!(
+        info["providers"],
+        json!([{ "key": "github", "name": "GitHub" }, { "key": "gitlab", "name": "GitLab" }])
+    );
     // Someone else cannot read or change it.
     t.workspace(&ana, "acme").await;
     let bob = t.join(&ana, "acme", "bob@example.com", "member").await;
-    assert_eq!(t.get("/api/v1/admin/auth", Some(&bob)).await.status, StatusCode::FORBIDDEN);
+    assert_eq!(
+        t.get("/api/v1/admin/auth", Some(&bob)).await.status,
+        StatusCode::FORBIDDEN
+    );
 
     // GitLab (OpenID Connect): an existing account by its verified email.
     let (loc, cookie) = sign_in(&t, &f, "gitlab", "Bob@Example.com").await;
     assert_eq!(loc, "/acme");
-    assert_eq!(t.get("/api/v1/me", cookie.as_deref()).await.body["email"], "bob@example.com");
+    assert_eq!(
+        t.get("/api/v1/me", cookie.as_deref()).await.body["email"],
+        "bob@example.com"
+    );
 
     // GitHub: the primary email must be verified and the person in the organization.
     let (loc, cookie) = sign_in(&t, &f, "github", "bob@example.com").await;
@@ -148,14 +189,26 @@ async fn admins_set_up_providers_and_people_sign_in_with_them() {
     assert!(loc.contains("no%20account"), "{loc}");
 
     // A provider that is off cannot be used.
-    t.patch("/api/v1/admin/auth", json!({ "providers": { "gitlab": { "enabled": false } } }), Some(&ana)).await;
+    t.patch(
+        "/api/v1/admin/auth",
+        json!({ "providers": { "gitlab": { "enabled": false } } }),
+        Some(&ana),
+    )
+    .await;
     let res = tower::ServiceExt::oneshot(
         t.app.clone(),
-        Request::get("/api/v1/auth/oauth/gitlab/start").body(Body::empty()).unwrap(),
+        Request::get("/api/v1/auth/oauth/gitlab/start")
+            .body(Body::empty())
+            .unwrap(),
     )
     .await
     .unwrap();
-    assert!(res.headers()[header::LOCATION].to_str().unwrap().contains("not%20set%20up"));
+    assert!(
+        res.headers()[header::LOCATION]
+            .to_str()
+            .unwrap()
+            .contains("not%20set%20up")
+    );
 }
 
 #[tokio::test]
@@ -167,7 +220,13 @@ async fn password_sign_in_can_be_turned_off_but_not_every_way_in() {
     t.join(&ana, "acme", "bob@example.com", "member").await;
     // Not while it is the only way in.
     assert_eq!(
-        t.patch("/api/v1/admin/auth", json!({ "password_enabled": false }), Some(&ana)).await.status,
+        t.patch(
+            "/api/v1/admin/auth",
+            json!({ "password_enabled": false }),
+            Some(&ana)
+        )
+        .await
+        .status,
         StatusCode::CONFLICT
     );
     let r = t
@@ -178,19 +237,36 @@ async fn password_sign_in_can_be_turned_off_but_not_every_way_in() {
         )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
-    assert_eq!(t.get("/api/v1/instance", None).await.body["password_enabled"], false);
+    assert_eq!(
+        t.get("/api/v1/instance", None).await.body["password_enabled"],
+        false
+    );
     // People sign in with the provider now; instance admins keep their password as a way back.
     let r = t
-        .post("/api/v1/auth/login", json!({ "email": "bob@example.com", "password": "password123" }), None)
+        .post(
+            "/api/v1/auth/login",
+            json!({ "email": "bob@example.com", "password": "password123" }),
+            None,
+        )
         .await;
     assert_eq!(r.status, StatusCode::FORBIDDEN, "{}", r.body);
     let r = t
-        .post("/api/v1/auth/login", json!({ "email": "ana@example.com", "password": "correct horse" }), None)
+        .post(
+            "/api/v1/auth/login",
+            json!({ "email": "ana@example.com", "password": "correct horse" }),
+            None,
+        )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
     // Turning the last provider off is refused too.
     assert_eq!(
-        t.patch("/api/v1/admin/auth", json!({ "providers": { "github": { "enabled": false } } }), Some(&ana)).await.status,
+        t.patch(
+            "/api/v1/admin/auth",
+            json!({ "providers": { "github": { "enabled": false } } }),
+            Some(&ana)
+        )
+        .await
+        .status,
         StatusCode::CONFLICT
     );
 }

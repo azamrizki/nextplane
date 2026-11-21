@@ -419,8 +419,12 @@
   gap: var(--space-3);
   min-height: 32px;
 }
+.automation-row > span:first-child {
+  flex: 1;
+}
 .automation-row .select {
-  min-width: 160px;
+  width: 200px;
+  flex: none;
 }
 .automation-state {
   display: inline-flex;
@@ -738,9 +742,6 @@
 }
 
 /* Member profile (S3.7): tabs, then the main column and a profile card on the right. */
-.profile-tabs {
-  margin-bottom: var(--space-4);
-}
 .profile-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -1083,4 +1084,10 @@
 }
 .exports-table td.ellipsis {
   max-width: 260px;
+}
+
+/* A picker that looks like a select: text on the left. */
+.btn.select-like {
+  justify-content: flex-start;
+  font-weight: var(--weight-normal, 450);
 }

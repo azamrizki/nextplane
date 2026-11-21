@@ -48,11 +48,13 @@ impl Store {
 
     /// (comments, reactions, votes) allowed on a project's board.
     pub async fn board_settings(&self, project: Uuid) -> Result<(bool, bool, bool)> {
-        sqlx::query_as("SELECT board_comments, board_reactions, board_votes FROM projects WHERE id = ?")
-            .bind(project)
-            .fetch_one(self.pool())
-            .await
-            .map_err(db_err)
+        sqlx::query_as(
+            "SELECT board_comments, board_reactions, board_votes FROM projects WHERE id = ?",
+        )
+        .bind(project)
+        .fetch_one(self.pool())
+        .await
+        .map_err(db_err)
     }
 
     pub async fn set_board_settings(
@@ -115,11 +117,13 @@ impl Store {
 
     /// Everyone's votes on an item: (person, +1 or -1).
     pub async fn votes(&self, item: Uuid) -> Result<Vec<(Uuid, i64)>> {
-        sqlx::query_as("SELECT user_id, value FROM work_item_votes WHERE work_item_id = ? ORDER BY created_at")
-            .bind(item)
-            .fetch_all(self.pool())
-            .await
-            .map_err(db_err)
+        sqlx::query_as(
+            "SELECT user_id, value FROM work_item_votes WHERE work_item_id = ? ORDER BY created_at",
+        )
+        .bind(item)
+        .fetch_all(self.pool())
+        .await
+        .map_err(db_err)
     }
 
     /// One vote per person: +1, -1, or 0 to take it back.

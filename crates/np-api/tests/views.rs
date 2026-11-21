@@ -205,10 +205,17 @@ async fn workspace_views_span_the_projects_you_belong_to() {
                 )
                 .await
                 .body;
-            format!("/api/v1/workspaces/acme/projects/{}", p["id"].as_str().unwrap())
+            format!(
+                "/api/v1/workspaces/acme/projects/{}",
+                p["id"].as_str().unwrap()
+            )
         }
     };
-    let (a, b, c) = (mk("Alpha", false).await, mk("Beta", false).await, mk("Gamma", true).await);
+    let (a, b, c) = (
+        mk("Alpha", false).await,
+        mk("Beta", false).await,
+        mk("Gamma", true).await,
+    );
     let bob = t.join(&owner, "acme", "bob@example.com", "member").await;
     let bob_id = t.user_id(&bob).await;
     t.post(&format!("{a}/join"), json!({}), Some(&bob)).await;
@@ -218,7 +225,9 @@ async fn workspace_views_span_the_projects_you_belong_to() {
         } else {
             json!({ "title": title })
         };
-        let r = t.post(&format!("{base}/work-items"), body, Some(&owner)).await;
+        let r = t
+            .post(&format!("{base}/work-items"), body, Some(&owner))
+            .await;
         assert_eq!(r.status, StatusCode::CREATED, "{}", r.body);
     }
     let titles = |v: &Value| -> Vec<String> {
@@ -235,22 +244,44 @@ async fn workspace_views_span_the_projects_you_belong_to() {
     assert_eq!(mine.body[0]["identifier"], "ALP");
     assert_eq!(titles(&t.get(items, Some(&owner)).await.body).len(), 4);
     assert_eq!(
-        titles(&t.get(&format!("{items}?assignee={bob_id}"), Some(&owner)).await.body),
+        titles(
+            &t.get(&format!("{items}?assignee={bob_id}"), Some(&owner))
+                .await
+                .body
+        ),
         ["A one"]
     );
     assert_eq!(
-        titles(&t.get(&format!("{items}?subscribed=true"), Some(&bob)).await.body),
+        titles(
+            &t.get(&format!("{items}?subscribed=true"), Some(&bob))
+                .await
+                .body
+        ),
         ["A one"],
         "assignees follow their items"
     );
     let bid = b.rsplit('/').next().unwrap();
     assert_eq!(
-        titles(&t.get(&format!("{items}?project={bid}"), Some(&owner)).await.body),
+        titles(
+            &t.get(&format!("{items}?project={bid}"), Some(&owner))
+                .await
+                .body
+        ),
         ["B one"]
     );
-    assert_eq!(t.get(&format!("{items}?limit=1"), Some(&owner)).await.body.as_array().unwrap().len(), 1);
     assert_eq!(
-        t.get(&format!("{items}?archived=true"), Some(&owner)).await.status,
+        t.get(&format!("{items}?limit=1"), Some(&owner))
+            .await
+            .body
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        t.get(&format!("{items}?archived=true"), Some(&owner))
+            .await
+            .status,
         StatusCode::BAD_REQUEST
     );
 
@@ -267,23 +298,57 @@ async fn workspace_views_span_the_projects_you_belong_to() {
     assert_eq!(v.status, StatusCode::CREATED, "{}", v.body);
     assert_eq!(v.body["is_shared"], true);
     let vid = v.body["id"].as_str().unwrap();
-    assert_eq!(t.get(views, Some(&owner)).await.body.as_array().unwrap().len(), 1);
-    let guest = t.join(&owner, "acme", "gus@example.com", "guest").await;
-    assert_eq!(t.get(views, Some(&guest)).await.body.as_array().unwrap().len(), 0);
     assert_eq!(
-        t.patch(&format!("{views}/{vid}"), json!({ "name": "Mine now" }), Some(&owner))
+        t.get(views, Some(&owner))
             .await
-            .status,
+            .body
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    let guest = t.join(&owner, "acme", "gus@example.com", "guest").await;
+    assert_eq!(
+        t.get(views, Some(&guest))
+            .await
+            .body
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+    assert_eq!(
+        t.patch(
+            &format!("{views}/{vid}"),
+            json!({ "name": "Mine now" }),
+            Some(&owner)
+        )
+        .await
+        .status,
         StatusCode::FORBIDDEN
     );
     let r = t
-        .patch(&format!("{views}/{vid}"), json!({ "name": "Very urgent" }), Some(&bob))
+        .patch(
+            &format!("{views}/{vid}"),
+            json!({ "name": "Very urgent" }),
+            Some(&bob),
+        )
         .await;
     assert_eq!(r.body["name"], "Very urgent");
     assert_eq!(r.body["description"], "Everything on fire");
     assert_eq!(
-        t.delete(&format!("{views}/{vid}"), Some(&owner)).await.status,
+        t.delete(&format!("{views}/{vid}"), Some(&owner))
+            .await
+            .status,
         StatusCode::NO_CONTENT
     );
-    assert_eq!(t.get(views, Some(&bob)).await.body.as_array().unwrap().len(), 0);
+    assert_eq!(
+        t.get(views, Some(&bob))
+            .await
+            .body
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
 }

@@ -64,11 +64,19 @@ async fn settings_are_checked_and_the_daily_pass_archives_and_closes() {
         StatusCode::BAD_REQUEST
     );
     let r = t
-        .patch(&base, json!({ "archive_in": 1, "close_in": 3 }), Some(&owner))
+        .patch(
+            &base,
+            json!({ "archive_in": 1, "close_in": 3 }),
+            Some(&owner),
+        )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
     assert_eq!(r.body["archive_in"], 1);
-    assert_eq!(r.body["close_state_id"], state("cancelled"), "the first cancelled state");
+    assert_eq!(
+        r.body["close_state_id"],
+        state("cancelled"),
+        "the first cancelled state"
+    );
 
     let items = format!("{base}/work-items");
     let make = |body: Value| {
@@ -102,7 +110,9 @@ async fn settings_are_checked_and_the_daily_pass_archives_and_closes() {
         .clone();
     let done = make(json!({ "title": "Done", "state_id": state("completed") })).await;
     let stale = make(json!({ "title": "Stale" })).await;
-    let in_cycle = make(json!({ "title": "In cycle", "state_id": state("completed"), "cycle_id": cycle })).await;
+    let in_cycle =
+        make(json!({ "title": "In cycle", "state_id": state("completed"), "cycle_id": cycle }))
+            .await;
     let in_module = make(json!({ "title": "In module", "module_ids": [module] })).await;
 
     let mut rx = t.events.subscribe();
@@ -113,7 +123,10 @@ async fn settings_are_checked_and_the_daily_pass_archives_and_closes() {
         .unwrap();
     assert_eq!((r.archived, r.closed), (1, 0));
     let ev = rx.try_recv().unwrap();
-    assert_eq!((ev.area.as_str(), ev.action.as_str()), ("work_item", "archived"));
+    assert_eq!(
+        (ev.area.as_str(), ev.action.as_str()),
+        ("work_item", "archived")
+    );
     let one = t.get(&format!("{items}/{done}"), Some(&owner)).await.body;
     assert!(one["archived_at"].is_string());
     let act = t
@@ -139,14 +152,24 @@ async fn settings_are_checked_and_the_daily_pass_archives_and_closes() {
     let s = t.get(&format!("{items}/{stale}"), Some(&owner)).await.body;
     assert_eq!(s["state_id"], state("cancelled"));
     assert!(s["archived_at"].is_null());
-    let c = t.get(&format!("{items}/{in_cycle}"), Some(&owner)).await.body;
+    let c = t
+        .get(&format!("{items}/{in_cycle}"), Some(&owner))
+        .await
+        .body;
     assert!(c["archived_at"].is_string());
-    let m = t.get(&format!("{items}/{in_module}"), Some(&owner)).await.body;
+    let m = t
+        .get(&format!("{items}/{in_module}"), Some(&owner))
+        .await
+        .body;
     assert_ne!(m["state_id"], state("cancelled"), "left alone");
 
     // Turning auto-close off forgets the state; nothing runs for the project any more.
     let r = t
-        .patch(&base, json!({ "close_in": 0, "archive_in": 0 }), Some(&owner))
+        .patch(
+            &base,
+            json!({ "close_in": 0, "archive_in": 0 }),
+            Some(&owner),
+        )
         .await;
     assert!(r.body["close_state_id"].is_null());
     let r = np_api::automations::run(&t.store, &t.events, now + Duration::days(400))

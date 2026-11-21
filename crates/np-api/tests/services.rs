@@ -57,9 +57,18 @@ async fn the_ai_assistant_once_an_admin_sets_it_up() {
     let ana = t.setup_admin().await;
     t.workspace(&ana, "acme").await;
     let s = t.get("/api/v1/admin/services", Some(&ana)).await.body;
-    assert_eq!((s["ai"]["enabled"].as_bool(), s["ai"]["model"].as_str()), (Some(false), Some("gpt-4o-mini")));
-    let ask = json!({ "task": "Write a description for this work item", "prompt": "Fix the login page" });
-    assert_eq!(t.post("/api/v1/workspaces/acme/ai", ask.clone(), Some(&ana)).await.status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        (s["ai"]["enabled"].as_bool(), s["ai"]["model"].as_str()),
+        (Some(false), Some("gpt-4o-mini"))
+    );
+    let ask =
+        json!({ "task": "Write a description for this work item", "prompt": "Fix the login page" });
+    assert_eq!(
+        t.post("/api/v1/workspaces/acme/ai", ask.clone(), Some(&ana))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
     let r = t
         .patch(
             "/api/v1/admin/services",
@@ -70,28 +79,62 @@ async fn the_ai_assistant_once_an_admin_sets_it_up() {
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
     assert!(!r.body.to_string().contains("sk-secret"));
     assert_eq!(r.body["ai"]["has_key"], true);
-    assert_eq!(t.get("/api/v1/instance", None).await.body["ai_enabled"], true);
+    assert_eq!(
+        t.get("/api/v1/instance", None).await.body["ai_enabled"],
+        true
+    );
 
     let r = t.post("/api/v1/workspaces/acme/ai", ask, Some(&ana)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
-    assert_eq!(r.body["response_html"], "<p>Steps:<br>1. Reproduce</p><p>Then fix it.</p>");
+    assert_eq!(
+        r.body["response_html"],
+        "<p>Steps:<br>1. Reproduce</p><p>Then fix it.</p>"
+    );
     let (auth, body) = f.last_ai.lock().unwrap().clone().unwrap();
     assert_eq!(auth, "Bearer sk-secret");
     assert_eq!(body["model"], "small-1");
-    assert!(body["messages"][1]["content"].as_str().unwrap().ends_with("work item\nFix the login page"));
+    assert!(
+        body["messages"][1]["content"]
+            .as_str()
+            .unwrap()
+            .ends_with("work item\nFix the login page")
+    );
     assert_eq!(
-        t.post("/api/v1/workspaces/acme/ai", json!({ "task": " " }), Some(&ana)).await.status,
+        t.post(
+            "/api/v1/workspaces/acme/ai",
+            json!({ "task": " " }),
+            Some(&ana)
+        )
+        .await
+        .status,
         StatusCode::BAD_REQUEST
     );
     let gus = t.join(&ana, "acme", "gus@example.com", "guest").await;
     assert_eq!(
-        t.post("/api/v1/workspaces/acme/ai", json!({ "task": "x" }), Some(&gus)).await.status,
+        t.post(
+            "/api/v1/workspaces/acme/ai",
+            json!({ "task": "x" }),
+            Some(&gus)
+        )
+        .await
+        .status,
         StatusCode::FORBIDDEN
     );
     // Removing the key turns it off again; only instance admins see or change it.
-    assert_eq!(t.get("/api/v1/admin/services", Some(&gus)).await.status, StatusCode::FORBIDDEN);
-    t.patch("/api/v1/admin/services", json!({ "ai": { "api_key": "" } }), Some(&ana)).await;
-    assert_eq!(t.get("/api/v1/instance", None).await.body["ai_enabled"], false);
+    assert_eq!(
+        t.get("/api/v1/admin/services", Some(&gus)).await.status,
+        StatusCode::FORBIDDEN
+    );
+    t.patch(
+        "/api/v1/admin/services",
+        json!({ "ai": { "api_key": "" } }),
+        Some(&ana),
+    )
+    .await;
+    assert_eq!(
+        t.get("/api/v1/instance", None).await.body["ai_enabled"],
+        false
+    );
 }
 
 #[tokio::test]
@@ -102,8 +145,17 @@ async fn unsplash_photos_become_credited_project_covers() {
     let ana = t.setup_admin().await;
     t.workspace(&ana, "acme").await;
     let photos = "/api/v1/workspaces/acme/unsplash";
-    assert_eq!(t.get(photos, Some(&ana)).await.body, json!([]), "off until a key is saved");
-    t.patch("/api/v1/admin/services", json!({ "unsplash": { "access_key": "uk" } }), Some(&ana)).await;
+    assert_eq!(
+        t.get(photos, Some(&ana)).await.body,
+        json!([]),
+        "off until a key is saved"
+    );
+    t.patch(
+        "/api/v1/admin/services",
+        json!({ "unsplash": { "access_key": "uk" } }),
+        Some(&ana),
+    )
+    .await;
     let latest = t.get(photos, Some(&ana)).await.body;
     assert_eq!(latest.as_array().unwrap().len(), 2);
     let found = t.get(&format!("{photos}?query=sea"), Some(&ana)).await.body;
@@ -112,17 +164,36 @@ async fn unsplash_photos_become_credited_project_covers() {
     assert_eq!(found[0]["regular"], "https://images.unsplash.com/sea1-r");
 
     let p = t
-        .post("/api/v1/workspaces/acme/projects", json!({ "name": "Website" }), Some(&ana))
+        .post(
+            "/api/v1/workspaces/acme/projects",
+            json!({ "name": "Website" }),
+            Some(&ana),
+        )
         .await
         .body;
-    let url = format!("/api/v1/workspaces/acme/projects/{}", p["id"].as_str().unwrap());
+    let url = format!(
+        "/api/v1/workspaces/acme/projects/{}",
+        p["id"].as_str().unwrap()
+    );
     // An Unsplash cover needs its credit; other addresses are refused.
     assert_eq!(
-        t.patch(&url, json!({ "cover_image": "https://images.unsplash.com/sea1-r" }), Some(&ana)).await.status,
+        t.patch(
+            &url,
+            json!({ "cover_image": "https://images.unsplash.com/sea1-r" }),
+            Some(&ana)
+        )
+        .await
+        .status,
         StatusCode::BAD_REQUEST
     );
     assert_eq!(
-        t.patch(&url, json!({ "cover_image": "https://evil.example/x.png" }), Some(&ana)).await.status,
+        t.patch(
+            &url,
+            json!({ "cover_image": "https://evil.example/x.png" }),
+            Some(&ana)
+        )
+        .await
+        .status,
         StatusCode::BAD_REQUEST
     );
     let r = t
@@ -146,8 +217,17 @@ async fn unsplash_photos_become_credited_project_covers() {
     assert_eq!(*f.downloads.lock().unwrap(), ["sea1"]);
     // Our own uploads are fine too, and null removes the cover.
     let own = "/api/v1/files/01a1feab-397c-7512-88f7-a4520ff9ce09";
-    let r = t.patch(&url, json!({ "cover_image": own }), Some(&ana)).await.body;
-    assert_eq!((r["cover_image"].as_str(), r["cover_credit"].is_null()), (Some(own), true));
-    let r = t.patch(&url, json!({ "cover_image": null }), Some(&ana)).await.body;
+    let r = t
+        .patch(&url, json!({ "cover_image": own }), Some(&ana))
+        .await
+        .body;
+    assert_eq!(
+        (r["cover_image"].as_str(), r["cover_credit"].is_null()),
+        (Some(own), true)
+    );
+    let r = t
+        .patch(&url, json!({ "cover_image": null }), Some(&ana))
+        .await
+        .body;
     assert!(r["cover_image"].is_null());
 }

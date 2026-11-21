@@ -33,6 +33,15 @@ The code lives in `crates/np-core/src/perm.rs`; every row below has a test.
 | Browse all public projects | ✓ | ✓ | ✓ | — |
 | See private projects without membership | ✓ | ✓ | — | — |
 | Leave the workspace | ✓ unless last owner | ✓ | ✓ | ✓ |
+| Workspace views: see shared ones and your own; create; edit your own | ✓ | ✓ | ✓ | own only |
+| Workspace views: delete someone else's | ✓ | ✓ | — | — |
+| See a member's profile summary | ✓ | ✓ | ✓ | ✓ (no emails, no per-project rows) |
+| See a member's work lists and activity, download activity | ✓ | ✓ | ✓ | — |
+| Export work items (projects where you are contributor or admin) | ✓ | ✓ | ✓ | — |
+| Use the AI writing assistant (once an instance admin set it up) | ✓ | ✓ | ✓ | — |
+| Home widgets, quick links, recents, stickies | own | own | own | own |
+
+**Across projects.** Workspace views, profiles and exports count only the live projects *you* are a member of and may read (as in Plane), so two people can see different numbers for the same profile.
 
 **Last-owner rule.** A workspace always keeps at least one owner: the last owner cannot leave, be removed or be demoted. Leaving or removal deactivates the membership; the person's work stays.
 
@@ -65,6 +74,9 @@ The code lives in `crates/np-core/src/perm.rs`; every row below has a test.
 | Create work items | ✓ | ✓ | — | — |
 | Edit any work item (fields, assignees, relations, bulk edit) | ✓ | ✓ | — | — |
 | Archive work items (completed or cancelled ones), see the project's archives | ✓ | ✓ | — | — |
+| Automations (auto-archive, auto-close) | ✓ | — | — | — |
+| Publish the board; allow comments, reactions, votes on it | ✓ | — | — | — |
+| Show a comment on the public board, or take it off | any | own | own | — |
 | Delete a work item | any | own | — | — |
 | Create comments | ✓ | ✓ | ✓ | — |
 | Edit/delete a comment | own only | own only | own only | — |
@@ -89,11 +101,15 @@ The code lives in `crates/np-core/src/perm.rs`; every row below has a test.
 
 **Intake.** Guests see only the requests they sent; commenters and up see the whole queue. Submitter emails from the public form are shown only to project admins. Requests change only through intake (submitter while pending or snoozed, admins until accepted), not through the regular work item API.
 
+**Archives.** Only completed or cancelled work items are archived, cycles once they are completed, modules once they are completed or cancelled. Archived ones are read-only until restored; archived work items can still be deleted.
+
+**Public boards.** Anyone with the link reads a published board. Commenting, reacting and voting, where the project allows them, need a signed-in account on the server (any account; it gives no access to the project). Visitors edit and delete only their own board comments.
+
 **Last-admin rule.** A project always keeps at least one explicit admin: the last one cannot leave, be removed or be demoted **(D6)**.
 
 ## 3. Instance roles
 
-Separate from workspaces. An **instance admin** (the account created by setup, and anyone they promote) manages users, signup policy, SMTP and creates password-reset links. Being instance admin gives no access to a workspace's content.
+Separate from workspaces. An **instance admin** (the account created by setup, and anyone they promote) manages users, signup policy, SMTP, sign-in methods (passwords; Google, GitHub, GitLab and Gitea), the AI assistant and Unsplash, and creates password-reset links. Being instance admin gives no access to a workspace's content. With password sign-in turned off, instance admins can still sign in with theirs, so a broken provider cannot lock everyone out; turning off the last way to sign in is refused.
 
 ## 4. Decisions where Plane's docs disagree
 

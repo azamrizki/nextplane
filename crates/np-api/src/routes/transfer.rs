@@ -494,7 +494,11 @@ use np_store::projects::Project;
 use np_store::transfer::{ExportEntry, ExportRow};
 
 /// Live projects where you may export: those you are a member of as contributor or admin.
-async fn exportable(state: &AppState, slug: &str, me: &User) -> ApiResult<(np_store::workspaces::MyWorkspace, Vec<Project>)> {
+async fn exportable(
+    state: &AppState,
+    slug: &str,
+    me: &User,
+) -> ApiResult<(np_store::workspaces::MyWorkspace, Vec<Project>)> {
     let ws = super::workspaces::load(state, slug, me).await?;
     if ws.role == WsRole::Guest {
         return Err(Error::forbidden("guests cannot export work items").into());
@@ -541,7 +545,11 @@ fn row_cells(r: &ExportRow) -> Vec<String> {
 
 /// One file for all the projects: CSV and JSON rows carry their project; XLSX has a sheet per
 /// project. Archived items are included; drafts and intake requests are not.
-async fn build_export(state: &AppState, projects: &[Project], format: &str) -> ApiResult<(Vec<u8>, &'static str, &'static str, i64)> {
+async fn build_export(
+    state: &AppState,
+    projects: &[Project],
+    format: &str,
+) -> ApiResult<(Vec<u8>, &'static str, &'static str, i64)> {
     let mut all: Vec<(&Project, Vec<ExportRow>)> = Vec::new();
     for p in projects {
         all.push((p, state.store.export_items(p.id).await?));
@@ -590,14 +598,18 @@ async fn build_export(state: &AppState, projects: &[Project], format: &str) -> A
             )
         }
         "xlsx" => {
-            let names = crate::xlsx::sheet_names(&all.iter().map(|(p, _)| p.name.clone()).collect::<Vec<_>>());
+            let names = crate::xlsx::sheet_names(
+                &all.iter().map(|(p, _)| p.name.clone()).collect::<Vec<_>>(),
+            );
             let sheets: Vec<crate::xlsx::Sheet> = all
                 .iter()
                 .zip(names)
                 .map(|((_, rows), name)| {
-                    let mut grid: Vec<Vec<crate::xlsx::Cell>> = vec![head.iter().map(|h| (*h).into()).collect()];
+                    let mut grid: Vec<Vec<crate::xlsx::Cell>> =
+                        vec![head.iter().map(|h| (*h).into()).collect()];
                     for r in rows {
-                        let mut cells: Vec<crate::xlsx::Cell> = row_cells(r).into_iter().map(Into::into).collect();
+                        let mut cells: Vec<crate::xlsx::Cell> =
+                            row_cells(r).into_iter().map(Into::into).collect();
                         // Estimates that are numbers stay numbers.
                         if let Some(n) = r.estimate.as_deref().and_then(|e| e.parse::<f64>().ok()) {
                             cells[11] = crate::xlsx::Cell::Number(n);
@@ -676,7 +688,12 @@ pub async fn ws_exports(
 ) -> ApiResult<Json<Vec<ExportEntry>>> {
     let (ws, _) = exportable(&state, &slug, &me).await?;
     let page = q.page.unwrap_or(1).max(1);
-    Ok(Json(state.store.exports(ws.workspace.id, me.id, 10, (page - 1) * 10).await?))
+    Ok(Json(
+        state
+            .store
+            .exports(ws.workspace.id, me.id, 10, (page - 1) * 10)
+            .await?,
+    ))
 }
 
 /// The file of an export, made now from the projects it names that you may still export.

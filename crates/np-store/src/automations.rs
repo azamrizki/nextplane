@@ -1,7 +1,7 @@
 //! Project automations (S3.7): which projects have them, and which work items they apply to.
 
-use np_core::id::Uuid;
 use np_core::Result;
+use np_core::id::Uuid;
 use sqlx::{FromRow, QueryBuilder, Sqlite};
 
 use crate::{Store, db_err};
@@ -47,12 +47,15 @@ impl Store {
              WHERE w.project_id = ",
         );
         qb.push_bind(project);
-        qb.push(" AND w.deleted_at IS NULL AND w.archived_at IS NULL AND w.is_draft = 0 AND s.grp IN (");
+        qb.push(
+            " AND w.deleted_at IS NULL AND w.archived_at IS NULL AND w.is_draft = 0 AND s.grp IN (",
+        );
         let mut sep = qb.separated(", ");
         for g in groups {
             sep.push_bind(g.to_string());
         }
-        qb.push(") AND w.updated_at < ").push_bind(before.to_string());
+        qb.push(") AND w.updated_at < ")
+            .push_bind(before.to_string());
         qb.push(
             " AND (w.cycle_id IS NULL OR EXISTS (SELECT 1 FROM cycles c WHERE c.id = w.cycle_id
                    AND c.end_date IS NOT NULL AND c.end_date < ",

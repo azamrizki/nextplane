@@ -14,9 +14,9 @@ use serde::{Deserialize, Serialize};
 
 use super::account::RESET_TTL_ADMIN;
 use crate::AppState;
-use crate::providers::Provider;
 use crate::auth::{self, CurrentUser};
 use crate::error::{ApiError, ApiResult};
+use crate::providers::Provider;
 
 /// The logged-in user, who must be an instance admin.
 pub struct InstanceAdmin(pub User);
@@ -258,7 +258,9 @@ fn clean_host(h: &str) -> ApiResult<String> {
     let ok = (h.starts_with("https://") || h.starts_with("http://"))
         && reqwest::Url::parse(h).is_ok_and(|u| u.host_str().is_some_and(|x| !x.is_empty()));
     if !ok {
-        return Err(Error::bad_request("the host is a web address, like https://gitlab.com").into());
+        return Err(
+            Error::bad_request("the host is a web address, like https://gitlab.com").into(),
+        );
     }
     Ok(h.to_string())
 }
@@ -282,7 +284,12 @@ pub async fn update_auth(
             p.client_id = v.trim().chars().take(500).collect();
             entries.push((k("client_id"), Some(p.client_id.clone())));
         }
-        if let Some(v) = r.client_secret.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+        if let Some(v) = r
+            .client_secret
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+        {
             p.client_secret = v.chars().take(500).collect();
             entries.push((k("client_secret"), Some(p.client_secret.clone())));
         }
@@ -293,7 +300,10 @@ pub async fn update_auth(
         if let Some(v) = &r.org {
             let org = v.trim();
             if !org.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
-                return Err(Error::bad_request("a GitHub organization is its short name, like acme-inc").into());
+                return Err(Error::bad_request(
+                    "a GitHub organization is its short name, like acme-inc",
+                )
+                .into());
             }
             p.org = org.to_string();
             entries.push((k("org"), Some(p.org.clone())));
@@ -303,7 +313,11 @@ pub async fn update_auth(
                 return Err(Error::bad_request(format!(
                     "set up {} (client id, secret{}) before turning it on",
                     p.name(),
-                    if matches!(p.key, "gitlab" | "gitea") { " and host" } else { "" }
+                    if matches!(p.key, "gitlab" | "gitea") {
+                        " and host"
+                    } else {
+                        ""
+                    }
                 ))
                 .into());
             }
@@ -318,7 +332,10 @@ pub async fn update_auth(
         return Err(Error::conflict("at least one way to sign in must stay on").into());
     }
     if let Some(on) = req.password_enabled {
-        entries.push(("auth.password_enabled".into(), Some(if on { "1" } else { "0" }.into())));
+        entries.push((
+            "auth.password_enabled".into(),
+            Some(if on { "1" } else { "0" }.into()),
+        ));
     }
     state.store.set_config(&entries).await?;
     tracing::info!(by = %admin.email, "sign-in settings changed");
@@ -411,10 +428,11 @@ pub async fn update_services(
         }
         if let Some(b) = ai.base_url {
             let b = b.trim().trim_end_matches('/').to_string();
-            if !b.is_empty()
-                && !(b.starts_with("https://") || b.starts_with("http://"))
-            {
-                return Err(Error::bad_request("the AI address is a web address, like https://api.openai.com/v1").into());
+            if !(b.is_empty() || b.starts_with("https://") || b.starts_with("http://")) {
+                return Err(Error::bad_request(
+                    "the AI address is a web address, like https://api.openai.com/v1",
+                )
+                .into());
             }
             entries.push(("ai.base_url".into(), opt(&b)));
         }

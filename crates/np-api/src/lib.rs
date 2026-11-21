@@ -14,8 +14,8 @@ pub mod pagesync;
 pub mod providers;
 pub mod ratelimit;
 pub mod richtext;
-pub mod services;
 mod routes;
+pub mod services;
 mod system;
 pub mod util;
 pub mod webhooks;
@@ -118,9 +118,9 @@ impl AppState {
 pub fn router(state: AppState, spa: Router) -> Router {
     use axum::routing::{delete, patch};
     use routes::{
-        account, admin, analytics, assist, auth, collab, cycles, home, inbox, intake, integrations, invites,
-        members, modules, pages, profile, projects, setup, sso, tokens, transfer, views, work_items as wi,
-        workspaces,
+        account, admin, analytics, assist, auth, collab, cycles, home, inbox, intake, integrations,
+        invites, members, modules, pages, profile, projects, setup, sso, tokens, transfer, views,
+        work_items as wi, workspaces,
     };
     let api = Router::new()
         .route("/health", get(system::health))
@@ -382,10 +382,7 @@ pub fn router(state: AppState, spa: Router) -> Router {
             "/workspaces/{slug}/stickies/{id}",
             patch(home::update_sticky).delete(home::delete_sticky),
         )
-        .route(
-            "/workspaces/{slug}/work-items",
-            get(views::workspace_items),
-        )
+        .route("/workspaces/{slug}/work-items", get(views::workspace_items))
         .route(
             "/workspaces/{slug}/views",
             get(views::ws_list).post(views::ws_create),

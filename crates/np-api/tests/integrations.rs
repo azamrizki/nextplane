@@ -489,74 +489,202 @@ async fn github_links_and_closes() {
 async fn visitors_who_sign_in_comment_react_and_vote_on_a_board() {
     let (t, owner, _con, base) = setup().await;
     let item = t
-        .post(&format!("{base}/work-items"), json!({ "title": "Dark mode" }), Some(&owner))
+        .post(
+            &format!("{base}/work-items"),
+            json!({ "title": "Dark mode" }),
+            Some(&owner),
+        )
         .await
         .body;
     let wid = item["id"].as_str().unwrap().to_string();
     // An internal comment from the team.
     let internal = t
-        .post(&format!("{base}/work-items/{wid}/comments"), json!({ "body_html": "<p>Team only</p>" }), Some(&owner))
+        .post(
+            &format!("{base}/work-items/{wid}/comments"),
+            json!({ "body_html": "<p>Team only</p>" }),
+            Some(&owner),
+        )
         .await
         .body;
-    let p = t.post(&format!("{base}/publish"), json!({ "enabled": true }), Some(&owner)).await.body;
+    let p = t
+        .post(
+            &format!("{base}/publish"),
+            json!({ "enabled": true }),
+            Some(&owner),
+        )
+        .await
+        .body;
     let path = p["path"].as_str().unwrap().to_string();
     let board = format!("/api/v1/public/boards/{}", path.trim_start_matches("/p/"));
     let one = format!("{board}/items/1");
     let r = t.get(&one, None).await.body;
-    assert!(r.get("comments").is_none() && r.get("votes").is_none(), "off by default: {r}");
+    assert!(
+        r.get("comments").is_none() && r.get("votes").is_none(),
+        "off by default: {r}"
+    );
     // Turning them on keeps the link.
     let s = t
-        .post(&format!("{base}/publish"), json!({ "comments": true, "reactions": true, "votes": true }), Some(&owner))
+        .post(
+            &format!("{base}/publish"),
+            json!({ "comments": true, "reactions": true, "votes": true }),
+            Some(&owner),
+        )
         .await
         .body;
-    assert_eq!((s["path"].as_str(), s["comments"].as_bool()), (Some(path.as_str()), Some(true)));
+    assert_eq!(
+        (s["path"].as_str(), s["comments"].as_bool()),
+        (Some(path.as_str()), Some(true))
+    );
     assert_eq!(t.get(&board, None).await.body["allow"]["votes"], true);
-    assert_eq!(t.get(&one, None).await.body["comments"], json!([]), "internal comments stay private");
+    assert_eq!(
+        t.get(&one, None).await.body["comments"],
+        json!([]),
+        "internal comments stay private"
+    );
 
     // Reading is open; writing needs an account (any account on the server).
     let comment = json!({ "body_html": "<p>Please add this</p>" });
-    assert_eq!(t.post(&format!("{one}/comments"), comment.clone(), None).await.status, StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        t.post(&format!("{one}/comments"), comment.clone(), None)
+            .await
+            .status,
+        StatusCode::UNAUTHORIZED
+    );
     let vic = t.user("vic@example.com").await;
-    let r = t.post(&format!("{one}/comments"), comment, Some(&vic)).await;
+    let r = t
+        .post(&format!("{one}/comments"), comment, Some(&vic))
+        .await;
     assert_eq!(r.status, StatusCode::CREATED, "{}", r.body);
     let c = &r.body["comments"][0];
-    assert_eq!((c["author_name"].as_str(), c["mine"].as_bool()), (Some("vic"), Some(true)));
+    assert_eq!(
+        (c["author_name"].as_str(), c["mine"].as_bool()),
+        (Some("vic"), Some(true))
+    );
     let cid = c["id"].as_str().unwrap().to_string();
     // The team sees it in the app, marked public; the internal one can be made public too.
-    let app = t.get(&format!("{base}/work-items/{wid}/comments"), Some(&owner)).await.body;
-    assert!(app.as_array().unwrap().iter().any(|x| x["id"] == cid.as_str() && x["is_public"] == true));
+    let app = t
+        .get(&format!("{base}/work-items/{wid}/comments"), Some(&owner))
+        .await
+        .body;
+    assert!(
+        app.as_array()
+            .unwrap()
+            .iter()
+            .any(|x| x["id"] == cid.as_str() && x["is_public"] == true)
+    );
     t.post(
-        &format!("{base}/work-items/{wid}/comments/{}/public", internal["id"].as_str().unwrap()),
+        &format!(
+            "{base}/work-items/{wid}/comments/{}/public",
+            internal["id"].as_str().unwrap()
+        ),
         json!({ "public": true }),
         Some(&owner),
     )
     .await;
-    assert_eq!(t.get(&one, None).await.body["comments"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        t.get(&one, None).await.body["comments"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
 
     // Reactions and one vote per person.
-    let r = t.post(&format!("{one}/reactions"), json!({ "emoji": "👍" }), Some(&vic)).await.body;
-    assert_eq!(r["reactions"], json!([{ "emoji": "👍", "count": 1, "mine": true }]));
-    let r = t.post(&format!("{one}/reactions"), json!({ "emoji": "🎉", "comment_id": cid }), Some(&vic)).await.body;
-    let mine = r["comments"].as_array().unwrap().iter().find(|x| x["id"] == cid.as_str()).unwrap().clone();
+    let r = t
+        .post(
+            &format!("{one}/reactions"),
+            json!({ "emoji": "👍" }),
+            Some(&vic),
+        )
+        .await
+        .body;
+    assert_eq!(
+        r["reactions"],
+        json!([{ "emoji": "👍", "count": 1, "mine": true }])
+    );
+    let r = t
+        .post(
+            &format!("{one}/reactions"),
+            json!({ "emoji": "🎉", "comment_id": cid }),
+            Some(&vic),
+        )
+        .await
+        .body;
+    let mine = r["comments"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["id"] == cid.as_str())
+        .unwrap()
+        .clone();
     assert_eq!(mine["reactions"][0]["emoji"], "🎉");
-    let r = t.post(&format!("{one}/votes"), json!({ "value": 1 }), Some(&vic)).await.body;
+    let r = t
+        .post(&format!("{one}/votes"), json!({ "value": 1 }), Some(&vic))
+        .await
+        .body;
     assert_eq!(r["votes"], json!({ "up": 1, "down": 0, "mine": 1 }));
-    let r = t.post(&format!("{one}/votes"), json!({ "value": -1 }), Some(&owner)).await.body;
+    let r = t
+        .post(
+            &format!("{one}/votes"),
+            json!({ "value": -1 }),
+            Some(&owner),
+        )
+        .await
+        .body;
     assert_eq!(r["votes"], json!({ "up": 1, "down": 1, "mine": -1 }));
-    let r = t.post(&format!("{one}/votes"), json!({ "value": 0 }), Some(&vic)).await.body;
+    let r = t
+        .post(&format!("{one}/votes"), json!({ "value": 0 }), Some(&vic))
+        .await
+        .body;
     assert_eq!(r["votes"]["up"], 0);
-    assert_eq!(t.post(&format!("{one}/votes"), json!({ "value": 5 }), Some(&vic)).await.status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        t.post(&format!("{one}/votes"), json!({ "value": 5 }), Some(&vic))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
 
     // Only the author edits or deletes a comment; off means off.
     assert_eq!(
-        t.patch(&format!("{one}/comments/{cid}"), json!({ "body_html": "<p>x</p>" }), Some(&owner)).await.status,
+        t.patch(
+            &format!("{one}/comments/{cid}"),
+            json!({ "body_html": "<p>x</p>" }),
+            Some(&owner)
+        )
+        .await
+        .status,
         StatusCode::FORBIDDEN
     );
-    let r = t.patch(&format!("{one}/comments/{cid}"), json!({ "body_html": "<p>Please add dark mode</p>" }), Some(&vic)).await;
+    let r = t
+        .patch(
+            &format!("{one}/comments/{cid}"),
+            json!({ "body_html": "<p>Please add dark mode</p>" }),
+            Some(&vic),
+        )
+        .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.body);
-    assert!(r.body["comments"].to_string().contains("Please add dark mode"));
-    assert_eq!(t.delete(&format!("{one}/comments/{cid}"), Some(&vic)).await.status, StatusCode::OK);
-    t.post(&format!("{base}/publish"), json!({ "votes": false }), Some(&owner)).await;
-    assert_eq!(t.post(&format!("{one}/votes"), json!({ "value": 1 }), Some(&vic)).await.status, StatusCode::BAD_REQUEST);
+    assert!(
+        r.body["comments"]
+            .to_string()
+            .contains("Please add dark mode")
+    );
+    assert_eq!(
+        t.delete(&format!("{one}/comments/{cid}"), Some(&vic))
+            .await
+            .status,
+        StatusCode::OK
+    );
+    t.post(
+        &format!("{base}/publish"),
+        json!({ "votes": false }),
+        Some(&owner),
+    )
+    .await;
+    assert_eq!(
+        t.post(&format!("{one}/votes"), json!({ "value": 1 }), Some(&vic))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
     assert!(t.get(&one, None).await.body.get("votes").is_none());
 }

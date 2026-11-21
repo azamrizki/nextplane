@@ -2,7 +2,7 @@
 
 The single place to see where NextPlane stands: which phase is active, which sprint runs, and which tasks are done. Scope and decisions live in [SPEC.md](SPEC.md); this file tracks progress only.
 
-**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** S3.7 — Plane Community Edition parity (v0.1.1 released 2026-11-21)
+**Last updated:** 2026-11-21 · **Active phase:** web v1 review by the owner (see the end of phase 3) · **Active sprint:** — (S3.7 done, not released yet; v0.1.1 released 2026-11-21)
 
 ## How to use this file
 
@@ -23,7 +23,7 @@ The single place to see where NextPlane stands: which phase is active, which spr
 | 2 | Planning | S2.1 – S2.5 | ✅ Done | 29 / 29 |
 | 3 | Knowledge & insight | S3.1 – S3.5 | ✅ Done | 26 / 26 |
 | 3.5 | Familiar UI (Plane look and behaviour) | S3.6 | ✅ Done (v0.1.1 released) | 10 / 10 |
-| 3.6 | Plane Community Edition parity | S3.7 | 🚧 In progress | 0 / 10 |
+| 3.6 | Plane Community Edition parity | S3.7 | ✅ Done | 10 / 10 |
 | 4 | Clients (desktop, Android) | — | ⏸ Waiting for web v1 final | — |
 
 Status icons: ⏳ not started · 🚧 in progress · ✅ done · ⏸ on hold.
@@ -387,22 +387,36 @@ Found while testing: the title box in the detail view collapsed to 6 px inside t
 
 ### S3.7 — Plane Community Edition parity
 
-**Dates:** 2026-11-21 → · **Status:** 🚧 · **Why:** a comparison with Plane's open-source edition (source of 2026-11-20) found eight things it has that NextPlane lacked; the owner asked for all of them. Same method as S3.6: Plane's source is read only to write a prose spec of its behaviour, and the code is our own.
+**Dates:** 2026-11-21 → 2026-11-21 · **Status:** ✅ · **Why:** a comparison with Plane's open-source edition (source of 2026-11-20) found eight things it has that NextPlane lacked; the owner asked for all of them. Same method as S3.6: Plane's source is read only to write a prose spec of its behaviour, and the code is our own.
 
-- [ ] Research: prose spec of the eight features' behaviour (no code copied)
-- [ ] Project archives: archived work items with restore and delete, next to archived cycles and modules
-- [ ] Automations: auto-archive closed work items and auto-close inactive ones after N months, run by the server
-- [ ] Workspace views: all work items across projects (built-in tabs and custom views), with filters and display
-- [ ] Home: quick links, recents and stickies
-- [ ] Member profile pages: summary, statistics, work lists and activity
-- [ ] Sign in with GitHub, Google, GitLab and Gitea, set up by the instance admin
-- [ ] Instance AI settings and a writing assistant in the editor; Unsplash covers for projects
-- [ ] Workspace exports (several projects, CSV/JSON/XLSX) and comments and reactions on public boards
-- [ ] Docs, tests and e2e for all of the above; screenshots reviewed in light and dark
+- [x] Research: prose spec of the eight features' behaviour (no code copied)
+- [x] Project archives: archived work items with restore and delete, next to archived cycles and modules
+- [x] Automations: auto-archive closed work items and auto-close inactive ones after N months, run by the server
+- [x] Workspace views: all work items across projects (built-in tabs and custom views), with filters and display
+- [x] Home: quick links, recents and stickies
+- [x] Member profile pages: summary, statistics, work lists and activity
+- [x] Sign in with GitHub, Google, GitLab and Gitea, set up by the instance admin
+- [x] Instance AI settings and a writing assistant in the editor; Unsplash covers for projects
+- [x] Workspace exports (several projects, CSV/JSON/XLSX) and comments and reactions on public boards
+- [x] Docs, tests and e2e for all of the above; screenshots reviewed in light and dark
+
+**Review:** A research pass read Plane's repository and wrote a prose spec of the eight features (rules, defaults, who may do what); the code was written from it. Migrations 0016–0022. What shipped:
+- **Archives** (project ⋯ menu, palette, `/archives`): work items in a list with the usual filters and display, cycles and modules with search; restore and delete from row menus, toasts with a link back. As in Plane, only completed or cancelled work items are archived (`400` otherwise), cycles once completed, modules once completed or cancelled; archived ones are read-only (`409`) until restored, and only contributors and admins see the archive. The menus show the archive entry disabled with the reason.
+- **Automations** (project settings): auto-archive closed items and auto-close stale ones after 1–12 months (presets and a custom value), into a cancelled state of the project. A daily pass from 01:00 UTC acts as the workspace's `NextPlane` service account, skips items in running cycles or open-ended modules, and is published like any change (activity, notifications, realtime, webhooks). Activity now carries the actor's name, so service accounts show by name.
+- **Workspace views** (`/views`, sidebar, `G` `V`): All work items, Assigned, Created, Subscribed and custom views (shared by default; owner edits, owner or admin deletes; guests see their own) as a spreadsheet across projects, each row edited with its own project's states, labels and people; filters by project and state group. Only projects you are a member of count, as in Plane.
+- **Home**: greeting, a "get started" checklist, and quick links, recents (the last 20 things you opened) and stickies (rich text with checklists, eight colours) in your own order (Manage widgets). A stickies page (`G` `N`). All personal: no realtime events or webhooks.
+- **Profiles** (`/profile/:id`, from member names; "Your work" is your own, as in Plane): overview and workload tiles, assigned work by priority (chart with a table view), assigned/created/subscribed lists, activity with a one-day CSV download, and a card with per-project completion. Numbers count only the projects the viewer may read.
+- **Sign-in providers** (instance admin): Google, GitLab and Gitea over OpenID Connect, GitHub over OAuth with the primary verified email and an optional organization; callback URLs to copy; secrets never sent back. Password sign-in can be turned off (instance admins keep theirs as a way back in); turning off the last way in is refused by the server.
+- **AI and Unsplash** (instance admin): a writing assistant on any OpenAI-compatible API ("Draft from title" and "Ask AI" in the create dialog), 60 requests an hour per person, off until a key is saved; Unsplash photos as project covers, credited to their photographer and reported to Unsplash as its API guidelines ask (Plane does neither), next to uploaded covers.
+- **Exports** (workspace settings): CSV, JSON or XLSX of the projects you work in, one file (XLSX: a sheet per project, written by our own small ZIP/SpreadsheetML writer, no new dependency), with a history to download again. Nothing is stored on the server.
+- **Public boards**: comments, reactions and votes, each switched on per project; visitors read freely and sign in to take part; only comments marked public show, and the team can make an app comment public or take it off.
+- **Shared pieces**: toasts on every page; the archive and delete actions shared by row menus and the detail view.
+
+Found while testing: the description editor saved unchanged text whenever it switched between editable and read-only (Tiptap's `setEditable` emits an update), which also hit archived items with `409`; the AI popover was a form inside the create form, so Generate submitted the work item. Both fixed. The XLSX output was checked as ZIP and XML with Python; opening it in a spreadsheet program was not possible here. Tests: 132 Rust (+1 ignored perf), 27 Vitest, 54 Playwright (+3 screenshot specs), screenshots of the new screens in light and dark in `../.generate`.
 
 ### Web v1 — owner review
 
-Phases 0–3.5 are done and v0.1.1 is released. These need the owner:
+Phases 0–3.6 are done (S3.7 not released yet); v0.1.1 is released. These need the owner:
 
 1. **Declare web v1 final** (or list changes). That starts phase 4 (desktop, Android).
 2. **Git:** ✅ `azamrizki/nextplane`, public since 2026-11-21 (history checked first: no secrets, no `.env`, keys or databases, commits carry no email); `v0.1.0` released.
@@ -439,6 +453,7 @@ Phases 0–3.5 are done and v0.1.1 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-21 | S3.7 done: archives, automations, workspace views, home widgets, profiles, sign-in providers, AI and Unsplash, exports and board interactions. |
 | 2026-11-21 | S3.7 started: Plane Community Edition parity (eight features). |
 | 2026-11-21 | v0.1.1 released (patch, owner's go-ahead): the S3.6 UI; the Linux amd64 download matched `SHA256SUMS`, reports 0.1.1 and serves the new UI. |
 | 2026-11-21 | S3.6 done: the web app follows Plane's look and behaviour, rebuilt in our own code. |

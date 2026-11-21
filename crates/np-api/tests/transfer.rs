@@ -168,56 +168,136 @@ async fn workspace_exports_span_your_projects_in_three_formats() {
     let mut bases = Vec::new();
     for name in ["Alpha", "Beta"] {
         let p = t
-            .post("/api/v1/workspaces/acme/projects", json!({ "name": name }), Some(&owner))
+            .post(
+                "/api/v1/workspaces/acme/projects",
+                json!({ "name": name }),
+                Some(&owner),
+            )
             .await
             .body;
-        let base = format!("/api/v1/workspaces/acme/projects/{}", p["id"].as_str().unwrap());
+        let base = format!(
+            "/api/v1/workspaces/acme/projects/{}",
+            p["id"].as_str().unwrap()
+        );
         for i in 0..2 {
-            t.post(&format!("{base}/work-items"), json!({ "title": format!("{name} {i}") }), Some(&owner))
-                .await;
+            t.post(
+                &format!("{base}/work-items"),
+                json!({ "title": format!("{name} {i}") }),
+                Some(&owner),
+            )
+            .await;
         }
         bases.push((p["id"].as_str().unwrap().to_string(), base));
     }
     let bob = t.join(&owner, "acme", "bob@example.com", "member").await;
-    t.post(&format!("{}/join", bases[0].1), json!({}), Some(&bob)).await;
+    t.post(&format!("{}/join", bases[0].1), json!({}), Some(&bob))
+        .await;
     let ex = "/api/v1/workspaces/acme/exports";
 
     let e = t.post(ex, json!({ "format": "csv" }), Some(&owner)).await;
     assert_eq!(e.status, StatusCode::CREATED, "{}", e.body);
     assert_eq!(e.body["items"], 4);
     let (status, headers, body) = t
-        .raw(&format!("{ex}/{}/download", e.body["id"].as_str().unwrap()), &owner)
+        .raw(
+            &format!("{ex}/{}/download", e.body["id"].as_str().unwrap()),
+            &owner,
+        )
         .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(headers["content-disposition"].to_str().unwrap().contains("acme-work-items-"));
+    assert!(
+        headers["content-disposition"]
+            .to_str()
+            .unwrap()
+            .contains("acme-work-items-")
+    );
     let text = String::from_utf8(body).unwrap();
     assert!(text.contains("Project,Project key,Key,Title"), "{text}");
-    assert!(text.contains("Alpha,ALP,ALP-1,Alpha 0") && text.contains("Beta,BET,BET-2,Beta 1"), "{text}");
+    assert!(
+        text.contains("Alpha,ALP,ALP-1,Alpha 0") && text.contains("Beta,BET,BET-2,Beta 1"),
+        "{text}"
+    );
 
-    let x = t.post(ex, json!({ "format": "xlsx" }), Some(&owner)).await.body;
-    let (_, headers, body) = t.raw(&format!("{ex}/{}/download", x["id"].as_str().unwrap()), &owner).await;
-    assert!(headers["content-type"].to_str().unwrap().contains("spreadsheetml"));
+    let x = t
+        .post(ex, json!({ "format": "xlsx" }), Some(&owner))
+        .await
+        .body;
+    let (_, headers, body) = t
+        .raw(
+            &format!("{ex}/{}/download", x["id"].as_str().unwrap()),
+            &owner,
+        )
+        .await;
+    assert!(
+        headers["content-type"]
+            .to_str()
+            .unwrap()
+            .contains("spreadsheetml")
+    );
     assert_eq!(&body[..2], b"PK");
-    let j = t.post(ex, json!({ "format": "json", "project_ids": [bases[1].0] }), Some(&owner)).await.body;
+    let j = t
+        .post(
+            ex,
+            json!({ "format": "json", "project_ids": [bases[1].0] }),
+            Some(&owner),
+        )
+        .await
+        .body;
     assert_eq!(j["items"], 2);
-    let (_, _, body) = t.raw(&format!("{ex}/{}/download", j["id"].as_str().unwrap()), &owner).await;
+    let (_, _, body) = t
+        .raw(
+            &format!("{ex}/{}/download", j["id"].as_str().unwrap()),
+            &owner,
+        )
+        .await;
     let rows: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 2);
     assert_eq!(rows[0]["project"], "Beta");
 
     // Only projects you belong to as a contributor or admin; your own history only.
     assert_eq!(
-        t.post(ex, json!({ "format": "csv", "project_ids": [bases[1].0] }), Some(&bob)).await.status,
+        t.post(
+            ex,
+            json!({ "format": "csv", "project_ids": [bases[1].0] }),
+            Some(&bob)
+        )
+        .await
+        .status,
         StatusCode::BAD_REQUEST
     );
-    assert_eq!(t.post(ex, json!({ "format": "csv" }), Some(&bob)).await.body["items"], 2);
-    assert_eq!(t.post(ex, json!({ "format": "pdf" }), Some(&bob)).await.status, StatusCode::BAD_REQUEST);
-    assert_eq!(t.get(ex, Some(&owner)).await.body.as_array().unwrap().len(), 3);
-    assert_eq!(t.get(ex, Some(&bob)).await.body.as_array().unwrap().len(), 1);
-    let gus = t.join(&owner, "acme", "gus@example.com", "guest").await;
-    assert_eq!(t.post(ex, json!({ "format": "csv" }), Some(&gus)).await.status, StatusCode::FORBIDDEN);
     assert_eq!(
-        t.raw(&format!("{ex}/{}/download", e.body["id"].as_str().unwrap()), &bob).await.0,
+        t.post(ex, json!({ "format": "csv" }), Some(&bob))
+            .await
+            .body["items"],
+        2
+    );
+    assert_eq!(
+        t.post(ex, json!({ "format": "pdf" }), Some(&bob))
+            .await
+            .status,
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
+        t.get(ex, Some(&owner)).await.body.as_array().unwrap().len(),
+        3
+    );
+    assert_eq!(
+        t.get(ex, Some(&bob)).await.body.as_array().unwrap().len(),
+        1
+    );
+    let gus = t.join(&owner, "acme", "gus@example.com", "guest").await;
+    assert_eq!(
+        t.post(ex, json!({ "format": "csv" }), Some(&gus))
+            .await
+            .status,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        t.raw(
+            &format!("{ex}/{}/download", e.body["id"].as_str().unwrap()),
+            &bob
+        )
+        .await
+        .0,
         StatusCode::NOT_FOUND
     );
 }

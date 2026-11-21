@@ -94,9 +94,10 @@ function ArchivedItems({ ctx, strip }: { ctx: PropsCtx; strip: ReactNode }) {
     setParams(next, { replace: !id });
   };
   const readOnly = useMemo(() => ({ ...ctx, editable: false }), [ctx]);
-  const listView = useMemo(() => ({ ...view, layout: "list" as const, showSubItems: true }), [view]);
+  // Only closed items are archived, so empty groups (open states) would only be noise.
+  const listView = useMemo(() => ({ ...view, layout: "list" as const, showSubItems: true, showEmptyGroups: false }), [view]);
   const all = items.data ?? [];
-  const groups = useMemo(() => groupItems(all, view.groupBy, ctx, view.orderBy, view.showEmptyGroups), [all, view.groupBy, view.orderBy, view.showEmptyGroups, ctx]);
+  const groups = useMemo(() => groupItems(all, view.groupBy, ctx, view.orderBy, false), [all, view.groupBy, view.orderBy, ctx]);
   const nFilters = activeFilterCount(view.filters);
   const filtered = nFilters > 0 || !!q.trim();
   return (
@@ -108,7 +109,7 @@ function ArchivedItems({ ctx, strip }: { ctx: PropsCtx; strip: ReactNode }) {
       >
         <ExpandableSearch value={view.filters.q} onChange={(v) => setView({ filters: { ...view.filters, q: v } })} label={t("view.search")} />
         <FiltersToggle open={filterRow} onToggle={() => setFilterRow((o) => !o)} count={nFilters} />
-        <DisplayMenu view={listView} setView={setView} />
+        <DisplayMenu view={{ ...view, layout: "list" }} setView={setView} />
       </ProjectBar>
       {strip}
       {filterRow || nFilters > 0 ? <FilterRow view={view} setView={setView} ctx={ctx} /> : null}

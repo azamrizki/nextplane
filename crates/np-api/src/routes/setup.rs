@@ -55,7 +55,9 @@ pub async fn instance(State(state): State<AppState>) -> ApiResult<Json<InstanceI
             })
             .collect(),
         ai_enabled: crate::services::ai(&state.store).await?.enabled(),
-        unsplash_enabled: !crate::services::unsplash_key(&state.store).await?.is_empty(),
+        unsplash_enabled: !crate::services::unsplash_key(&state.store)
+            .await?
+            .is_empty(),
     }))
 }
 

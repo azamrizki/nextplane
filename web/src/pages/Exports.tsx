@@ -145,7 +145,7 @@ function ExportDialog({ onClose, onDone }: { onClose: () => void; onDone: (e: Ex
           <label>{t("ex.projects")}</label>
           <Picker
             label={t("ex.projects")}
-            className="btn btn-block"
+            className="btn btn-block select-like"
             multi
             value={chosen}
             onChange={setChosen}

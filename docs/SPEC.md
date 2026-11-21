@@ -139,7 +139,8 @@ Priority: **P1** = MVP (phase 1), **P2** = phase 2, **P3** = phase 3+.
 - First-run setup link (like NextBoard): create the instance admin and the first workspace.
 - Email + password login; invite links; password reset (by email when SMTP is set, otherwise an admin-generated link).
 - Instance admin page: users, workspaces, SMTP, signup policy (closed / invite only / open).
-- *P2:* OAuth/OIDC login (GitHub, Google, generic OIDC).
+- *P2:* OAuth/OIDC login (GitHub, Google, generic OIDC). *S3.7:* sign in with Google, GitHub (optionally only an organization's members), GitLab and Gitea, set up by the instance admin; password sign-in can be turned off (instance admins keep theirs as a way back in).
+- *S3.7:* instance admin switches on an AI writing assistant (any OpenAI-compatible Chat Completions API) and Unsplash covers; keys are never sent back to a browser.
 
 ### 6.2 Workspaces and members — P1
 - Create, rename, delete (soft delete, 30-day trash).
@@ -153,6 +154,7 @@ Priority: **P1** = MVP (phase 1), **P2** = phase 2, **P3** = phase 3+.
 - Public / private project.
 - Per-project settings: states, labels, estimates (points or t-shirt), enabled features (cycles, modules, pages, intake).
 - Archive and restore.
+- *S3.7:* cover image (an upload, or an Unsplash photo credited to its photographer); archives of work items, cycles and modules; automations that archive closed work items and close inactive ones after 1–12 months, once a day.
 
 ### 6.4 Work items — P1
 - Key `PROJ-n` with a per-project sequence that never reuses numbers.
@@ -167,6 +169,7 @@ Priority: **P1** = MVP (phase 1), **P2** = phase 2, **P3** = phase 3+.
 ### 6.5 Layouts and views
 - **P1:** List, Kanban (group by state, priority, assignee, label; drag to change), filters, sort, group, display properties.
 - **P2:** Spreadsheet, Calendar, Gantt (timeline). Saved views (personal / shared), workspace-wide views ("My work", "Assigned to me", "Created by me").
+- *S3.7:* workspace views across projects (All work items, Assigned, Created, Subscribed and custom views) as a spreadsheet; member profiles (summary, work lists, activity) — "Your work" is your own profile; a home page with quick links, recents and stickies.
 
 ### 6.6 Cycles — P2
 - Upcoming, current, completed. One current cycle per project at a time *(proposal)*.
@@ -194,8 +197,8 @@ Priority: **P1** = MVP (phase 1), **P2** = phase 2, **P3** = phase 3+.
 ### 6.11 Other — P3
 - Intake (triage queue, optional public form).
 - Analytics (workspace and project dashboards, custom charts).
-- Import (CSV first; Jira, Linear, GitHub Issues later) and export (CSV, JSON).
-- Public boards (read-only project view on a public link).
+- Import (CSV first; Jira, Linear, GitHub Issues later) and export (CSV, JSON). *S3.7:* workspace exports of several projects as CSV, JSON or XLSX, with a history.
+- Public boards (read-only project view on a public link). *S3.7:* comments, reactions and votes from signed-in visitors where the project allows them; only comments marked public show.
 - GitHub integration (link PRs/commits by `PROJ-n` in messages).
 - Command palette (`Ctrl/⌘K`) and keyboard shortcuts *(P1 for the palette)*.
 

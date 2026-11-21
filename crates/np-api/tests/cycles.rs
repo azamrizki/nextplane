@@ -323,7 +323,9 @@ async fn only_completed_cycles_are_archived_and_archived_ones_are_read_only() {
     )
     .await;
     assert_eq!(
-        t.get(&format!("{c}?archived=true"), Some(&com)).await.status,
+        t.get(&format!("{c}?archived=true"), Some(&com))
+            .await
+            .status,
         StatusCode::FORBIDDEN
     );
     assert_eq!(
@@ -333,9 +335,13 @@ async fn only_completed_cycles_are_archived_and_archived_ones_are_read_only() {
         StatusCode::OK
     );
     assert_eq!(
-        t.patch(&format!("{c}/{old}"), json!({ "name": "Done 1" }), Some(&owner))
-            .await
-            .status,
+        t.patch(
+            &format!("{c}/{old}"),
+            json!({ "name": "Done 1" }),
+            Some(&owner)
+        )
+        .await
+        .status,
         StatusCode::OK
     );
 }

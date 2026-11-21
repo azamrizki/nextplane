@@ -9,6 +9,8 @@ test.describe.configure({ mode: "serial" });
 let base = "";
 let projectUrl = "";
 let itemId = "";
+let meId = "";
+let boardPath = "";
 
 const day = (offset: number) => {
   const d = new Date();
@@ -28,7 +30,10 @@ test("seed", async ({ page, hub }) => {
   await expect(page).toHaveURL(/\/acme$/);
   const r = await page.evaluate(async (d) => {
     const h = { "Content-Type": "application/json" };
-    const j = async (url: string, body: unknown) => (await fetch(url, { method: "POST", headers: h, body: JSON.stringify(body) })).json();
+    const j = async (url: string, body: unknown) => {
+      const res = await fetch(url, { method: "POST", headers: h, body: JSON.stringify(body) });
+      return res.status === 204 ? null : res.json();
+    };
     const me = await (await fetch("/api/v1/me")).json();
     const p = await j("/api/v1/workspaces/acme/projects", { name: "Website", icon: "🚀" });
     await j("/api/v1/workspaces/acme/projects", { name: "Mobile App", icon: "📱" });
@@ -51,16 +56,42 @@ test("seed", async ({ page, hub }) => {
       { title: "Drop the legacy theme switch", priority: "low", state_id: st("cancelled") },
     ];
     let first = "";
+    const ids: Record<string, string> = {};
     for (const it of items) {
       const w = await j(`${pp}/work-items`, it);
       first ||= w.id;
+      ids[it.title] = w.id;
     }
-    await j(`${pp}/pages`, { title: "Release plan" });
-    return { pid: p.id as string, first };
+    const page = await j(`${pp}/pages`, { title: "Release plan" });
+    // S3.7: archives, automations, home widgets, a workspace view, a public board with comments.
+    await j(`${pp}/work-items/${ids["Remove the old export endpoint"]}/archive`, {});
+    await fetch(pp, { method: "PATCH", headers: h, body: JSON.stringify({ archive_in: 3, close_in: 6 }) });
+    const ws = "/api/v1/workspaces/acme";
+    await j(`${ws}/quick-links`, { url: "github.com/acme/website", title: "Repository" });
+    await j(`${ws}/quick-links`, { url: "docs.acme.dev/handbook", title: "Handbook" });
+    await j(`${ws}/quick-links`, { url: "status.acme.dev" });
+    await j(`${ws}/stickies`, { description_html: "<p><strong>Standup</strong> moved to 9:30 on Fridays.</p>", color: "peach" });
+    await j(`${ws}/stickies`, {
+      description_html: '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><p>Review the 0.2 notes</p></li><li data-type="taskItem" data-checked="false"><p>Plan Sprint 13</p></li></ul>',
+      color: "light-blue",
+    });
+    await j(`${ws}/stickies`, { description_html: "<p>Ask design about the empty states.</p>", color: "green" });
+    await j(`${ws}/recents`, { entity: "project", id: p.id });
+    await j(`${ws}/recents`, { entity: "page", id: page.id, project_id: p.id });
+    await j(`${ws}/recents`, { entity: "work_item", id: ids["Fix login redirect after password reset"], project_id: p.id });
+    await j(`${ws}/views`, { name: "Urgent work", config: { filters: { priority: ["urgent", "high"] } } });
+    const pub = await j(`${pp}/publish`, { enabled: true, comments: true, reactions: true, votes: true });
+    const board = `/api/v1/public/boards/${String(pub.path).replace("/p/", "")}/items/1`;
+    await j(`${board}/comments`, { body_html: "<p>This bit me twice this week, thanks for picking it up.</p>" });
+    await j(`${board}/votes`, { value: 1 });
+    await j(`${board}/reactions`, { emoji: "🎉" });
+    return { pid: p.id as string, first, me: me.id as string, board: String(pub.path) };
   }, [day(-3), day(-1), day(2), day(9), day(14)]);
   base = `${hub.url}/acme`;
   projectUrl = `${base}/projects/${r.pid}`;
   itemId = r.first;
+  meId = r.me;
+  boardPath = r.board;
 });
 
 for (const theme of ["light", "dark"] as const) {
@@ -138,5 +169,36 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto(projectUrl);
     await page.getByRole("button", { name: "Switch workspace" }).click();
     await shot("ws-menu");
+    await page.keyboard.press("Escape");
+    // S3.7 screens.
+    await page.goto(`${projectUrl}/archives`);
+    await expect(page.locator(".list-row").first()).toBeVisible();
+    await shot("archives");
+    await page.goto(`${projectUrl}/settings/automations`);
+    await shot("automations");
+    await page.goto(`${base}/views/all`);
+    await expect(page.locator(".sheet-row:not(.sheet-head)").first()).toBeVisible();
+    await page.waitForTimeout(300);
+    await shot("views");
+    await page.goto(`${base}/profile/${meId}`);
+    await page.waitForTimeout(500);
+    await shot("profile");
+    await page.goto(`${base}/profile/${meId}/activity`);
+    await page.waitForTimeout(400);
+    await shot("profile-activity");
+    await page.goto(`${base}/stickies`);
+    await page.waitForTimeout(500);
+    await shot("stickies");
+    await page.goto(`${base}/settings/exports`);
+    await page.getByRole("button", { name: "Export" }).first().click();
+    await shot("exports");
+    await page.keyboard.press("Escape");
+    await page.goto(`${hub.url}/admin`);
+    await page.waitForTimeout(300);
+    await shot("admin");
+    await page.goto(`${hub.url}${boardPath}`);
+    await page.getByText("Fix login redirect after password reset").click();
+    await page.waitForTimeout(500);
+    await shot("board-item");
   });
 }

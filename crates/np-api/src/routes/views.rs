@@ -272,7 +272,8 @@ pub async fn workspace_items(
     let out: Vec<WorkItemInProject> = items
         .into_iter()
         .map(|item| {
-            let (identifier, project_name) = readable.get(&item.project_id).cloned().unwrap_or_default();
+            let (identifier, project_name) =
+                readable.get(&item.project_id).cloned().unwrap_or_default();
             WorkItemInProject {
                 item,
                 identifier,
@@ -403,7 +404,9 @@ pub async fn ws_remove(
 ) -> ApiResult<StatusCode> {
     let (ws, v) = ws_view(&state, &me, &slug, vid).await?;
     if v.owner_id != me.id && !ws.role.is_admin() {
-        return Err(Error::forbidden("only the view's owner or a workspace admin can delete it").into());
+        return Err(
+            Error::forbidden("only the view's owner or a workspace admin can delete it").into(),
+        );
     }
     state.store.delete_view(vid).await?;
     Ok(StatusCode::NO_CONTENT)

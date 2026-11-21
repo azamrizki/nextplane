@@ -24,7 +24,9 @@ pub async fn widgets(
     Path(slug): Path<String>,
 ) -> ApiResult<Json<Vec<Widget>>> {
     let ws = load(&state, &slug, &me).await?;
-    Ok(Json(state.store.home_widgets(ws.workspace.id, me.id).await?))
+    Ok(Json(
+        state.store.home_widgets(ws.workspace.id, me.id).await?,
+    ))
 }
 
 #[derive(Deserialize)]
@@ -50,7 +52,9 @@ pub async fn set_widget(
         .store
         .set_home_widget(ws.workspace.id, me.id, &key, req.is_enabled, req.sort_order)
         .await?;
-    Ok(Json(state.store.home_widgets(ws.workspace.id, me.id).await?))
+    Ok(Json(
+        state.store.home_widgets(ws.workspace.id, me.id).await?,
+    ))
 }
 
 // ---- Quick links ---------------------------------------------------------------------------
@@ -218,7 +222,9 @@ async fn resolve(
         "page" => {
             let c = super::pages::ctx(state, me, slug, pid).await.ok()?;
             let p = super::pages::load(state, &c, id, me).await.ok()?;
-            Some(json!({ "id": p.id, "project_id": pid, "title": p.title, "owner_id": p.owner_id, "project_name": c.row.project.name }))
+            Some(
+                json!({ "id": p.id, "project_id": pid, "title": p.title, "owner_id": p.owner_id, "project_name": c.row.project.name }),
+            )
         }
         _ => None,
     }
@@ -339,7 +345,9 @@ fn color(c: Option<&str>) -> ApiResult<Option<String>> {
     match c {
         None => Ok(None),
         Some(c) if COLORS.contains(&c) => Ok(Some(c.to_string())),
-        Some(_) => Err(Error::bad_request(format!("colour is one of {}", COLORS.join(", "))).into()),
+        Some(_) => {
+            Err(Error::bad_request(format!("colour is one of {}", COLORS.join(", "))).into())
+        }
     }
 }
 
@@ -359,7 +367,12 @@ pub async fn create_sticky(
     });
     Ok((
         StatusCode::CREATED,
-        Json(state.store.create_sticky(ws.workspace.id, me.id, b, &c).await?),
+        Json(
+            state
+                .store
+                .create_sticky(ws.workspace.id, me.id, b, &c)
+                .await?,
+        ),
     ))
 }
 
@@ -392,6 +405,9 @@ pub async fn delete_sticky(
     Path((slug, id)): Path<(String, Uuid)>,
 ) -> ApiResult<StatusCode> {
     let ws = load(&state, &slug, &me).await?;
-    state.store.delete_sticky(ws.workspace.id, me.id, id).await?;
+    state
+        .store
+        .delete_sticky(ws.workspace.id, me.id, id)
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }

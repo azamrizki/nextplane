@@ -324,7 +324,9 @@ async fn cover(state: &AppState, req: &UpdateReq, p: &mut ProjectPatch) -> ApiRe
         .is_some_and(|id| id.parse::<Uuid>().is_ok());
     let unsplash = url.starts_with("https://images.unsplash.com/")
         && url.len() <= 2048
-        && !url.chars().any(|c| c.is_whitespace() || c == '"' || c == '\'' || c == '<');
+        && !url
+            .chars()
+            .any(|c| c.is_whitespace() || c == '"' || c == '\'' || c == '<');
     if !own && !unsplash {
         return Err(Error::bad_request("a cover is an uploaded image or an Unsplash photo").into());
     }
@@ -334,12 +336,17 @@ async fn cover(state: &AppState, req: &UpdateReq, p: &mut ProjectPatch) -> ApiRe
         if key.is_empty() {
             return Err(Error::bad_request("Unsplash is not set up on this server").into());
         }
-        let c = req
-            .cover_credit
-            .as_ref()
-            .ok_or_else(|| Error::bad_request("an Unsplash photo needs its photographer's credit"))?;
-        if c.name.trim().is_empty() || !c.url.starts_with("https://unsplash.com/") || c.url.len() > 500 {
-            return Err(Error::bad_request("the photographer's credit is a name and an unsplash.com link").into());
+        let c = req.cover_credit.as_ref().ok_or_else(|| {
+            Error::bad_request("an Unsplash photo needs its photographer's credit")
+        })?;
+        if c.name.trim().is_empty()
+            || !c.url.starts_with("https://unsplash.com/")
+            || c.url.len() > 500
+        {
+            return Err(Error::bad_request(
+                "the photographer's credit is a name and an unsplash.com link",
+            )
+            .into());
         }
         credit = Some(
             serde_json::json!({ "name": c.name.trim().chars().take(100).collect::<String>(), "url": c.url })
@@ -347,7 +354,9 @@ async fn cover(state: &AppState, req: &UpdateReq, p: &mut ProjectPatch) -> ApiRe
         );
         if let Some(d) = req.unsplash_download.clone() {
             let (http, base) = (state.http.clone(), state.unsplash_api.clone());
-            tokio::spawn(async move { crate::services::unsplash_track(&http, &base, &key, &d).await });
+            tokio::spawn(
+                async move { crate::services::unsplash_track(&http, &base, &key, &d).await },
+            );
         }
     }
     p.cover_image = Some(Some((url.to_string(), credit)));

@@ -308,7 +308,14 @@ async fn board_item_out(
 }
 
 /// Open screens and webhooks hear about a visitor's comment, reaction or vote.
-fn announce(state: &AppState, b: &np_store::board::BoardInfo, wid: Uuid, area: &str, action: &str, me: Uuid) {
+fn announce(
+    state: &AppState,
+    b: &np_store::board::BoardInfo,
+    wid: Uuid,
+    area: &str,
+    action: &str,
+    me: Uuid,
+) {
     state.events.publish(Event {
         workspace: b.workspace_slug.clone(),
         workspace_id: Some(b.workspace_id),
@@ -323,7 +330,13 @@ fn announce(state: &AppState, b: &np_store::board::BoardInfo, wid: Uuid, area: &
 }
 
 /// Signed in, the feature on, and not too fast.
-async fn may_write(state: &AppState, b: &np_store::board::BoardInfo, me: &User, allowed: bool, what: &str) -> ApiResult<()> {
+async fn may_write(
+    state: &AppState,
+    b: &np_store::board::BoardInfo,
+    me: &User,
+    allowed: bool,
+    what: &str,
+) -> ApiResult<()> {
     if !allowed {
         return Err(Error::bad_request(format!("{what} are turned off on this board")).into());
     }
@@ -348,11 +361,17 @@ pub async fn board_comment(
     may_write(&state, &b, &me, b.comments, "comments").await?;
     let wid = board_item(&state, &b, seq).await?;
     let (json, html) = super::collab::clean_comment(req)?;
-    let c = state.store.add_comment(wid, me.id, json.as_deref(), &html).await?;
+    let c = state
+        .store
+        .add_comment(wid, me.id, json.as_deref(), &html)
+        .await?;
     state.store.set_comment_public(c.id, true).await?;
     state.store.notify_comment(wid, me.id, c.id, &[]).await?;
     announce(&state, &b, wid, "comment", "created", me.id);
-    Ok((StatusCode::CREATED, Json(board_item_out(&state, &b, seq, Some(me.id)).await?)))
+    Ok((
+        StatusCode::CREATED,
+        Json(board_item_out(&state, &b, seq, Some(me.id)).await?),
+    ))
 }
 
 /// Your own comment on a board: edit or delete.
@@ -387,7 +406,10 @@ pub async fn board_edit_comment(
     may_write(&state, &b, &me, b.comments, "comments").await?;
     let wid = own_board_comment(&state, &b, seq, cid, &me).await?;
     let (json, html) = super::collab::clean_comment(req)?;
-    state.store.edit_comment(cid, json.as_deref(), &html).await?;
+    state
+        .store
+        .edit_comment(cid, json.as_deref(), &html)
+        .await?;
     announce(&state, &b, wid, "comment", "updated", me.id);
     Ok(Json(board_item_out(&state, &b, seq, Some(me.id)).await?))
 }
@@ -432,10 +454,16 @@ pub async fn board_react(
                 .await?
                 .filter(|c| c.is_public && c.hidden_at.is_none())
                 .ok_or_else(|| Error::not_found("comment not found"))?;
-            state.store.toggle_reaction("comment", cid, me.id, &emoji).await?;
+            state
+                .store
+                .toggle_reaction("comment", cid, me.id, &emoji)
+                .await?;
         }
         None => {
-            state.store.toggle_reaction("work_item", wid, me.id, &emoji).await?;
+            state
+                .store
+                .toggle_reaction("work_item", wid, me.id, &emoji)
+                .await?;
         }
     }
     announce(&state, &b, wid, "reaction", "updated", me.id);

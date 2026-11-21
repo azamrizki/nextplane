@@ -266,8 +266,9 @@ pub fn proj_can(role: ProjRole, action: ProjAction) -> bool {
             role == Admin
         }
         ViewArchives | CreateWorkItem | EditWorkItem | ArchiveWorkItem | AddAttachment
-        | CreateCycleOrModule
-        | EditCycleOrModule | CreateView | CreatePage => at_least(Contributor),
+        | CreateCycleOrModule | EditCycleOrModule | CreateView | CreatePage => {
+            at_least(Contributor)
+        }
         // Project pages are shared documents: every contributor co-edits them (D7). Locking,
         // archiving, deleting and access stay with the owner or an admin.
         EditPage(_) => at_least(Contributor),

@@ -65,6 +65,13 @@ async fn pending_migration_on_existing_data_takes_a_backup_first() {
             "DROP INDEX projects_public_board",
             "ALTER TABLE projects DROP COLUMN public_board_token",
         ],
+        22 => &[
+            "DROP TABLE work_item_votes",
+            "ALTER TABLE comments DROP COLUMN is_public",
+            "ALTER TABLE projects DROP COLUMN board_votes",
+            "ALTER TABLE projects DROP COLUMN board_reactions",
+            "ALTER TABLE projects DROP COLUMN board_comments",
+        ],
         n => panic!("add the reversal of migration {n} to this test"),
     };
     sqlx::query("DELETE FROM _sqlx_migrations WHERE version = ?")

@@ -70,7 +70,13 @@ async fn run_project(
     };
     if p.archive_in > 0 {
         let ids = store
-            .automation_candidates(p.id, &["completed", "cancelled"], &cutoff(p.archive_in), &today, BATCH)
+            .automation_candidates(
+                p.id,
+                &["completed", "cancelled"],
+                &cutoff(p.archive_in),
+                &today,
+                BATCH,
+            )
             .await?;
         for id in ids {
             let actor = match bot {

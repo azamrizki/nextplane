@@ -52,15 +52,29 @@ pub fn sheet_names(wanted: &[String]) -> Vec<String> {
     for w in wanted {
         let clean: String = w
             .chars()
-            .map(|c| if "[]:*?/\\".contains(c) || c.is_control() { ' ' } else { c })
+            .map(|c| {
+                if "[]:*?/\\".contains(c) || c.is_control() {
+                    ' '
+                } else {
+                    c
+                }
+            })
             .collect();
         let clean = clean.trim().trim_matches('\'').trim().to_string();
-        let base = if clean.is_empty() { "Sheet".to_string() } else { clean };
+        let base = if clean.is_empty() {
+            "Sheet".to_string()
+        } else {
+            clean
+        };
         let mut name: String = base.chars().take(31).collect();
         let mut n = 2;
         while out.iter().any(|o| o.eq_ignore_ascii_case(&name)) {
             let suffix = format!(" ({n})");
-            name = base.chars().take(31 - suffix.chars().count()).collect::<String>() + &suffix;
+            name = base
+                .chars()
+                .take(31 - suffix.chars().count())
+                .collect::<String>()
+                + &suffix;
             n += 1;
         }
         out.push(name);
@@ -99,7 +113,11 @@ pub fn workbook(sheets: &[Sheet]) -> Vec<u8> {
         name: "Sheet".into(),
         rows: vec![],
     }];
-    let sheets = if sheets.is_empty() { &empty[..] } else { sheets };
+    let sheets = if sheets.is_empty() {
+        &empty[..]
+    } else {
+        sheets
+    };
     for (i, s) in sheets.iter().enumerate() {
         let id = i + 1;
         book.push_str(&format!(
@@ -107,7 +125,10 @@ pub fn workbook(sheets: &[Sheet]) -> Vec<u8> {
             esc(&s.name)
         ));
         rels.push_str(&format!(r#"<Relationship Id="rId{id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet{id}.xml"/>"#));
-        zip.add(&format!("xl/worksheets/sheet{id}.xml"), sheet_xml(s).as_bytes());
+        zip.add(
+            &format!("xl/worksheets/sheet{id}.xml"),
+            sheet_xml(s).as_bytes(),
+        );
     }
     book.push_str("</sheets></workbook>");
     rels.push_str(&format!(r#"<Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>"#, sheets.len() + 1));
@@ -145,7 +166,11 @@ fn sheet_xml(s: &Sheet) -> String {
                 Cell::Text(t) => {
                     // Excel refuses cells over 32,767 characters.
                     let t: String = t.chars().take(32_767).collect();
-                    let style = if r > 0 && t.contains('\n') { r#" s="2""# } else { style };
+                    let style = if r > 0 && t.contains('\n') {
+                        r#" s="2""#
+                    } else {
+                        style
+                    };
                     x.push_str(&format!(
                         r#"<c r="{at}" t="inlineStr"{style}><is><t xml:space="preserve">{}</t></is></c>"#,
                         esc(&t)
@@ -276,7 +301,12 @@ mod tests {
         let mut out = Vec::new();
         for _ in 0..count {
             assert_eq!(u32_at(at), 0x0201_4b50);
-            let (crc, csize, nlen, off) = (u32_at(at + 16), u32_at(at + 20), u16_at(at + 28), u32_at(at + 42));
+            let (crc, csize, nlen, off) = (
+                u32_at(at + 16),
+                u32_at(at + 20),
+                u16_at(at + 28),
+                u32_at(at + 42),
+            );
             let name = String::from_utf8(z[at + 46..at + 46 + nlen].to_vec()).unwrap();
             let data_at = off + 30 + u16_at(off + 26) + u16_at(off + 28);
             let mut s = String::new();
@@ -302,7 +332,11 @@ mod tests {
             name: names[0].clone(),
             rows: vec![
                 vec!["Key".into(), "Title".into(), "Points".into()],
-                vec!["WEB-1".into(), "A <b> & \"c\"\u{1}".into(), Cell::Number(3.0)],
+                vec![
+                    "WEB-1".into(),
+                    "A <b> & \"c\"\u{1}".into(),
+                    Cell::Number(3.0),
+                ],
                 vec!["WEB-2".into(), Cell::Empty, Cell::Number(f64::NAN)],
             ],
         }]);
@@ -310,7 +344,11 @@ mod tests {
         let names: Vec<_> = files.iter().map(|f| f.0.as_str()).collect();
         assert!(names.contains(&"[Content_Types].xml"));
         assert!(names.contains(&"xl/workbook.xml"));
-        let sheet = &files.iter().find(|f| f.0 == "xl/worksheets/sheet1.xml").unwrap().1;
+        let sheet = &files
+            .iter()
+            .find(|f| f.0 == "xl/worksheets/sheet1.xml")
+            .unwrap()
+            .1;
         assert!(sheet.contains(r#"<c r="B2" t="inlineStr"><is><t xml:space="preserve">A &lt;b&gt; &amp; &quot;c&quot;</t></is></c>"#));
         assert!(sheet.contains(r#"<c r="C2"><v>3</v></c>"#));
         assert!(!sheet.contains("C3"), "NaN is left out");

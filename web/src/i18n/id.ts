@@ -1126,4 +1126,5 @@ export const id: Record<MessageKey, string> = {
   "pb.react": "Beri reaksi",
   "pb.delete": "Hapus komentarmu",
   "pb.edited": "diubah",
+  "pb.public": "Board publik",
 };

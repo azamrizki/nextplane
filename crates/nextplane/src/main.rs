@@ -421,7 +421,11 @@ async fn automation_loop(store: Store, events: np_api::events::Bus) {
         last = Some(now.date());
         match np_api::automations::run(&store, &events, now).await {
             Ok(r) if r.archived + r.closed == 0 => {}
-            Ok(r) => tracing::info!(archived = r.archived, closed = r.closed, "project automations ran"),
+            Ok(r) => tracing::info!(
+                archived = r.archived,
+                closed = r.closed,
+                "project automations ran"
+            ),
             Err(e) => tracing::warn!(error = %format!("{e:#}"), "project automations failed"),
         }
     }

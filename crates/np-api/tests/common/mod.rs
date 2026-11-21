@@ -236,7 +236,10 @@ impl TestApp {
     /// so it may be archived.
     pub async fn complete(&self, item_path: &str, cookie: &str) {
         let project = item_path.split("/work-items/").next().unwrap();
-        let states = self.get(&format!("{project}/states"), Some(cookie)).await.body;
+        let states = self
+            .get(&format!("{project}/states"), Some(cookie))
+            .await
+            .body;
         let done = states
             .as_array()
             .unwrap()
@@ -245,7 +248,11 @@ impl TestApp {
             .unwrap()["id"]
             .clone();
         let r = self
-            .patch(item_path, serde_json::json!({ "state_id": done }), Some(cookie))
+            .patch(
+                item_path,
+                serde_json::json!({ "state_id": done }),
+                Some(cookie),
+            )
             .await;
         assert_eq!(r.status, StatusCode::OK, "{}", r.body);
     }

@@ -30,8 +30,16 @@ pub async fn ai(store: &Store) -> np_core::Result<Ai> {
     let base = get("ai.base_url");
     Ok(Ai {
         api_key: get("ai.api_key"),
-        model: if model.is_empty() { DEFAULT_AI_MODEL.into() } else { model },
-        base_url: if base.is_empty() { DEFAULT_AI_BASE.into() } else { base },
+        model: if model.is_empty() {
+            DEFAULT_AI_MODEL.into()
+        } else {
+            model
+        },
+        base_url: if base.is_empty() {
+            DEFAULT_AI_BASE.into()
+        } else {
+            base
+        },
     })
 }
 
@@ -45,7 +53,12 @@ pub async fn unsplash_key(store: &Store) -> np_core::Result<String> {
 }
 
 /// What the assistant is asked: the task first, then the text it works on (as in Plane).
-pub async fn complete(http: &reqwest::Client, ai: &Ai, task: &str, prompt: &str) -> anyhow::Result<String> {
+pub async fn complete(
+    http: &reqwest::Client,
+    ai: &Ai,
+    task: &str,
+    prompt: &str,
+) -> anyhow::Result<String> {
     #[derive(Deserialize)]
     struct Msg {
         content: Option<String>,
@@ -76,8 +89,7 @@ pub async fn complete(http: &reqwest::Client, ai: &Ai, task: &str, prompt: &str)
         anyhow::bail!("the AI service answered {status}");
     }
     let a: Answer = res.json().await?;
-    Ok(a
-        .choices
+    Ok(a.choices
         .into_iter()
         .next()
         .and_then(|c| c.message.content)
@@ -145,7 +157,9 @@ pub async fn unsplash_photos(
     {
         let mut pairs = url.query_pairs_mut();
         if let Some(q) = q {
-            pairs.append_pair("query", q).append_pair("orientation", "landscape");
+            pairs
+                .append_pair("query", q)
+                .append_pair("orientation", "landscape");
         }
         pairs
             .append_pair("page", &page.to_string())
@@ -178,7 +192,12 @@ pub async fn unsplash_photos(
 }
 
 /// Tells Unsplash a photo was chosen (required by its API guidelines). Failures only log.
-pub async fn unsplash_track(http: &reqwest::Client, base: &str, key: &str, download_location: &str) {
+pub async fn unsplash_track(
+    http: &reqwest::Client,
+    base: &str,
+    key: &str,
+    download_location: &str,
+) {
     let ok = download_location.starts_with(&format!("{base}/photos/"));
     if !ok {
         tracing::warn!("ignored an Unsplash download link that is not Unsplash's");

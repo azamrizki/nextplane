@@ -27,7 +27,9 @@ pub struct AiOut {
 }
 
 fn esc(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 /// Plain text to paragraphs: blank lines split paragraphs, single newlines become `<br>`.
@@ -68,7 +70,10 @@ pub async fn ai(
         .await
         .map_err(|e| {
             tracing::warn!(error = %format!("{e:#}"), "AI assistant failed");
-            Error::new(np_core::ErrorKind::Internal, "the AI service did not answer; try again later")
+            Error::new(
+                np_core::ErrorKind::Internal,
+                "the AI service did not answer; try again later",
+            )
         })?;
     Ok(Json(AiOut {
         response_html: to_html(&response),
@@ -98,12 +103,21 @@ pub async fn photos(
         .limiter
         .check(&format!("unsplash:{}", me.id), ratelimit::UNSPLASH_PER_USER)?;
     let page = q.page.unwrap_or(1).clamp(1, 50);
-    let list = services::unsplash_photos(&state.http, &state.unsplash_api, &key, q.query.as_deref(), page)
-        .await
-        .map_err(|e| {
-            tracing::warn!(error = %format!("{e:#}"), "Unsplash failed");
-            Error::new(np_core::ErrorKind::Internal, "Unsplash did not answer; try again later")
-        })?;
+    let list = services::unsplash_photos(
+        &state.http,
+        &state.unsplash_api,
+        &key,
+        q.query.as_deref(),
+        page,
+    )
+    .await
+    .map_err(|e| {
+        tracing::warn!(error = %format!("{e:#}"), "Unsplash failed");
+        Error::new(
+            np_core::ErrorKind::Internal,
+            "Unsplash did not answer; try again later",
+        )
+    })?;
     Ok(Json(list))
 }
 

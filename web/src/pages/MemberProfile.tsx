@@ -67,15 +67,16 @@ export function MemberProfilePage() {
   const self = userId === me.id;
   const base = `/${ws.slug}/profile/${userId}`;
   return (
-    <div className="page page-wide profile-page">
+    <div className="proj-view profile-page">
       <PageHeader crumbs={[{ icon: <UserRound />, label: self ? t("nav.myWork") : p.user.name || p.user.email || "" }]} />
-      <nav className="tabs profile-tabs" aria-label={t("prof.sections")}>
+      <nav className="tabs archive-tabs profile-tabs" aria-label={t("prof.sections")}>
         {TABS.filter((x) => !guest || x === "summary").map((x) => (
           <Link key={x} to={x === "summary" ? base : `${base}/${x}`} className={x === tab ? "active" : ""} aria-current={x === tab ? "page" : undefined}>
             {t(`prof.tab.${x}`)}
           </Link>
         ))}
       </nav>
+      <div className="page page-wide">
       <div className="profile-body">
         <div className="profile-main">
           {tab === "summary" ? <Summary p={p} base={base} /> : null}
@@ -83,6 +84,7 @@ export function MemberProfilePage() {
           {tab === "activity" ? <Activity userId={userId} name={p.user.name || p.user.email || ""} /> : null}
         </div>
         <Sidebar p={p} />
+      </div>
       </div>
     </div>
   );
