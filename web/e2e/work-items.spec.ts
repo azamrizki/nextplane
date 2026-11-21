@@ -179,7 +179,7 @@ test("comments with a mention, reactions, attachment upload, link", async ({ pag
   const comment = page.locator(".comment").first();
   await expect(comment.locator(".mention")).toHaveText("@Ana");
   await comment.getByRole("button", { name: "Add reaction" }).click();
-  await page.getByRole("button", { name: "👍" }).click();
+  await page.getByRole("menuitem", { name: "👍" }).click();
   await expect(comment.locator(".reaction.mine")).toContainText("1");
 
   await page.locator('input[type="file"]').setInputFiles({ name: "log.txt", mimeType: "text/plain", buffer: Buffer.from("error at line 3") });

@@ -1126,6 +1126,7 @@ export const en = {
   "pb.delete": "Delete your comment",
   "pb.edited": "edited",
   "pb.public": "Public board",
+  "comments.actions": "Comment actions",
 } as const;
 
 export type MessageKey = keyof typeof en;

@@ -1,7 +1,8 @@
 // Comments, reactions, attachments, links and the subscribe button on a work item.
-import { Link as LinkIcon, Bell, BellOff, FileImage, FileText, SmilePlus, X } from "lucide-react";
+import { Popover } from "./Layout";
+import { Link as LinkIcon, Bell, BellOff, Ellipsis, Eye, EyeOff, FileImage, FileText, Globe, Pencil, SmilePlus, Trash2, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { ApiError, del, get, patch, post } from "../api/client";
 import type { WorkItem } from "../api/types";
 import { useI18n } from "../i18n";
@@ -77,6 +78,7 @@ export function Reactions({ list, onToggle, canReact }: { list: Reaction[]; onTo
   const { t } = useI18n();
   const me = useMe().data!;
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
   return (
     <div className="reactions">
       {list.map((r) => (
@@ -85,16 +87,21 @@ export function Reactions({ list, onToggle, canReact }: { list: Reaction[]; onTo
         </button>
       ))}
       {canReact ? (
-        <span className="popover-wrap">
-          <button type="button" className="reaction add" aria-label={t("react.add")} onClick={() => setOpen((o) => !o)}><SmilePlus /></button>
-          {open ? (
-            <span className="popover emoji-pop" onMouseLeave={() => setOpen(false)}>
-              {EMOJI.map((e) => (
-                <button key={e} type="button" className="emoji" aria-label={e} onClick={() => { onToggle(e); setOpen(false); }}>{e}</button>
-              ))}
-            </span>
-          ) : null}
-        </span>
+        <Popover
+          open={open}
+          onClose={close}
+          trigger={
+            <button type="button" className="reaction add" aria-label={t("react.add")} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+              <SmilePlus />
+            </button>
+          }
+        >
+          <span className="emoji-pop" role="menu">
+            {EMOJI.map((e) => (
+              <button key={e} type="button" role="menuitem" className="emoji" aria-label={e} onClick={() => { onToggle(e); setOpen(false); }}>{e}</button>
+            ))}
+          </span>
+        </Popover>
       ) : null}
     </div>
   );
@@ -164,14 +171,18 @@ export function Comments({ slug, ctx, item }: { slug: string; ctx: PropsCtx; ite
                   <span className="faint small">{new Date(c.created_at).toLocaleString(lang === "id" ? "id-ID" : "en-US", { dateStyle: "medium", timeStyle: "short" })}</span>
                   {c.edited_at ? <span className="faint small">({t("comments.edited")})</span> : null}
                   <span className="grow" />
-                  {mine && canComment && !c.hidden_at ? <button className="btn btn-sm btn-ghost" onClick={() => setEditing(c.id)}>{t("comments.edit")}</button> : null}
-                  {mine && canComment ? <button className="btn btn-sm btn-ghost" onClick={() => act(() => del(`${base}/${c.id}`))}>{t("common.delete")}</button> : null}
-                  {ctx.project.my_role === "admin" && !ctx.project.archived_at ? (
-                    <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(`${base}/${c.id}/${c.hidden_at ? "unhide" : "hide"}`))}>{c.hidden_at ? t("comments.unhide") : t("comments.hide")}</button>
-                  ) : null}
-                  {(ctx.project.is_published || c.is_public) && (mine ? canComment : ctx.project.my_role === "admin") && !ctx.project.archived_at ? (
-                    <button className="btn btn-sm btn-ghost" onClick={() => act(() => post(`${base}/${c.id}/public`, { public: !c.is_public }))}>{c.is_public ? t("cm.makePrivate") : t("cm.makePublic")}</button>
-                  ) : null}
+                  <CommentMenu
+                    items={[
+                      ...(mine && canComment && !c.hidden_at ? [{ label: t("comments.edit"), icon: <Pencil />, run: () => setEditing(c.id) }] : []),
+                      ...((ctx.project.is_published || c.is_public) && (mine ? canComment : ctx.project.my_role === "admin") && !ctx.project.archived_at
+                        ? [{ label: c.is_public ? t("cm.makePrivate") : t("cm.makePublic"), icon: <Globe />, run: () => act(() => post(`${base}/${c.id}/public`, { public: !c.is_public })) }]
+                        : []),
+                      ...(ctx.project.my_role === "admin" && !ctx.project.archived_at
+                        ? [{ label: c.hidden_at ? t("comments.unhide") : t("comments.hide"), icon: c.hidden_at ? <Eye /> : <EyeOff />, run: () => act(() => post(`${base}/${c.id}/${c.hidden_at ? "unhide" : "hide"}`)) }]
+                        : []),
+                      ...(mine && canComment ? [{ label: t("common.delete"), icon: <Trash2 />, danger: true, run: () => act(() => del(`${base}/${c.id}`)) }] : []),
+                    ]}
+                  />
                 </div>
                 {c.hidden_at ? (
                   <p className="faint small" style={{ margin: 0 }}>{t("comments.hidden")}</p>
@@ -353,5 +364,34 @@ export function SubscribeButton({ slug, ctx, item }: { slug: string; ctx: PropsC
       {on ? <BellOff /> : <Bell />}
       {on ? t("sub.unsubscribe") : t("sub.subscribe")}
     </button>
+  );
+}
+
+/** "…" on a comment: edit, show on the public board, hide, delete (whichever apply). */
+function CommentMenu({ items }: { items: { label: string; icon: ReactNode; run: () => void; danger?: boolean }[] }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  if (!items.length) return null;
+  return (
+    <Popover
+      open={open}
+      onClose={close}
+      right
+      trigger={
+        <button type="button" className="icon-btn icon-btn-sm" aria-label={t("comments.actions")} title={t("comments.actions")} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <Ellipsis />
+        </button>
+      }
+    >
+      <div className="menu" role="menu">
+        {items.map((it) => (
+          <button key={it.label} type="button" role="menuitem" className={"menu-item" + (it.danger ? " danger" : "")} onClick={() => (close(), it.run())}>
+            {it.icon}
+            {it.label}
+          </button>
+        ))}
+      </div>
+    </Popover>
   );
 }

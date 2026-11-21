@@ -1,6 +1,7 @@
 import { Check, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useT } from "../i18n";
+import { Floating } from "./Floating";
 
 export interface Option {
   value: string;
@@ -54,6 +55,7 @@ export function Picker({
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
   const shown = useMemo(() => {
     const ql = q.trim().toLowerCase();
     const list = ql ? options.filter((o) => o.label.toLowerCase().includes(ql) || o.hint?.toLowerCase().includes(ql)) : options;
@@ -63,7 +65,8 @@ export function Picker({
   useEffect(() => {
     if (!open) return;
     const down = (e: MouseEvent) => {
-      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!wrap.current?.contains(t) && !pop.current?.contains(t)) setOpen(false);
     };
     document.addEventListener("mousedown", down);
     return () => document.removeEventListener("mousedown", down);
@@ -114,7 +117,7 @@ export function Picker({
         {trigger}
       </button>
       {open ? (
-        <div className={"popover" + (align === "right" ? " popover-right" : "")} onClick={(e) => e.stopPropagation()}>
+        <Floating ref={pop} anchor={wrap} align={align === "right" ? "end" : "start"} className="popover" onClick={(e) => e.stopPropagation()}>
           <div className="menu picker-menu">
             {searchable ? (
               <div className="menu-search-row">
@@ -146,7 +149,7 @@ export function Picker({
               })}
             </div>
           </div>
-        </div>
+        </Floating>
       ) : null}
     </div>
   );

@@ -1,3 +1,4 @@
+import { Floating } from "./Floating";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Boxes,
@@ -536,12 +537,16 @@ function UserMenu() {
 }
 
 /** A trigger plus a floating panel that closes on outside click and Esc. */
+/** A trigger and a menu that floats above everything (Floating.tsx); the menu closes on Esc
+ * or a click outside both. */
 export function Popover({ trigger, children, open, onClose, up, right }: { trigger: ReactNode; children: ReactNode; open: boolean; onClose: () => void; up?: boolean; right?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const pop = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const t = e.target as Node;
+      if (!ref.current?.contains(t) && !pop.current?.contains(t)) onClose();
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("mousedown", onDown);
@@ -554,7 +559,11 @@ export function Popover({ trigger, children, open, onClose, up, right }: { trigg
   return (
     <div className="popover-wrap" ref={ref}>
       {trigger}
-      {open ? <div className={"popover" + (up ? " popover-up" : "") + (right ? " popover-right" : "")}>{children}</div> : null}
+      {open ? (
+        <Floating ref={pop} anchor={ref} align={right ? "end" : "start"} up={up} className="popover">
+          {children}
+        </Floating>
+      ) : null}
     </div>
   );
 }

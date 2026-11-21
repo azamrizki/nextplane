@@ -1,3 +1,4 @@
+import { layerHost, placeNear } from "./Floating";
 import { EditorContent, useEditor, type Editor as TiptapEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -170,11 +171,6 @@ function mentionMenu() {
   let index = 0;
   const draw = () => {
     if (!el || !props) return;
-    const rect = props.clientRect?.();
-    if (rect) {
-      el.style.left = `${rect.left + window.scrollX}px`;
-      el.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    }
     el.replaceChildren();
     if (!props.items.length) {
       el.style.display = "none";
@@ -193,15 +189,20 @@ function mentionMenu() {
       };
       el!.appendChild(b);
     });
+    // Next to the caret, kept on screen (flips up near the bottom), as menus are.
+    const rect = props.clientRect?.();
+    if (rect) placeNear(rect, el, "start", false);
   };
   return {
     onStart: (p: SuggestionProps<MentionPerson>) => {
       props = p;
       index = 0;
       el = document.createElement("div");
-      el.className = "menu mention-menu";
+      el.className = "menu mention-menu floating";
       el.setAttribute("role", "listbox");
-      document.body.appendChild(el);
+      el.style.position = "fixed";
+      // Inside a modal dialog the menu must live in the dialog to be seen above it.
+      layerHost(p.editor.view.dom).appendChild(el);
       draw();
     },
     onUpdate: (p: SuggestionProps<MentionPerson>) => {

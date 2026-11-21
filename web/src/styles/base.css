@@ -456,6 +456,24 @@ svg.lucide {
   left: auto;
   right: 0;
 }
+/* Menus and pickers float in a layer of their own (Floating.tsx), above every scrolling or
+   clipping container, sized to the room they have. */
+.floating,
+.floating.popover {
+  z-index: 1000;
+  max-height: var(--float-max, none);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.floating > .menu {
+  max-height: min(384px, var(--float-max, 384px));
+}
+/* Small pickers (colours, emoji) are as wide as their content, not a menu's minimum. */
+.floating.popover:has(> .sticky-swatches),
+.floating.popover:has(> .emoji-menu),
+.floating.popover:has(> .emoji-pop) {
+  min-width: 0;
+}
 .menu {
   display: flex;
   flex-direction: column;
@@ -467,6 +485,9 @@ svg.lucide {
   max-height: 384px;
   max-width: 400px;
   overflow: auto;
+}
+.menu.floating {
+  max-height: min(384px, var(--float-max, 384px));
 }
 .menu-label {
   padding: 6px var(--space-2) 4px;
@@ -1037,8 +1058,8 @@ svg.lucide {
   font-weight: 500;
 }
 .mention-menu {
-  position: absolute;
-  z-index: 100;
+  position: fixed;
+  z-index: 1000;
   min-width: 180px;
 }
 .prose img {
