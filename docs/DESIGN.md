@@ -1,32 +1,51 @@
 # NextPlane design
 
-Since 2026-11-21 NextPlane deliberately looks and behaves like Plane's web app, so people who know Plane can work without relearning (owner decision, SPEC §2). The design is rebuilt from a written description of Plane's patterns and values, in our own code: no Plane component, CSS, icon artwork, illustration, wording, logo or name.
+NextPlane works like Plane's web app: the same layout, density, interaction patterns and shortcuts, so people who know Plane can work without relearning (owner decision 2026-11-21, SPEC §2). Since v0.3 the surfaces are our own: **NextPlane Glass** (owner decision 2026-11-22). It is flat, quiet frosted glass over a near-neutral scene, with our own form controls throughout.
+
+The design is rebuilt in our own code from a written description of Plane's patterns: no Plane component, CSS, icon artwork, illustration, wording, logo or name. The mockups and the review behind Glass are kept outside the repository, in `.generate/overhoul-ui-glass`.
 
 ## Principles
 
-1. **Familiar first.** Layout, density, colors and shortcuts follow Plane's current web app, so someone coming from Plane finds everything where they expect it.
-2. **Dense but calm.** 13 px body text (Inter), 44 px rows, hairline borders, color only where it carries meaning (state, priority, the one primary action).
-3. **Keyboard first.** Every frequent action has a shortcut (Plane's set) and is reachable from the command palette (`Ctrl/⌘K`).
-4. **Two themes, one system.** Light and dark use the same tokens; components never hard-code colors.
+1. **Familiar first.** Layout, density and shortcuts follow Plane's current web app, so someone coming from Plane finds everything where they expect it.
+2. **Flat glass, no effects.** Depth comes from layers of frosted glass, not from lighting:
+   - every surface is a tint, a blur, an even hairline edge and a soft shadow;
+   - no gradients, bevels, glow or text shadows, on buttons or anywhere else;
+   - the owner rejected all of those as generic "AI" styling.
+3. **Dense but calm.** 13 px body text (Inter), 44 px rows, hairline borders, color only where it carries meaning (state, priority, the one primary action).
+4. **Our own controls.** No browser-drawn select, date, colour or number control; checkboxes and radios keep the native input under our look, so labels, forms and screen readers keep working.
+5. **Keyboard first.** Every frequent action has a shortcut (Plane's set) and is reachable from the command palette (`Ctrl/⌘K`).
+6. **Two themes, one system.** Light and dark use the same tokens; components never hard-code colors.
 
 ## Tokens
 
-All tokens live in `web/src/styles/tokens.css` as CSS variables. Values follow Plane's current palette (read from its published design tokens, then written here as our own variables).
+All tokens live in `web/src/styles/tokens.css` as CSS variables. Names stay from the Plane-like v0.1 set; values are NextPlane Glass.
 
 | Group | Tokens | Notes |
 |---|---|---|
 | Type | `--font-sans` (Inter Variable), `--font-mono` (IBM Plex Mono), `--text-xs` 11 · `--text-sm` 12 · `--text-base` 13 · `--text-md` 14 · `--text-lg` 16 · `--text-xl` 20 · `--text-2xl` 24, weights 450/500/600 | Fonts are bundled (`@fontsource`, OFL). |
 | Space | `--space-1` (4 px) … `--space-7` (48 px), `--page-x` 22 px | Page gutter as in Plane. |
-| Radius | `--radius-sm` 4, `--radius-md` 6, `--radius-lg` 8, `--radius-xl` 12 | Controls use 6. |
+| Radius | `--radius-sm` 6 (chips), `--radius-md` 8 (buttons, inputs, menu items), `--radius-lg` 12 (cards, menus), `--radius-xl` 16 (dialogs, board columns), `--radius-2xl` 20 (the app panel) | One step rounder than v0.2. |
 | Controls | `--ctl-xs` 20 · `--ctl-sm` 24 (chips) · `--ctl-md` 28 (buttons) · `--ctl-lg` 32 (inputs) · `--ctl-xl` 36 | |
-| Surfaces | `--canvas` (behind the panel), `--bg` (surface), `--bg-subtle`, `--layer-1/2/3` (+ `-hover`, `-active`), `--bg-hover` / `--bg-pressed` / `--bg-active` (transparent rows) | Light canvas `#f2f2f3`, dark `#0f0f10`. |
+| Scene | `--canvas` with `--scene-1` / `--scene-2` (two faint radial tints) | The near-neutral backdrop behind the panel: light `#eef0f3`, dark `#0c0e11`. |
+| Surfaces | `--bg` (the page, opaque: the glass panel's look), `--bg-subtle`, `--layer-1/2/3` (+ `-hover`, `-active`), `--bg-hover` / `--bg-pressed` / `--bg-active` (translucent rows) | |
+| Glass | `--glass-float` (menus, pickers, dialogs, toasts, the peek), `--glass-blur` 28 px, `--glass-saturate` 140 %, `--glass-edge` (an even inner hairline) | Only floating layers blur. |
+| Controls | `--btn-bg` / `-hover` / `--btn-border` / `--btn-shadow` (flat glass buttons), `--well` / `--well-hover` (inputs) | |
 | Lines | `--border` (subtle), `--border-1` (cards, chips), `--border-strong`, `--border-strong-1` | |
 | Text | `--text`, `--text-secondary`, `--text-muted`, `--text-faint`, `--icon` | Four steps. |
-| Accent | `--accent` (`#006399` light / `#2893cc` dark), `--accent-hover`, `--accent-active`, `--accent-fg`, `--accent-soft(-hover)` | The one brand color. |
-| Status | `--danger(-fg, -soft)`, `--warning-fg/-soft`, `--success(-soft)`, `--focus` | |
+| Accent | `--accent` (`#1a6dc4` light / `#2370cc` dark), `--accent-hover`, `--accent-active`, `--accent-fg`, `--accent-soft(-hover)`, `--accent-border-soft` | The one brand color, used flat: a solid fill only on the primary action and checked controls, a soft tint for selection, a ring for focus. White text on either fill passes 4.5:1. The logo uses it too. |
+| Status | `--danger(-fg, -soft, -border)`, `--warning-fg/-soft`, `--success(-soft)`, `--focus` | Danger `#b42318`. |
 | Priority | `--prio-urgent/high/medium/low/none`, `--prio-unlit` | Per theme. |
 | State group | `--group-backlog/unstarted/started/completed/cancelled` | Defaults for new states. |
-| Shadow | `--shadow-sm`, `--shadow-raised`, `--shadow-md` (menus), `--shadow-lg` (dialogs), `--shadow-side` (peek) | |
+| Shadow | `--shadow-sm`, `--shadow-raised`, `--shadow-md` (menus), `--shadow-lg` (dialogs), `--shadow-side` (peek), `--shadow-panel` | Soft; no glow. |
+
+**Glass rules.**
+
+1. **Where the blur goes.** Only floating layers blur: menus, pickers, the peek, dialogs and toasts. The page and its cards are opaque surfaces, so long lists stay cheap to scroll.
+2. **A dialog carries its blur on `::before`.** An element with its own `backdrop-filter` becomes a "backdrop root", and any glass inside it would only be see-through, not blurred. Menus open inside dialogs, so the dialog's blur sits on `::before` and its body scrolls.
+3. **Fallbacks.**
+   - `prefers-reduced-transparency` swaps the glass for solid surfaces.
+   - `forced-colors` gets the browser's own colours.
+   - `prefers-reduced-motion` stops the motion.
 | Layout | `--sidebar-w` 250 px, `--topbar-h` 44 px, `--header-h` 48 px | |
 
 ## App frame
@@ -57,7 +76,47 @@ All tokens live in `web/src/styles/tokens.css` as CSS variables. Values follow P
 
 ## Components
 
-`.btn` (secondary look; `-primary`, `-danger`, `-danger-outline`, `-ghost`, `-sm` 24, `-lg` 32, `-block`), `.icon-btn` (+ `-sm`, `-xs`, `.bordered`), `.seg` (segmented control), `.menu` / `.menu-item` (32 px rows), `Picker` (searchable combobox with checks), `Dialog` (header, body, footer with Cancel then primary; `bare` for the palette), `.badge`, `.card`, `.switch`, `.keycap`. React wrappers in `web/src/components/ui.tsx`.
+**Buttons.**
+
+- `.btn` is flat glass: a translucent fill and a hairline.
+- Variants:
+  - `-primary`: solid accent;
+  - `-danger-outline`: red text, for everyday destructive actions;
+  - `-danger-ghost`;
+  - `-danger`: solid red, only for the last step of a confirmation;
+  - `-ghost`, `-accent`;
+  - sizes `-sm` 24 and `-lg` 32, plus `-block`.
+- Icons in buttons take the label's colour at 70 % (100 % on hover) and are 14 px, so icon and text read as one.
+- Icon buttons: `.icon-btn` (+ `-sm`, `-xs`, `.bordered`).
+
+**Other parts.**
+
+- `.seg` (segmented control: a sunken track with a raised thumb).
+- `.menu` / `.menu-item` (frosted, 32 px rows).
+- `Picker` (searchable combobox with checks).
+- `Dialog` (header, scrolling body, footer with Cancel then primary; `bare` for the palette).
+- `.badge`, `.card`, `.switch`, `.keycap`.
+
+**Form controls** (`web/src/components`, styles in `styles/controls.css`):
+
+- **`Select`** replaces `<select>`.
+  - It takes `options`, or `<option>`/`<optgroup>` children, and `onChange` gets the value.
+  - Keyboard as a native select: arrows, Home/End, PgUp/PgDn, Enter/Space, Esc, and type-ahead.
+  - A search row appears past eight options; `required` still blocks the form.
+  - Tests use `choose(locator, value)`.
+- **`DateTrigger` / `DateField` / `DateRangeField`** replace the browser calendar. The panel has:
+  - a typed field that understands both languages (`2026-11-30`, `11/30` or `30/11` by language, `nov 30`, `besok`, `+3d`, `next fri`, `senin depan`; `web/src/lib/dates.ts`);
+  - quick picks;
+  - a month grid with month and year views; the week starts Sunday in English and Monday in Indonesian;
+  - a footer that says what the date means ("Due in 8 days", "Overdue by 4 days").
+
+  The range panel adds two months, quick ranges, "like the last cycle", and a warning when a cycle would overlap another one. Tests use `pickDate` / `pickRange`.
+- **`NumberField`:** − and + around a number input whose spinner is hidden.
+- **`ColorButton`:** a swatch that opens a saturation and brightness square, a hue slider, hex, eyedropper and the palette.
+- **`FileDrop`:** a dashed glass area to drop a file on.
+- **Checkbox and radio:** the native input with our look (`appearance: none`).
+
+React wrappers in `web/src/components/ui.tsx`.
 
 **Layers.** Every menu, picker and small popup (`Popover`, `Picker`, the mention menu) floats in a layer of its own (`Floating.tsx`): rendered outside the page (into `body`, or into the open modal dialog it belongs to), in fixed position next to its trigger, flipped above when there is more room there, kept inside the window, and only as tall as the room it has (the menu scrolls). No board column, list row, chip row, panel, dialog body or sidebar can cut one off. Toasts are a manual popover in the browser's top layer, so they show above modal dialogs. Do not position a menu with `position: absolute` inside a scrolling container. Crowded page headers (four or more actions) turn secondary buttons into icons below 860 px (they keep their names as tooltips), and breadcrumbs end in "…" instead of disappearing.
 

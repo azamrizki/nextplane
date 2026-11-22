@@ -414,6 +414,31 @@ Found while testing: the title box in the detail view collapsed to 6 px inside t
 
 Found while testing: the description editor saved unchanged text whenever it switched between editable and read-only (Tiptap's `setEditable` emits an update), which also hit archived items with `409`; the AI popover was a form inside the create form, so Generate submitted the work item. Both fixed. The XLSX output was checked as ZIP and XML with Python; opening it in a spreadsheet program was not possible here. Tests: 132 Rust (+1 ignored perf), 27 Vitest, 54 Playwright (+3 screenshot specs), screenshots of the new screens in light and dark in `../.generate`.
 
+### S3.8 — NextPlane Glass: our own visual style and form controls
+
+**Dates:** 2026-11-22 → 2026-11-22 · **Status:** ✅ · **Why:** the owner asked for:
+- our own components for every form control (the browser's dark calendar looked foreign);
+- a consistent "glass" overhaul, mocked up first;
+- a polish of colours and buttons that read as generic "AI" styling and 3D.
+
+The owner approved the mockups (`.generate/overhoul-ui-glass`, outside the repo) and the new brand blue.
+
+- [x] Tokens and material: near-neutral scene, frosted floating layers, flat glass buttons and wells, rounder radii, brand blue `#1a6dc4` / `#2370cc` (logo too), muted avatar colours, reduced-transparency fallback
+- [x] `Select` replaces all 24 native selects (keyboard as native, type-ahead, search past eight options, `required`)
+- [x] Date picker: `DateTrigger` (property chips, bulk bar), `DateField` (intake snooze), `DateRangeField` (cycles, modules) replace the 7 date inputs; typed dates in both languages (`lib/dates.ts`, unit-tested)
+- [x] Checkbox and radio look over the native input; `NumberField`; `ColorButton` for state and label colours; `FileDrop` for CSV import; restyled switch, segmented control, drop zone, swatches
+- [x] Docs (DESIGN.md, SPEC §2), tests and e2e helpers (`choose`, `pickDate`, `pickRange`), audit cases for the new pickers, screenshots in light and dark
+
+**Review:**
+- **Glass model.**
+  - Only floating layers blur: menus, pickers, toasts, the peek, dialogs. The page and its cards stay opaque, so long lists scroll as before.
+  - Dialogs carry their blur on `::before`. The mockups showed why: an element with its own `backdrop-filter` stops every glass layer inside it from blurring, and menus open inside dialogs.
+- **Floating layer.** It now slides a panel over its trigger when neither side has room. The range picker on a 600 px window stayed whole instead of scrolling its Apply button out of view.
+- **Accessibility.**
+  - The dark accent fill moved from `#2893cc` (white text 3.4:1) to `#2370cc` (4.9:1).
+  - Everyday delete buttons are red text on glass; solid red is kept for the last step of a confirmation.
+- **Tests.** e2e that used `selectOption` and filled date inputs now go through our controls.
+
 ### Web v1 — owner review
 
 Phases 0–3.6 are done and v0.2.0 is released. These need the owner:
@@ -453,6 +478,7 @@ Phases 0–3.6 are done and v0.2.0 is released. These need the owner:
 | 2026-11-20 | Created: phase overview, phase 0 and phase 1 sprints with task checklists, phase 2–4 outline. |
 | 2026-11-20 | S0.1 done (10/10); S0.2 gains a task for the sqlx query-check decision. |
 | 2026-11-20 | S0.2 done (12/12), phase 0 done; S1.1 started with the carried fmt/clippy task. |
+| 2026-11-22 | S3.8 done: NextPlane Glass (owner-approved mockups): flat frosted surfaces, our own Select, date and range pickers, number, colour and file controls, brand blue `#1a6dc4`. |
 | 2026-11-22 | Layering fixes (owner's report: a board card's picker cut off by its column): menus and pickers float in their own layer, toasts show above dialogs, crowded headers collapse button labels, comment actions in a ⋯ menu; a UI audit spec (59 popups, 25 pages, two window sizes) finds nothing left. |
 | 2026-11-21 | v0.2.0 released (minor: S3.7 adds features), at the owner's go-ahead; commits now follow Conventional Commits as in NextBoard. CI's newer clippy caught one lint the local one missed (fixed before tagging). The Linux amd64 download matched `SHA256SUMS`, reports 0.2.0 and migrates a fresh data folder. |
 | 2026-11-21 | S3.7 done: archives, automations, workspace views, home widgets, profiles, sign-in providers, AI and Unsplash, exports and board interactions. |
