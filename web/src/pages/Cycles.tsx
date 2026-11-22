@@ -21,6 +21,7 @@ import { toast } from "../lib/toast";
 import { wiq } from "../lib/workItems";
 import { ProjectBar, WorkItemsView } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
+import { DateRangeField } from "../components/DatePicker";
 
 const ORDER: CycleStatus[] = ["current", "upcoming", "draft", "completed"];
 
@@ -104,6 +105,10 @@ function CycleDialog({ ctx, open, onClose, cycle }: { ctx: PropsCtx; open: boole
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [f, setF] = useState({ name: cycle?.name ?? "", description: cycle?.description ?? "", start_date: cycle?.start_date ?? "", end_date: cycle?.end_date ?? "" });
+  // Other dated cycles: the range picker warns about overlaps and offers "like the last one".
+  const all = useCycles(ws.slug, ctx.project.id, open);
+  const others = (all.data ?? []).filter((c) => c.id !== cycle?.id && c.start_date && c.end_date).map((c) => ({ name: c.name, start: c.start_date!, end: c.end_date! }));
+  const last = others.reduce<(typeof others)[number] | null>((a, c) => (!a || c.end > a.end ? c : a), null);
   const save = useMutation({
     mutationFn: () => {
       const body = { name: f.name, description: f.description, start_date: f.start_date || null, end_date: f.end_date || null };
@@ -122,8 +127,18 @@ function CycleDialog({ ctx, open, onClose, cycle }: { ctx: PropsCtx; open: boole
         <ErrorAlert message={save.isError ? errorText(save.error, t) : null} />
         <TextField label={t("cyc.name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required maxLength={80} autoFocus />
         <div className="form-row">
-          <div className="grow"><TextField label={t("cyc.start")} type="date" value={f.start_date} onChange={(e) => setF({ ...f, start_date: e.target.value })} /></div>
-          <div className="grow"><TextField label={t("cyc.end")} type="date" value={f.end_date} onChange={(e) => setF({ ...f, end_date: e.target.value })} /></div>
+          <div className="field grow">
+            <label id="cyc-dates">{t("date.dates")}</label>
+            <DateRangeField
+              aria-labelledby="cyc-dates"
+              startLabel={t("cyc.start")}
+              endLabel={t("cyc.end")}
+              value={{ start: f.start_date || null, end: f.end_date || null }}
+              onChange={(r) => setF({ ...f, start_date: r.start ?? "", end_date: r.end ?? "" })}
+              conflicts={others}
+              last={last}
+            />
+          </div>
         </div>
         <div className="field">
           <label htmlFor="cyc-desc">{t("cyc.description")} ({t("common.optional")})</label>

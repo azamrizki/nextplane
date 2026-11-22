@@ -1,4 +1,4 @@
-import { ADMIN, expect, login, test, openFilter } from "./fixtures";
+import { ADMIN, expect, login, test, openFilter, pickRange } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -31,8 +31,7 @@ test("create a cycle, add items, see progress and burn-down", async ({ page, hub
   await page.getByRole("button", { name: "New cycle" }).click();
   const dlg = page.getByRole("dialog");
   await dlg.getByLabel("Cycle name").fill("Sprint 12");
-  await dlg.getByLabel("Start date").fill(day(-4));
-  await dlg.getByLabel("End date").fill(day(9));
+  await pickRange(dlg.getByLabel("Start date"), day(-4), day(9));
   await dlg.getByRole("button", { name: "New cycle" }).click();
   await expect(page.locator(".cycle-title")).toContainText("Sprint 12");
   await expect(page.locator(".cycle-title .badge")).toHaveText("Current");
@@ -71,8 +70,7 @@ test("move unfinished items to the next cycle", async ({ page, hub }) => {
   await page.getByRole("button", { name: "New cycle" }).click();
   const dlg = page.getByRole("dialog");
   await dlg.getByLabel("Cycle name").fill("Sprint 13");
-  await dlg.getByLabel("Start date").fill(day(10));
-  await dlg.getByLabel("End date").fill(day(23));
+  await pickRange(dlg.getByLabel("Start date"), day(10), day(23));
   await dlg.getByRole("button", { name: "New cycle" }).click();
   await expect(page.locator(".cycle-title .badge")).toHaveText("Upcoming");
   await page.getByRole("link", { name: "Cycles", exact: true }).first().click();

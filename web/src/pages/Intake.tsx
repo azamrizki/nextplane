@@ -21,6 +21,8 @@ import { useMe } from "../lib/session";
 import { itemsPath } from "../lib/workItems";
 import { ProjectBar } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
+import { DateField } from "../components/DatePicker";
+import { addDays, todayIso } from "../lib/dates";
 
 function useCtx(): PropsCtx | null | "missing" {
   const ws = useWs();
@@ -231,7 +233,7 @@ function IntakeDetail({ ctx, id, nameOf }: { ctx: PropsCtx; id: string; nameOf: 
 
 function TriageDialog({ kind, busy, error, onClose, onSubmit }: { kind: Exclude<Triage, null>; busy: boolean; error: unknown; onClose: () => void; onSubmit: (body: object) => void }) {
   const { t } = useI18n();
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  const tomorrow = addDays(todayIso(), 1);
   const [value, setValue] = useState(kind === "snooze" ? tomorrow : "");
   const title = kind === "decline" ? t("in.decline") : kind === "duplicate" ? t("in.duplicate") : t("in.snooze");
   const submit = (ev: FormEvent) => {
@@ -244,7 +246,12 @@ function TriageDialog({ kind, busy, error, onClose, onSubmit }: { kind: Exclude<
         <ErrorAlert message={error ? errorText(error, t) : null} />
         {kind === "decline" ? <TextField label={t("in.reason")} value={value} onChange={(e) => setValue(e.target.value)} maxLength={1000} autoFocus /> : null}
         {kind === "duplicate" ? <TextField label={t("in.dupOf")} value={value} onChange={(e) => setValue(e.target.value)} required autoFocus placeholder="WEB-12" /> : null}
-        {kind === "snooze" ? <TextField label={t("in.until")} type="date" value={value} min={tomorrow} onChange={(e) => setValue(e.target.value)} required /> : null}
+        {kind === "snooze" ? (
+          <div className="field">
+            <label htmlFor="in-until">{t("in.until")}</label>
+            <DateField id="in-until" value={value || null} min={tomorrow} required onChange={(d) => setValue(d ?? "")} />
+          </div>
+        ) : null}
         <div>
           <button className="btn btn-primary" disabled={busy}>{title}</button>
         </div>

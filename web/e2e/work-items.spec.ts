@@ -1,4 +1,4 @@
-import { ADMIN, expect, test, openFilter } from "./fixtures";
+import { ADMIN, expect, test, openFilter, pickDate } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -48,7 +48,7 @@ test("quick add, peek, edit properties and description", async ({ page, hub }) =
   await peek.getByRole("button", { name: "Assignees" }).click();
   await page.getByRole("option", { name: "Ana" }).click();
   await page.keyboard.press("Escape");
-  await peek.getByLabel("Due date").fill("2026-12-24");
+  await pickDate(peek.getByLabel("Due date"), "2026-12-24");
 
   const editor = peek.getByRole("textbox", { name: "Description" });
   await editor.click();

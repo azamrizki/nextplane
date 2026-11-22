@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChartColumn, Plus } from "lucide-react";
+import { CalendarClock, ChartColumn, Plus } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router";
 import { patch, post } from "../api/client";
@@ -26,6 +26,7 @@ import { pq, projectPath, useProject } from "../lib/projects";
 import { itemsPath, useCreateItem, useUpdateItem, useWorkItems, wiq } from "../lib/workItems";
 import { ProjectIcon } from "./Projects";
 import { useWs } from "./WorkspaceHome";
+import { DateTrigger } from "../components/DatePicker";
 
 export function ProjectHomePage() {
   const { t } = useI18n();
@@ -216,10 +217,10 @@ function BulkBar({ ctx, ids, onDone }: { ctx: PropsCtx; ids: string[]; onDone: (
         options={ctx.members.map((m) => ({ value: m.user_id, label: m.name || m.email }))} trigger={t("wi.assignees")} />
       <Picker label={t("wi.labels")} className="btn btn-sm" value={[]} onChange={(v) => apply({ label_ids: v })} allowClear={t("wi.noLabels")}
         options={ctx.labels.map((l) => ({ value: l.id, label: l.name }))} trigger={t("wi.labels")} />
-      <label className="btn btn-sm" style={{ position: "relative" }}>
+      <DateTrigger className="btn btn-sm" aria-label={t("wi.due")} value={null} kind="due" clearAlways onChange={(d) => apply({ due_date: d })}>
+        <CalendarClock aria-hidden />
         {t("wi.due")}
-        <input type="date" className="date-overlay" aria-label={t("wi.due")} onChange={(e) => apply({ due_date: e.target.value || null })} />
-      </label>
+      </DateTrigger>
       <button className="btn btn-sm" onClick={archive}>{t("bulk.archive")}</button>
       <button className="btn btn-sm btn-ghost" onClick={onDone}>{t("bulk.clear")}</button>
       {error ? <span className="small" style={{ color: "var(--danger)" }}>{error}</span> : null}

@@ -109,3 +109,23 @@ export async function choose(target: import("@playwright/test").Locator, value: 
   const opt = typeof value === "string" ? list.locator(`[role="option"][data-value="${value}"]`) : list.getByRole("option", { name: value.label, exact: true });
   await opt.click();
 }
+
+/** Sets a date through our date picker: opens it from `trigger`, types the date, Enter. */
+export async function pickDate(trigger: import("@playwright/test").Locator, iso: string) {
+  await trigger.click();
+  const box = trigger.page().getByRole("textbox", { name: "Type a date" }).last();
+  await box.fill(iso);
+  await box.press("Enter");
+}
+
+/** Sets a start and an end through the range picker opened from `trigger`, then applies. */
+export async function pickRange(trigger: import("@playwright/test").Locator, start: string, end: string) {
+  await trigger.click();
+  const page = trigger.page();
+  for (const [name, iso] of [["Start", start], ["End", end]] as const) {
+    const box = page.getByRole("textbox", { name, exact: true }).last();
+    await box.fill(iso);
+    await box.press("Enter");
+  }
+  await page.getByRole("button", { name: "Apply" }).last().click();
+}

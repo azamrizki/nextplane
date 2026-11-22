@@ -24,6 +24,7 @@ import { Meter, ProgressPanels } from "./Cycles";
 import { ProjectBar, WorkItemsView } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
 import { Select } from "../components/Select";
+import { DateRangeField } from "../components/DatePicker";
 
 function useCtx(): PropsCtx | null | "missing" {
   const ws = useWs();
@@ -135,8 +136,16 @@ function ModuleDialog({ ctx, open, onClose, module: m }: { ctx: PropsCtx; open: 
           </div>
         </div>
         <div className="form-row">
-          <div className="grow"><TextField label={t("mod.start")} type="date" value={f.start_date} onChange={(e) => setF({ ...f, start_date: e.target.value })} /></div>
-          <div className="grow"><TextField label={t("mod.target")} type="date" value={f.target_date} onChange={(e) => setF({ ...f, target_date: e.target.value })} /></div>
+          <div className="field grow">
+            <label id="mod-dates">{t("date.dates")}</label>
+            <DateRangeField
+              aria-labelledby="mod-dates"
+              startLabel={t("mod.start")}
+              endLabel={t("mod.target")}
+              value={{ start: f.start_date || null, end: f.target_date || null }}
+              onChange={(r) => setF({ ...f, start_date: r.start ?? "", target_date: r.end ?? "" })}
+            />
+          </div>
         </div>
         <div className="field">
           <label>{t("mod.members")}</label>

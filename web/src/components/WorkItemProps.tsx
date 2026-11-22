@@ -11,6 +11,7 @@ import { Avatar } from "./Avatar";
 import { Dot } from "./ColorPicker";
 import { Picker } from "./Picker";
 import { PriorityIcon, StateIcon, fmtDate, isOverdue } from "./Props";
+import { DateTrigger } from "./DatePicker";
 
 type Patch = (body: Partial<WorkItem>) => void;
 export type PropVariant = "chip" | "pill" | "field";
@@ -166,22 +167,23 @@ export function DateProp(a: PropArgs & { field: "start_date" | "due_date" }) {
   const overdue = field === "due_date" && isOverdue(value, item.completed_at);
   const label = t(field === "start_date" ? "wi.start" : "wi.due");
   return (
-    <label className={cls(v, !value, overdue ? "overdue" : "")} title={value ? `${label}: ${fmtDate(value, lang)}` : label}>
+    <DateTrigger
+      className={cls(v, !value, overdue ? "overdue" : "")}
+      title={value ? `${label}: ${fmtDate(value, lang)}` : label}
+      aria-label={label}
+      disabled={!ctx.editable}
+      value={value ?? null}
+      kind={field === "due_date" ? "due" : "start"}
+      completed={!!item.completed_at}
+      onChange={(d) => onPatch({ [field]: d } as Partial<WorkItem>)}
+    >
       <Face
         v={v}
         icon={field === "due_date" ? <CalendarClock /> : <CalendarDays />}
         value={value ? <span>{fmtDate(value, lang)}</span> : null}
         placeholder={v === "pill" ? label : t("wi.noDate")}
       />
-      <input
-        type="date"
-        className="date-overlay"
-        aria-label={label}
-        disabled={!ctx.editable}
-        value={value ?? ""}
-        onChange={(e) => onPatch({ [field]: e.target.value || null } as Partial<WorkItem>)}
-      />
-    </label>
+    </DateTrigger>
   );
 }
 
