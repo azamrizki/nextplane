@@ -207,7 +207,7 @@ function General({ p }: { p: Project }) {
                   <b>{t("proj.delete")}</b>
                   <span className="muted small">{t("proj.deleteBody")}</span>
                 </div>
-                <button className="btn btn-danger" onClick={() => setConfirm("delete")}>{t("proj.delete")}</button>
+                <button className="btn btn-danger-outline" onClick={() => setConfirm("delete")}>{t("proj.delete")}</button>
               </div>
             </>
           ) : null}

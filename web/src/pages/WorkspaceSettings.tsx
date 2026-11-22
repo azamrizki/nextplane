@@ -137,7 +137,7 @@ export function WorkspaceSettingsPage() {
                 <b>{t("ws.delete")}</b>
                 <span className="muted small">{t("ws.deleteBody")}</span>
               </div>
-              <button className="btn btn-danger" onClick={() => setConfirm("delete")}>
+              <button className="btn btn-danger-outline" onClick={() => setConfirm("delete")}>
                 {t("ws.delete")}
               </button>
             </div>

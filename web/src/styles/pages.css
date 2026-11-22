@@ -48,7 +48,7 @@
   height: 24px;
   padding: 0 10px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: 7px;
   background: transparent;
   color: var(--text-muted);
   font-size: var(--text-base);

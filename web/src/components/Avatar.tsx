@@ -1,4 +1,5 @@
-const COLORS = ["#0e7c6b", "#6e56cf", "#d6409f", "#e5484d", "#f76b15", "#ad7f58", "#3e63dd", "#12a594"];
+// Flat, muted colours for people and workspace marks (white initials on each pass 4.5:1).
+const COLORS = ["#2f7d72", "#625ab8", "#9c5274", "#ad4c46", "#b25f3d", "#7d6548", "#3769ab", "#2b7a86"];
 
 function hash(s: string): number {
   let h = 0;

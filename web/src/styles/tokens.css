@@ -1,6 +1,6 @@
 /* NextPlane design tokens (docs/DESIGN.md). Components use only these variables.
-   The values follow Plane's current look (owner decision 2026-11-21, SPEC §2); the names and
-   this file are our own. */
+   Layout and density follow Plane (SPEC §2); since v0.3 the surfaces are NextPlane Glass:
+   flat, quiet frosted glass over a near-neutral scene (owner decision 2026-11-22). */
 :root {
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
@@ -27,11 +27,20 @@
   --space-7: 48px;
   --page-x: 22px;
 
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* Glass is a step rounder: chips 6, controls 8, cards and menus 12, dialogs 16, the panel 20. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
   --radius-full: 999px;
+
+  /* Glass material. Only floating layers blur (menus, pickers, toasts, the peek, dialogs);
+     the blur sits on the element itself, except for dialogs, which host menus and so carry
+     it on ::before (an element with its own backdrop-filter stops the glass inside it from
+     blurring). */
+  --glass-blur: 28px;
+  --glass-saturate: 140%;
 
   /* Control heights: xs 20, sm 24 (chips), md 28 (the workhorse), lg 32, xl 36. */
   --ctl-xs: 20px;
@@ -50,59 +59,73 @@
   --header-h: 48px;
 }
 
-:root,
-[data-theme="light"] {
-  --canvas: #f2f2f3;
-  --bg: #ffffff; /* surface 1: pages, sidebar, panels */
-  --bg-subtle: #fcfcfc; /* surface 2 */
-  --layer-1: #f9f9f9; /* toolbars, group headers, board columns */
-  --layer-1-hover: #f2f2f3;
-  --layer-1-active: #eaebec;
+[data-theme="light"],
+:root {
+  --canvas: #eef0f3; /* the scene behind the panel */
+  --scene-1: rgb(26 109 196 / 7%);
+  --scene-2: rgb(100 116 139 / 9%);
+  --bg: #f9fafb; /* surface 1: pages, sidebar, panels */
+  --bg-subtle: #fbfcfd; /* surface 2 */
+  --layer-1: #f3f4f6; /* toolbars, group headers, board columns */
+  --layer-1-hover: #edeff2;
+  --layer-1-active: #e7e9ed;
   --layer-2: #ffffff; /* cards, chips */
-  --layer-2-hover: #fcfcfc;
-  --layer-2-active: #f9f9f9;
-  --layer-3: #f2f2f3;
-  --bg-muted: #f2f2f3;
-  --bg-hover: rgb(9 11 11 / 4%); /* transparent rows */
-  --bg-pressed: rgb(9 11 11 / 6%);
-  --bg-active: rgb(9 11 11 / 8%);
-  --bg-overlay: rgb(9 11 11 / 40%);
-  --border: #eaebec; /* subtle */
-  --border-1: #e1e2e3; /* card and chip outline */
-  --border-strong: #d5d7d9;
-  --border-strong-1: #cacdcf;
-  --text: #0f0f10;
-  --text-secondary: #313435;
-  --text-muted: #494d50; /* tertiary */
-  --text-faint: #5d6265; /* placeholder */
-  --text-disabled: #9a9fa3;
-  --icon: #494d50;
-  --accent: #006399;
-  --accent-hover: #005685;
-  --accent-active: #003c5c;
+  --layer-2-hover: #fbfbfc;
+  --layer-2-active: #f5f6f8;
+  --layer-3: #eef0f3;
+  --bg-muted: #eef0f3;
+  --bg-hover: rgb(16 24 40 / 5%); /* transparent rows */
+  --bg-pressed: rgb(16 24 40 / 7%);
+  --bg-active: rgb(16 24 40 / 9%);
+  --bg-overlay: rgb(214 221 229 / 50%); /* the dialog scrim (frosted) */
+  --border: rgb(16 24 40 / 8%); /* subtle */
+  --border-1: rgb(16 24 40 / 11%); /* card and chip outline */
+  --border-strong: rgb(16 24 40 / 15%);
+  --border-strong-1: rgb(16 24 40 / 20%);
+  --text: #0e1116;
+  --text-secondary: #2c3138;
+  --text-muted: #474d55; /* tertiary */
+  --text-faint: #5b626b; /* placeholder */
+  --text-disabled: #9aa1a9;
+  --icon: #474d55;
+  /* Brand blue (2026-11-22): white text on it is 5.2:1. */
+  --accent: #1a6dc4;
+  --accent-hover: #155eb5;
+  --accent-active: #124f99;
   --accent-text: #ffffff;
-  --accent-fg: #005685; /* accent as text on surfaces */
-  --accent-soft: #ebf8ff;
-  --accent-soft-hover: #d6f1ff;
-  --accent-soft-active: #b8e6ff;
-  --accent-border-soft: #d6f1ff;
-  --danger: #bf2c22;
-  --danger-hover: #a5261d;
-  --danger-fg: #a5261d;
-  --danger-soft: #fbeae9;
-  --danger-soft-hover: #f8dedc;
-  --warning-fg: #9a5b00;
-  --warning-soft: #fdf3dc;
-  --success: #3b9c4d;
-  --success-soft: #e8f5ea;
-  --focus: rgb(0 99 153 / 35%);
-  --tooltip-bg: #1d1f20;
+  --accent-fg: #185fb0; /* accent as text on surfaces */
+  --accent-soft: rgb(26 109 196 / 9%);
+  --accent-soft-hover: rgb(26 109 196 / 13%);
+  --accent-soft-active: rgb(26 109 196 / 18%);
+  --accent-border-soft: rgb(26 109 196 / 22%);
+  --danger: #b42318;
+  --danger-hover: #9c1e14;
+  --danger-fg: #b42318;
+  --danger-soft: rgb(180 35 24 / 8%);
+  --danger-soft-hover: rgb(180 35 24 / 12%);
+  --danger-border: rgb(180 35 24 / 26%);
+  --warning-fg: #8a5200;
+  --warning-soft: rgb(206 133 9 / 12%);
+  --success: #2f8a41;
+  --success-soft: rgb(59 156 77 / 12%);
+  --focus: rgb(26 109 196 / 26%);
+  --tooltip-bg: #1d2025;
   --tooltip-fg: #ffffff;
-  --shadow-sm: 0px 1px 2px -1px rgb(41 47 61 / 6%), 0px 1px 3px 0px rgb(41 47 61 / 5%);
-  --shadow-raised: 0px 2px 4px -1px rgb(41 47 61 / 4%), 0px 4px 6px -1px rgb(41 47 61 / 5%);
-  --shadow-md: 0px 10px 10px -5px rgb(41 47 61 / 4%), 0px 10px 40px -5px rgb(41 47 61 / 8%), 0 0 0 1px rgb(41 47 61 / 2%);
-  --shadow-lg: 0px 10px 10px -10px rgb(41 47 61 / 4%), 0px 30px 60px -12px rgb(41 47 61 / 14%);
-  --shadow-side: -10px 0px 30px -5px rgb(41 47 61 / 4%), -5px 0px 80px -5px rgb(41 47 61 / 6%);
+  /* Glass surfaces and flat-glass controls. */
+  --glass-float: rgb(255 255 255 / 80%); /* menus, pickers, dialogs, toasts, peek */
+  --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 45%); /* an even inner hairline, no bevel */
+  --btn-bg: rgb(255 255 255 / 70%);
+  --btn-bg-hover: rgb(255 255 255 / 96%);
+  --btn-border: rgb(16 24 40 / 11%);
+  --btn-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+  --well: rgb(255 255 255 / 72%); /* inputs */
+  --well-hover: rgb(255 255 255 / 94%);
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 4%);
+  --shadow-raised: 0 2px 6px -2px rgb(16 24 40 / 8%), 0 1px 2px rgb(16 24 40 / 4%);
+  --shadow-md: 0 12px 32px -8px rgb(16 24 40 / 16%), 0 2px 6px -2px rgb(16 24 40 / 6%);
+  --shadow-lg: 0 24px 64px -16px rgb(16 24 40 / 24%), 0 4px 12px -4px rgb(16 24 40 / 8%);
+  --shadow-side: -16px 0 48px -16px rgb(16 24 40 / 16%);
+  --shadow-panel: 0 1px 2px rgb(16 24 40 / 4%), 0 12px 32px -20px rgb(16 24 40 / 14%);
 
   /* Priority and state-group colors. */
   --prio-urgent: #c0221f;
@@ -138,57 +161,70 @@
 }
 
 [data-theme="dark"] {
-  --canvas: #0f0f10;
-  --bg: #141415;
-  --bg-subtle: #181a1b;
-  --layer-1: #181a1b;
-  --layer-1-hover: #1d1f20;
-  --layer-1-active: #222425;
-  --layer-2: #1d1f20;
-  --layer-2-hover: #222425;
-  --layer-2-active: #2c2e30;
-  --layer-3: #222425;
-  --bg-muted: #222425;
+  --canvas: #0c0e11;
+  --scene-1: rgb(40 147 204 / 7%);
+  --scene-2: rgb(148 163 184 / 4%);
+  --bg: #14171b;
+  --bg-subtle: #171a1e;
+  --layer-1: #191c21;
+  --layer-1-hover: #1e2126;
+  --layer-1-active: #23272c;
+  --layer-2: #1d2126;
+  --layer-2-hover: #23272d;
+  --layer-2-active: #292d33;
+  --layer-3: #22262b;
+  --bg-muted: #22262b;
   --bg-hover: rgb(255 255 255 / 5%);
   --bg-pressed: rgb(255 255 255 / 7%);
   --bg-active: rgb(255 255 255 / 10%);
-  --bg-overlay: rgb(0 0 0 / 60%);
-  --border: #222425;
-  --border-1: #2c2e30;
-  --border-strong: #36393a;
-  --border-strong-1: #45484a;
-  --text: #e4e6e7;
-  --text-secondary: #cacdce;
-  --text-muted: #afb3b6;
-  --text-faint: #959a9d;
-  --text-disabled: #5d6265;
-  --icon: #afb3b6;
-  --accent: #2893cc;
-  --accent-hover: #4ca9dc;
-  --accent-active: #6ebae2;
-  --accent-text: #fafafa;
-  --accent-fg: #4ca9dc;
-  --accent-soft: #0a2533;
-  --accent-soft-hover: #0f374d;
-  --accent-soft-active: #16506f;
-  --accent-border-soft: #0f374d;
-  --danger: #db3e33;
-  --danger-hover: #bf2c22;
-  --danger-fg: #eea5a0;
-  --danger-soft: #3c0e0b;
-  --danger-soft-hover: #4e120e;
-  --warning-fg: #e6b45c;
-  --warning-soft: #362b12;
+  --bg-overlay: rgb(5 7 10 / 55%);
+  --border: rgb(255 255 255 / 7%);
+  --border-1: rgb(255 255 255 / 9%);
+  --border-strong: rgb(255 255 255 / 12%);
+  --border-strong-1: rgb(255 255 255 / 16%);
+  --text: #e8eaed;
+  --text-secondary: #cdd1d5;
+  --text-muted: #aab0b6;
+  --text-faint: #8f969d;
+  --text-disabled: #5b6168;
+  --icon: #aab0b6;
+  /* White text on the fill is 4.9:1 (the old #2893cc gave only 3.4). */
+  --accent: #2370cc;
+  --accent-hover: #2a7bd6;
+  --accent-active: #3a86de;
+  --accent-text: #ffffff;
+  --accent-fg: #7ab6ef;
+  --accent-soft: rgb(58 130 220 / 14%);
+  --accent-soft-hover: rgb(58 130 220 / 18%);
+  --accent-soft-active: rgb(58 130 220 / 24%);
+  --accent-border-soft: rgb(58 130 220 / 30%);
+  --danger: #c0392f;
+  --danger-hover: #a93127;
+  --danger-fg: #f2a39b;
+  --danger-soft: rgb(240 100 90 / 12%);
+  --danger-soft-hover: rgb(240 100 90 / 16%);
+  --danger-border: rgb(240 120 110 / 30%);
+  --warning-fg: #e8b65e;
+  --warning-soft: rgb(230 180 92 / 14%);
   --success: #4fb062;
-  --success-soft: #13291a;
-  --focus: rgb(40 147 204 / 45%);
-  --tooltip-bg: #e4e6e7;
-  --tooltip-fg: #141415;
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
-  --shadow-raised: 0 2px 6px rgb(0 0 0 / 45%);
-  --shadow-md: 0 10px 30px -5px rgb(0 0 0 / 60%), 0 0 0 1px rgb(255 255 255 / 3%);
-  --shadow-lg: 0 30px 60px -12px rgb(0 0 0 / 70%);
-  --shadow-side: -10px 0 40px -5px rgb(0 0 0 / 55%);
+  --success-soft: rgb(79 176 98 / 14%);
+  --focus: rgb(90 155 235 / 40%);
+  --tooltip-bg: #e8eaed;
+  --tooltip-fg: #0e1116;
+  --glass-float: rgb(30 34 40 / 78%);
+  --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 4%);
+  --btn-bg: rgb(255 255 255 / 6%);
+  --btn-bg-hover: rgb(255 255 255 / 10%);
+  --btn-border: rgb(255 255 255 / 9%);
+  --btn-shadow: none;
+  --well: rgb(0 0 0 / 20%);
+  --well-hover: rgb(0 0 0 / 28%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-raised: 0 2px 6px -2px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 25%);
+  --shadow-md: 0 16px 40px -10px rgb(0 0 0 / 55%), 0 2px 6px -2px rgb(0 0 0 / 30%);
+  --shadow-lg: 0 32px 80px -20px rgb(0 0 0 / 65%), 0 6px 16px -6px rgb(0 0 0 / 35%);
+  --shadow-side: -16px 0 48px -12px rgb(0 0 0 / 55%);
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 30%), 0 16px 40px -24px rgb(0 0 0 / 60%);
 
   --prio-urgent: #e7413c;
   --prio-high: #f97d2e;
@@ -213,4 +249,26 @@
   --series-8: #e66767;
   --series-other: #5b636b;
   color-scheme: dark;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  [data-theme="light"],
+  :root {
+    --glass-float: #ffffff;
+    --btn-bg: #ffffff;
+    --btn-bg-hover: #f5f6f8;
+    --well: #ffffff;
+    --well-hover: #ffffff;
+    --bg-overlay: rgb(16 24 40 / 35%);
+    --glass-blur: 0px;
+  }
+  [data-theme="dark"] {
+    --glass-float: #1d2126;
+    --btn-bg: #1d2126;
+    --btn-bg-hover: #23272d;
+    --well: #101316;
+    --well-hover: #0d0f12;
+    --bg-overlay: rgb(0 0 0 / 60%);
+    --glass-blur: 0px;
+  }
 }

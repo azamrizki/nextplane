@@ -15,7 +15,12 @@ body {
   font-weight: var(--weight-regular);
   line-height: 1.54;
   color: var(--text);
-  background: var(--bg);
+  /* The scene behind the glass: near-neutral, the faintest brand tint in one corner. */
+  background:
+    radial-gradient(70% 60% at 0% 0%, var(--scene-1), transparent 70%),
+    radial-gradient(60% 60% at 100% 100%, var(--scene-2), transparent 70%),
+    var(--canvas);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11", "ss01";
 }
@@ -55,18 +60,20 @@ svg.lucide {
   flex: none;
 }
 
-/* Buttons: .btn is Plane's "secondary" (bordered, neutral); sizes sm 24 / md 28 / lg 32. */
+/* Buttons: flat glass (no gradients, bevels or glow). Sizes sm 24 / md 28 / lg 32.
+   Icons take the label's colour, a little softer, at the label's weight (14 px). */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   height: var(--ctl-md);
-  padding: 0 10px;
+  padding: 0 12px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-1);
-  background: var(--layer-2);
-  color: var(--text-secondary);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  color: var(--text);
   font-size: var(--text-base);
   font-weight: var(--weight-medium);
   cursor: pointer;
@@ -74,89 +81,128 @@ svg.lucide {
   transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 .btn:hover:not(:disabled) {
-  background: var(--layer-2-hover);
+  background: var(--btn-bg-hover);
   border-color: var(--border-strong);
   color: var(--text);
   text-decoration: none;
 }
 .btn:active:not(:disabled),
 .btn[aria-expanded="true"] {
-  background: var(--layer-2-active);
-  border-color: var(--border-strong);
+  background: var(--btn-bg-hover);
+  border-color: var(--border-strong-1);
+}
+.btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
 }
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
+  box-shadow: none;
   cursor: not-allowed;
 }
 .btn svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
+}
+.btn svg.lucide {
+  color: currentColor;
+  opacity: 0.7;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.btn:hover:not(:disabled) svg.lucide,
+.btn[aria-expanded="true"] svg.lucide {
+  opacity: 1;
 }
 .btn-primary {
   background: var(--accent);
-  border-color: var(--accent);
+  border-color: transparent;
   color: var(--accent-text);
 }
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  border-color: transparent;
   color: var(--accent-text);
 }
 .btn-primary:active:not(:disabled) {
   background: var(--accent-active);
-  border-color: var(--accent-active);
+  border-color: transparent;
 }
+.btn-primary:focus-visible,
+.btn-danger:focus-visible {
+  border-color: transparent;
+}
+.btn-primary svg.lucide,
+.btn-danger svg.lucide {
+  opacity: 0.9;
+}
+/* Solid red only for the last step of a confirmation; everyday destructive actions are
+   .btn-danger-outline (red text on glass) or .btn-danger-ghost. */
 .btn-danger {
   background: var(--danger);
-  border-color: var(--danger);
+  border-color: transparent;
   color: #fff;
 }
 .btn-danger:hover:not(:disabled) {
   background: var(--danger-hover);
-  border-color: var(--danger-hover);
+  border-color: transparent;
   color: #fff;
 }
 .btn-danger-outline {
-  background: transparent;
-  border-color: var(--danger);
+  border-color: var(--danger-border);
   color: var(--danger-fg);
 }
 .btn-danger-outline:hover:not(:disabled) {
   background: var(--danger-soft);
-  border-color: var(--danger);
+  border-color: var(--danger-border);
+  color: var(--danger-fg);
+}
+.btn-danger-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--danger-fg);
+}
+.btn-danger-ghost:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: transparent;
   color: var(--danger-fg);
 }
 .btn-ghost {
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
+  color: var(--text-secondary);
 }
 .btn-ghost:hover:not(:disabled) {
   border-color: transparent;
   background: var(--bg-hover);
 }
 .btn-accent {
-  border-color: var(--accent);
+  border-color: var(--accent-border-soft);
   background: var(--accent-soft);
+  box-shadow: none;
   color: var(--accent-fg);
 }
 .btn-accent:hover:not(:disabled) {
-  border-color: var(--accent);
+  border-color: var(--accent-border-soft);
   background: var(--accent-soft-hover);
   color: var(--accent-fg);
 }
 .btn-sm {
   height: var(--ctl-sm);
-  padding: 0 var(--space-2);
+  padding: 0 9px;
   font-size: var(--text-base);
-  gap: 4px;
+  gap: 5px;
+  border-radius: 7px;
 }
 .btn-sm svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 .btn-lg {
   height: var(--ctl-lg);
-  padding: 0 var(--space-3);
+  padding: 0 14px;
   font-size: var(--text-md);
 }
 .btn-block {
@@ -173,7 +219,7 @@ svg.lucide {
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--icon);
+  color: var(--text-muted);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
@@ -193,6 +239,7 @@ svg.lucide {
 .icon-btn-sm {
   width: var(--ctl-sm);
   height: var(--ctl-sm);
+  border-radius: 7px;
 }
 .icon-btn-sm svg {
   width: 14px;
@@ -208,12 +255,13 @@ svg.lucide {
   height: 14px;
 }
 .icon-btn.bordered {
-  border: 1px solid var(--border-1);
-  background: var(--layer-2);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
 }
 .icon-btn.bordered:hover:not(:disabled) {
   border-color: var(--border-strong);
-  background: var(--layer-2-hover);
+  background: var(--btn-bg-hover);
 }
 .dot-badge {
   position: absolute;
@@ -249,14 +297,15 @@ svg.lucide {
   padding: 0 10px;
   border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
-  background: var(--layer-2);
+  background: var(--well);
   font-size: var(--text-base);
-  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 .input:hover,
 .select:hover,
 .textarea:hover {
   border-color: var(--border-strong);
+  background: var(--well-hover);
 }
 .input::placeholder,
 .textarea::placeholder {
@@ -270,15 +319,157 @@ svg.lucide {
 }
 .input:focus,
 .select:focus,
-.textarea:focus {
+.textarea:focus,
+.select[aria-expanded="true"] {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--focus);
+  background: var(--well-hover);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+/* Our Select (components/Select.tsx): a well-styled button and a frosted listbox. */
+.select-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: left;
+  cursor: pointer;
+  color: var(--text);
+}
+.select-trigger > svg:not(.select-chev) {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.select-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-value.placeholder {
+  color: var(--text-faint);
+}
+.select-chev {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  margin-right: -2px;
+  color: var(--text-faint);
+}
+.select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.select-menu {
+  max-width: min(420px, calc(100vw - 16px));
+}
+.select-option.active {
+  color: var(--text);
+  font-weight: var(--weight-medium);
+}
+.select-option[aria-disabled="true"] {
+  color: var(--text-disabled);
+  cursor: default;
+  background: transparent;
+}
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
 }
 .form {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+/* Checkbox and radio: our own look over the native input (keyboard, labels, forms and
+   screen readers keep working). The switch is a checkbox too and has its own look. */
+input[type="checkbox"]:not(.switch),
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid var(--border-strong-1);
+  border-radius: 5px;
+  background: var(--well);
+  vertical-align: -3px;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+input[type="radio"] {
+  border-radius: 50%;
+}
+input[type="checkbox"]:not(.switch)::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  background: #fff;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center / contain no-repeat;
+  transform: scale(0);
+  transition: transform var(--dur-fast) var(--ease);
+}
+input[type="checkbox"]:not(.switch):indeterminate::before {
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round'><path d='M6 12h12'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round'><path d='M6 12h12'/></svg>") center / contain no-repeat;
+}
+input[type="radio"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  transform: scale(0);
+  transition: transform var(--dur-fast) var(--ease);
+}
+input[type="checkbox"]:not(.switch):checked,
+input[type="checkbox"]:not(.switch):indeterminate,
+input[type="radio"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input[type="checkbox"]:not(.switch):checked::before,
+input[type="checkbox"]:not(.switch):indeterminate::before,
+input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+input[type="checkbox"]:not(.switch):hover:not(:checked):not(:disabled),
+input[type="radio"]:hover:not(:checked):not(:disabled) {
+  border-color: var(--text-faint);
+}
+input[type="checkbox"]:not(.switch):focus-visible,
+input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+input[type="checkbox"]:not(.switch):disabled,
+input[type="radio"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  input[type="checkbox"]::before,
+  input[type="radio"]::before,
+  .switch::after {
+    transition: none;
+  }
 }
 
 .alert {
@@ -478,10 +669,12 @@ svg.lucide {
   display: flex;
   flex-direction: column;
   padding: var(--space-1);
-  background: var(--layer-2);
-  border: 1px solid var(--border-1);
+  background: var(--glass-float);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--glass-edge), var(--shadow-md);
   max-height: 384px;
   max-width: 400px;
   overflow: auto;
@@ -502,7 +695,7 @@ svg.lucide {
   min-height: var(--ctl-lg);
   padding: 0 var(--space-2);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 7px;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -514,6 +707,9 @@ svg.lucide {
   width: 16px;
   height: 16px;
   color: var(--icon);
+}
+.menu-item.focused {
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 .menu-item:hover,
 .menu-item.focused {
@@ -564,22 +760,49 @@ svg.lucide {
 }
 .menu-sep {
   height: 1px;
-  margin: var(--space-1) 0;
+  margin: var(--space-1) calc(-1 * var(--space-1));
   background: var(--border);
 }
 
 /* Dialog: surface panel, 12px radius, header / body / right-aligned footer (Cancel, then primary). */
 .dialog {
   padding: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--glass-edge), var(--shadow-lg);
   max-width: calc(100vw - 32px);
+  isolation: isolate;
+}
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--glass-float);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  pointer-events: none;
 }
 .dialog::backdrop {
   background: var(--bg-overlay);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.dialog-body {
+  min-height: 0;
+  overflow: auto;
+}
+.dialog-head,
+.dialog-foot {
+  flex: none;
 }
 .dialog-head {
   display: flex;
@@ -602,6 +825,7 @@ svg.lucide {
   gap: var(--space-2);
   padding: var(--space-3) var(--space-5);
   border-top: 1px solid var(--border);
+  background: var(--bg-hover);
 }
 
 /* Pages */
@@ -713,13 +937,18 @@ svg.lucide {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
   cursor: pointer;
   padding: 0;
 }
-.swatch.on {
-  outline: 2px solid var(--text);
-  outline-offset: 1px;
+.swatch:hover {
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%), 0 0 0 2px var(--bg), 0 0 0 4px var(--border-strong-1);
+}
+.swatch.on,
+.swatch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 }
 .dot {
   display: inline-block;
@@ -757,51 +986,6 @@ svg.lucide {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--text-muted);
-}
-.color-input {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  cursor: pointer;
-  flex: none;
-}
-.color-input::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-.color-input::-webkit-color-swatch {
-  border: none;
-  border-radius: 50%;
-}
-.switch {
-  appearance: none;
-  width: 32px;
-  height: 18px;
-  border-radius: 9px;
-  background: var(--border-strong);
-  position: relative;
-  cursor: pointer;
-  flex: none;
-  transition: background var(--dur-fast) var(--ease);
-}
-.switch::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform var(--dur-fast) var(--ease);
-}
-.switch:checked {
-  background: var(--accent);
-}
-.switch:checked::after {
-  transform: translateX(14px);
 }
 .side-section-link {
   color: inherit;
@@ -1173,20 +1357,26 @@ svg.lucide {
 }
 .dropzone {
   padding: var(--space-4);
-  border: 1px dashed var(--border-strong);
+  border: 1.5px dashed var(--border-strong-1);
   border-radius: var(--radius-lg);
+  background: var(--well);
   text-align: center;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
-.dropping .dropzone,
+.dropping .dropzone {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
 .dropping .files {
-  outline: 2px dashed var(--accent);
+  outline: 1.5px dashed var(--accent);
   outline-offset: 4px;
+  border-radius: var(--radius-lg);
 }
 .link-btn {
   border: none;
   background: none;
   padding: 0;
-  color: var(--accent);
+  color: var(--accent-fg);
   cursor: pointer;
 }
 .link-form {
