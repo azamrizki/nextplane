@@ -10,6 +10,7 @@ import { pcan } from "../lib/perm";
 import { projectPath } from "../lib/projects";
 import { useWs } from "./WorkspaceHome";
 import { Select } from "../components/Select";
+import { FileDrop } from "../components/FileDrop";
 
 const FIELDS = ["title", "description", "state", "priority", "assignees", "labels", "start_date", "due_date", "estimate"] as const;
 type Field = (typeof FIELDS)[number];
@@ -73,23 +74,16 @@ export function DataTab({ p }: { p: Project }) {
             <>
               <p className="muted small">{t("x.importHint")}</p>
               <ErrorAlert message={load.error ? errorText(load.error, t) : run.error ? errorText(run.error, t) : null} />
-              <label className="btn" style={{ alignSelf: "flex-start" }}>
-                {t("x.pick")}
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  hidden
-                  aria-label={t("x.pick")}
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    const text = await f.text();
-                    setCsv(text);
-                    load.mutate(text);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              <FileDrop
+                label={t("x.pick")}
+                hint={t("x.dropHint")}
+                accept=".csv,text/csv"
+                onFile={async (f) => {
+                  const text = await f.text();
+                  setCsv(text);
+                  load.mutate(text);
+                }}
+              />
               {preview ? (
                 <>
                   <p className="small">{t("x.rows", { n: preview.total_rows })}</p>

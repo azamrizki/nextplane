@@ -11,6 +11,7 @@ import { errorText } from "../lib/errors";
 import { pcan } from "../lib/perm";
 import { pq, projectPath, useStates } from "../lib/projects";
 import { useWs } from "./WorkspaceHome";
+import { NumberField } from "../components/NumberField";
 import { Select } from "../components/Select";
 
 const PRESETS = [1, 3, 6, 9, 12];
@@ -155,7 +156,7 @@ function Months({ value, disabled, onChange }: { value: number; disabled: boolea
       >
         <label className="field">
           <span>{t("auto.months")}</span>
-          <input className="input" type="number" min={1} max={12} value={n} onChange={(e) => setN(e.target.value)} autoFocus />
+          <NumberField min={1} max={12} value={n} onChange={setN} autoFocus />
           {!valid ? <span className="small" style={{ color: "var(--danger)" }}>{t("auto.range")}</span> : null}
         </label>
       </Dialog>

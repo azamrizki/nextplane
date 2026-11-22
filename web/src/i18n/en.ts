@@ -1174,6 +1174,16 @@ export const en = {
   "date.pickStart": "Pick the first day",
   "date.pickEnd": "Now pick the last day",
   "date.endBeforeStart": "The end is before the start",
+  "num.less": "Decrease",
+  "num.more": "Increase",
+  "cp.sv": "Saturation and brightness",
+  "cp.hue": "Hue",
+  "cp.hex": "Hex colour",
+  "cp.eyedropper": "Pick a colour from the screen",
+  "cp.palette": "Palette",
+  "state.color": "State colour",
+  "label.color": "Label colour",
+  "x.dropHint": "Drop it here, or click to browse. CSV, up to 5,000 rows.",
 } as const;
 
 export type MessageKey = keyof typeof en;

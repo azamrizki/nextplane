@@ -10,7 +10,7 @@ import { del, patch, post } from "../api/client";
 import type { EstimateType, Label, Project, ProjRole, StateGroup, WfState, WsMember } from "../api/types";
 import { STATE_GROUPS } from "../api/types";
 import { Avatar } from "../components/Avatar";
-import { ColorPicker, Dot } from "../components/ColorPicker";
+import { ColorButton, ColorPicker, Dot } from "../components/ColorPicker";
 import { CoverPicker } from "../components/CoverPicker";
 import { ConfirmDialog, Dialog } from "../components/Dialog";
 import { ErrorAlert, FullPageSpinner, TextField } from "../components/ui";
@@ -386,7 +386,7 @@ function States({ p }: { p: Project }) {
               <div className="rows">
                 {inGroup.map((s, i) => (
                   <div className="row" key={s.id}>
-                    <input type="color" value={s.color.length === 7 ? s.color : "#888888"} disabled={!editable} aria-label={t("proj.cover")} className="color-input" onChange={(e) => upd.mutate({ id: s.id, body: { color: e.target.value } })} />
+                    <ColorButton value={s.color.length === 7 ? s.color : "#888888"} disabled={!editable} label={t("state.color")} onChange={(c) => upd.mutate({ id: s.id, body: { color: c } })} />
                     <input className="inline-input" defaultValue={s.name} disabled={!editable} aria-label={t("state.name")} onBlur={(e) => e.target.value.trim() && e.target.value !== s.name && upd.mutate({ id: s.id, body: { name: e.target.value } })} />
                     {s.is_default ? <span className="badge">{t("state.default")}</span> : editable ? <button className="btn btn-sm btn-ghost" onClick={() => upd.mutate({ id: s.id, body: { is_default: true } })}>{t("state.makeDefault")}</button> : null}
                     {editable ? (
@@ -501,7 +501,7 @@ function Labels({ p }: { p: Project }) {
         {ordered.length === 0 ? <div className="row muted">—</div> : null}
         {ordered.map((l) => (
           <div className="row" key={l.id} style={{ paddingLeft: l.parent_id ? 40 : undefined }}>
-            <input type="color" value={l.color.length === 7 ? l.color : "#888888"} disabled={!editable} className="color-input" aria-label={t("proj.cover")} onChange={(e) => upd.mutate({ id: l.id, body: { color: e.target.value } })} />
+            <ColorButton value={l.color.length === 7 ? l.color : "#888888"} disabled={!editable} label={t("label.color")} onChange={(c) => upd.mutate({ id: l.id, body: { color: c } })} />
             <input className="inline-input" defaultValue={l.name} disabled={!editable} aria-label={t("label.name")} onBlur={(e) => e.target.value.trim() && e.target.value !== l.name && upd.mutate({ id: l.id, body: { name: e.target.value } })} />
             {editable ? <button className="icon-btn" aria-label={t("common.delete")} onClick={() => remove.mutate(l.id)}><X /></button> : null}
           </div>

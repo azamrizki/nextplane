@@ -9,6 +9,7 @@ import { LinkBox } from "../pages/Members";
 import { Avatar } from "./Avatar";
 import { Dialog } from "./Dialog";
 import { ErrorAlert, TextField } from "./ui";
+import { NumberField } from "./NumberField";
 import { Select } from "./Select";
 
 interface Token {
@@ -82,7 +83,10 @@ export function ApiTokens() {
                 <option value="read">{t("tok.read")}</option>
               </Select>
             </div>
-            <TextField label={t("tok.expiry")} type="number" min={1} max={3650} value={f.days} onChange={(e) => setF({ ...f, days: e.target.value })} />
+            <div className="field">
+              <label htmlFor="tok-days">{t("tok.expiry")}</label>
+              <NumberField id="tok-days" min={1} max={3650} value={f.days} onChange={(v) => setF({ ...f, days: v })} />
+            </div>
             <div><button className="btn btn-primary" disabled={create.isPending}>{t("tok.new")}</button></div>
           </form>
         )}

@@ -1,6 +1,6 @@
-/* Our own form controls (NextPlane Glass, v0.3): the date picker and the date and range
-   fields. They float in the layer from Floating.tsx and use the frosted .menu look of the
-   other popovers. */
+/* Our own form controls (NextPlane Glass, v0.3): date picker, date and range fields, colour
+   picker, number field. They float in the layer from Floating.tsx and use the frosted .menu
+   look of the other popovers. */
 
 /* ── Date picker ─────────────────────────────────────────────────────────────────────────── */
 .dp-panel {
@@ -467,4 +467,244 @@
 }
 .range-len + .range-clear {
   margin-left: 2px;
+}
+
+/* ── Number field: − value + ───────────────────────────────────────────────────────────────── */
+.stepper {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--ctl-lg);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  background: var(--well);
+  overflow: hidden;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+.stepper:hover {
+  border-color: var(--border-strong);
+}
+.stepper:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+.stepper.disabled {
+  opacity: 0.55;
+}
+.stepper-input {
+  order: 2;
+  width: 64px;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 0 4px;
+  text-align: center;
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.stepper-unit {
+  order: 3;
+  align-self: center;
+  padding-right: 8px;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+.stepper-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.stepper-btn.less {
+  order: 1;
+  border-right: 1px solid var(--border);
+}
+.stepper-btn.more {
+  order: 4;
+  border-left: 1px solid var(--border);
+}
+.stepper-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.stepper-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Colour: a swatch button and its picker ────────────────────────────────────────────────── */
+.color-btn {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+  cursor: pointer;
+}
+.color-btn:hover:not(:disabled),
+.color-btn[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%), 0 0 0 2px var(--bg), 0 0 0 4px var(--border-strong-1);
+}
+.color-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+.color-btn:disabled {
+  cursor: default;
+}
+.floating.cp-pop {
+  min-width: 0;
+}
+.cp {
+  width: 248px;
+  padding: 10px;
+  background: var(--glass-float);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-edge), var(--shadow-md);
+}
+.cp-sv {
+  position: relative;
+  height: 130px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
+  cursor: crosshair;
+  touch-action: none;
+}
+.cp-hue {
+  position: relative;
+  height: 12px;
+  margin: 12px 0;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
+  cursor: pointer;
+  touch-action: none;
+}
+.cp-sv:focus-visible,
+.cp-hue:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+.cp-knob {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2.5px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 40%), inset 0 0 0 1px rgb(0 0 0 / 15%);
+  pointer-events: none;
+}
+.cp-hue .cp-knob {
+  top: 50%;
+}
+.cp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cp-preview {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 12%);
+}
+.cp-hex {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  height: 30px;
+}
+.cp-hex input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+.cp-hex:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+.cp-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+.cp-swatches .swatch {
+  width: auto;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* ── File drop area ────────────────────────────────────────────────────────────────────────── */
+.file-drop {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 20px 16px;
+  border: 1.5px dashed var(--border-strong-1);
+  border-radius: var(--radius-lg);
+  background: var(--well);
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.file-drop:hover {
+  background: var(--well-hover);
+  border-color: var(--text-faint);
+}
+.file-drop:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+.file-drop.over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.file-drop.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.file-drop-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--layer-2);
+  box-shadow: var(--shadow-sm);
+  color: var(--accent-fg);
+}
+.file-drop-icon svg {
+  width: 18px;
+  height: 18px;
 }
