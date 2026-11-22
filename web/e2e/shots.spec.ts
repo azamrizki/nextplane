@@ -136,6 +136,11 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto(`${projectUrl}?peek=${itemId}`);
     await page.waitForTimeout(500);
     await shot("peek");
+    // Our own controls (v0.3): the date picker from the peek, a Select, the range picker.
+    await page.getByRole("dialog", { name: "Properties" }).getByLabel("Due date").click();
+    await page.waitForTimeout(250);
+    await shot("date-picker");
+    await page.keyboard.press("Escape");
     await page.goto(`${projectUrl}/work-items/${itemId}`);
     await page.waitForTimeout(500);
     await shot("detail");
@@ -143,6 +148,18 @@ for (const theme of ["light", "dark"] as const) {
     await page.getByRole("button", { name: "Add work item", exact: true }).click();
     await page.waitForTimeout(300);
     await shot("create");
+    await page.keyboard.press("Escape");
+    await page.goto(`${projectUrl}/cycles`);
+    await page.getByRole("button", { name: /new cycle/i }).first().click();
+    await page.getByRole("dialog").getByLabel("Start date").click();
+    await page.waitForTimeout(250);
+    await shot("range-picker");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await page.goto(`${projectUrl}/settings`);
+    await page.getByLabel("Lead", { exact: true }).click();
+    await page.waitForTimeout(250);
+    await shot("select");
     await page.keyboard.press("Escape");
     await page.goto(`${projectUrl}/cycles`);
     await page.waitForTimeout(300);

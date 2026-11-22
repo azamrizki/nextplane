@@ -138,6 +138,8 @@ for (const size of SIZES) {
     await check("board card menu", async () => (await card.hover(), card.getByRole("button", { name: "Work item actions" }).click()));
     const firstCard = page.locator(".board-card").first();
     await check("board first card labels", async () => firstCard.getByRole("button", { name: "Labels" }).click());
+    // Our own date picker (v0.3) from the last card's due date.
+    await check("board card due date picker", async () => (await card.scrollIntoViewIfNeeded(), card.getByRole("button", { name: "Due date" }).click()));
 
     // List rows (chips row clips, last rows near the bottom).
     await page.getByRole("tab", { name: "List" }).click();
@@ -207,6 +209,21 @@ for (const size of SIZES) {
       if (!(await page.getByRole("dialog").count())) await page.getByRole("button", { name: "Add work item", exact: true }).click();
       await page.getByRole("dialog").getByRole("button", { name: "Labels" }).click();
     });
+    await check("create dialog due date", async () => {
+      if (!(await page.getByRole("dialog").count())) await page.getByRole("button", { name: "Add work item", exact: true }).click();
+      await page.getByRole("dialog").getByRole("button", { name: "Due date" }).click();
+    });
+    // Cycle dates: the two-month range picker inside a dialog.
+    await page.goto(`${projectUrl}/cycles`);
+    await check("cycle dialog range picker", async () => {
+      await page.getByRole("button", { name: /new cycle/i }).first().click();
+      await page.getByRole("dialog").getByLabel("Start date").click();
+    });
+    // Settings: a Select near the bottom of the form, and a state colour.
+    await page.goto(`${projectUrl}/settings`);
+    await check("settings lead select", async () => page.getByLabel("Lead", { exact: true }).click());
+    await page.goto(`${projectUrl}/settings/states`);
+    await check("settings state colour", async () => last(page.getByRole("button", { name: "State colour" })).click());
     await page.keyboard.press("Escape");
 
     // Shell: sidebar project menu (in a scrolling sidebar), switcher, help, account.
