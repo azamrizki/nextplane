@@ -9,6 +9,7 @@ import { LinkBox } from "../pages/Members";
 import { Avatar } from "./Avatar";
 import { Dialog } from "./Dialog";
 import { ErrorAlert, TextField } from "./ui";
+import { Select } from "./Select";
 
 interface Token {
   id: string;
@@ -76,10 +77,10 @@ export function ApiTokens() {
             <TextField label={t("tok.name")} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required maxLength={80} autoFocus />
             <div className="field">
               <label htmlFor="tok-scope">{t("tok.scope")}</label>
-              <select id="tok-scope" className="select" value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value })}>
+              <Select id="tok-scope" value={f.scope} onChange={(v) => setF({ ...f, scope: v })}>
                 <option value="write">{t("tok.write")}</option>
                 <option value="read">{t("tok.read")}</option>
-              </select>
+              </Select>
             </div>
             <TextField label={t("tok.expiry")} type="number" min={1} max={3650} value={f.days} onChange={(e) => setF({ ...f, days: e.target.value })} />
             <div><button className="btn btn-primary" disabled={create.isPending}>{t("tok.new")}</button></div>

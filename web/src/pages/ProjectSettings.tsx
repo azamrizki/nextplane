@@ -23,6 +23,7 @@ import { useMe } from "../lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { get } from "../api/client";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 type Tab = "general" | "members" | "states" | "labels" | "estimates" | "features" | "automations" | "data" | "publish";
 const TABS: Tab[] = ["general", "members", "states", "labels", "estimates", "features", "automations", "data", "publish"];
@@ -147,21 +148,21 @@ function General({ p }: { p: Project }) {
             <div className="form-row">
               <div className="field grow">
                 <label htmlFor="plead">{t("proj.lead")}</label>
-                <select id="plead" className="select" value={f.lead_id} onChange={(e) => setF({ ...f, lead_id: e.target.value })}>
+                <Select id="plead" value={f.lead_id} onChange={(v) => setF({ ...f, lead_id: v })}>
                   <option value="">{t("proj.noLead")}</option>
                   {(members.data ?? []).map((m) => (
                     <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div className="field grow">
                 <label htmlFor="pdef">{t("proj.defaultAssignee")}</label>
-                <select id="pdef" className="select" value={f.default_assignee_id} onChange={(e) => setF({ ...f, default_assignee_id: e.target.value })}>
+                <Select id="pdef" value={f.default_assignee_id} onChange={(v) => setF({ ...f, default_assignee_id: v })}>
                   <option value="">{t("proj.none")}</option>
                   {(members.data ?? []).map((m) => (
                     <option key={m.user_id} value={m.user_id}>{m.name || m.email}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
             <label className="checkbox">
@@ -283,11 +284,11 @@ function Members({ p }: { p: Project }) {
               <span className="faint small">{m.email} · {t(`role.${m.workspace_role}`)}</span>
             </div>
             {manage ? (
-              <select className="select select-inline" aria-label={t("members.role")} value={m.role} onChange={(e) => { setError(null); setRole.mutate({ user: m.user_id, role: e.target.value as ProjRole }); }}>
+              <Select className="select-inline" aria-label={t("members.role")} value={m.role} onChange={(v) => { setError(null); setRole.mutate({ user: m.user_id, role: v as ProjRole }); }}>
                 {projRolesFor(m.workspace_role).map((r) => (
                   <option key={r} value={r}>{t(`prole.${r}`)}</option>
                 ))}
-              </select>
+              </Select>
             ) : (
               <span className="muted small">{t(`prole.${m.role}`)}</span>
             )}
@@ -328,20 +329,20 @@ function AddMemberDialog({ open, onClose, p, candidates, onDone }: { open: boole
           <ErrorAlert message={add.isError ? errorText(add.error, t) : null} />
           <div className="field">
             <label htmlFor="am-user">{t("proj.person")}</label>
-            <select id="am-user" className="select" value={user} onChange={(e) => setUser(e.target.value)} required>
+            <Select id="am-user" value={user} onChange={(v) => setUser(v)} required>
               <option value="" disabled>—</option>
               {candidates.map((c) => (
                 <option key={c.user_id} value={c.user_id}>{(c.name || c.email) + " · " + t(`role.${c.role}`)}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="field">
             <label htmlFor="am-role">{t("members.role")}</label>
-            <select id="am-role" className="select" value={roles.includes(role) ? role : roles[0]} onChange={(e) => setRole(e.target.value as ProjRole)}>
+            <Select id="am-role" value={roles.includes(role) ? role : (roles[0] ?? "")} onChange={(v) => setRole(v as ProjRole)}>
               {roles.map((r) => (
                 <option key={r} value={r}>{t(`prole.${r}`)}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <button className="btn btn-primary" disabled={!user || add.isPending}>{t("common.add")}</button>
@@ -454,12 +455,12 @@ function NameColorDialog({ open, title, label, onClose, submit, onDone, parents 
         {parents ? (
           <div className="field">
             <label htmlFor="lp">{t("label.parent")}</label>
-            <select id="lp" className="select" value={parent} onChange={(e) => setParent(e.target.value)}>
+            <Select id="lp" value={parent} onChange={(v) => setParent(v)}>
               <option value="">{t("label.noParent")}</option>
               {parents.map((l) => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
         ) : null}
         <div>

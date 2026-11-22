@@ -14,6 +14,7 @@ import { pcan } from "../lib/perm";
 import { useProjects } from "../lib/projects";
 import { toast } from "../lib/toast";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 interface ExportEntry {
   id: string;
@@ -155,13 +156,13 @@ function ExportDialog({ onClose, onDone }: { onClose: () => void; onDone: (e: Ex
         </div>
         <div className="field">
           <label htmlFor="exf">{t("ex.format")}</label>
-          <select id="exf" className="select" value={format} onChange={(e) => setFormat(e.target.value as (typeof FORMATS)[number])}>
+          <Select id="exf" value={format} onChange={(v) => setFormat(v as (typeof FORMATS)[number])}>
             {FORMATS.map((f) => (
               <option key={f} value={f}>
                 {t(`ex.f.${f}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <p className="muted small">{t("ex.what")}</p>
       </div>

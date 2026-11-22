@@ -1,4 +1,4 @@
-import { ADMIN, expect, login, test } from "./fixtures";
+import { ADMIN, expect, login, test, choose } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -66,8 +66,8 @@ test("custom: points by label, segmented by priority, in dark mode", async ({ pa
   await page.goto(projectUrl + "/analytics");
   await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
   await page.getByRole("tab", { name: "Custom" }).click();
-  await page.getByLabel("Group by").selectOption("label");
-  await page.getByLabel("Measure").selectOption("points");
+  await choose(page.getByLabel("Group by"), "label");
+  await choose(page.getByLabel("Measure"), "points");
   const card = page.locator(".chart-card");
   await expect(card.locator(".chart-title")).toHaveText("Estimate points by label, segmented by priority");
   await expect(card.locator(".chart-legend li")).toHaveCount(4);

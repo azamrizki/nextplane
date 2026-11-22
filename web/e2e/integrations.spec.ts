@@ -32,8 +32,8 @@ test("import from CSV and export", async ({ page, hub }) => {
   const csv = "Summary,Status,Priority,Notes\nWrite release notes,Todo,high,For 1.0\nFix dark mode,In Progress,low,\nUpdate docs,Done,,\n";
   await page.getByLabel("Choose a CSV file").setInputFiles({ name: "items.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
   await expect(page.getByText("3 rows found")).toBeVisible();
-  await expect(page.getByLabel("Title", { exact: true })).toHaveValue("0");
-  await expect(page.getByLabel("Description", { exact: true })).toHaveValue("3");
+  await expect(page.getByLabel("Title", { exact: true })).toHaveAttribute("data-value", "0");
+  await expect(page.getByLabel("Description", { exact: true })).toHaveAttribute("data-value", "3");
   await page.getByRole("button", { name: "Import 3 rows" }).click();
   await expect(page.getByText("3 work items created.")).toBeVisible();
   await page.goto(projectUrl);

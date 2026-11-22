@@ -1,4 +1,4 @@
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, test, choose } from "./fixtures";
 
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
 
@@ -24,7 +24,7 @@ test("create a module, add items from inside and from the item, see progress", a
   await page.getByRole("button", { name: "New module" }).click();
   const dlg = page.getByRole("dialog");
   await dlg.getByLabel("Module name").fill("Checkout");
-  await dlg.getByLabel("Status").selectOption("in_progress");
+  await choose(dlg.getByLabel("Status"), "in_progress");
   await dlg.getByRole("button", { name: "New module" }).click();
   await expect(page.locator(".cycle-title")).toContainText("Checkout");
   await expect(page.locator(".cycle-title")).toContainText("In progress");

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, test, choose } from "./fixtures";
 
 test("public boards take comments, reactions and votes; exports span projects", async ({ page, hub, browser }) => {
   await page.goto(hub.setupLink);
@@ -56,7 +56,7 @@ test("public boards take comments, reactions and votes; exports span projects", 
   // Exports: every project you work in, downloaded at once and kept in the history.
   await page.goto(`${hub.url}/acme/settings/exports`);
   await page.getByRole("button", { name: "Export" }).first().click();
-  await page.getByRole("dialog").getByLabel("Format").selectOption("csv");
+  await choose(page.getByRole("dialog").getByLabel("Format"), "csv");
   const download = page.waitForEvent("download");
   await page.getByRole("dialog").getByRole("button", { name: "Export" }).click();
   const file = await download;

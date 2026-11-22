@@ -12,6 +12,7 @@ import { errorText } from "../lib/errors";
 import { wq } from "../lib/queries";
 import { qk, useMe } from "../lib/session";
 import { useTheme, type ThemeChoice } from "../lib/theme";
+import { Select } from "../components/Select";
 
 export function ProfilePage() {
   const { t, lang, setLang } = useI18n();
@@ -104,19 +105,19 @@ export function ProfilePage() {
         <div className="card-body form">
           <div className="field">
             <label htmlFor="pref-theme">{t("shell.theme")}</label>
-            <select id="pref-theme" className="select" value={theme} onChange={(e) => setTheme(e.target.value as ThemeChoice)}>
+            <Select id="pref-theme" value={theme} onChange={(v) => setTheme(v as ThemeChoice)}>
               <option value="system">{t("shell.theme.system")}</option>
               <option value="light">{t("shell.theme.light")}</option>
               <option value="dark">{t("shell.theme.dark")}</option>
-            </select>
+            </Select>
           </div>
           <div className="field">
             <label htmlFor="pref-lang">{t("shell.language")}</label>
-            <select id="pref-lang" className="select" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+            <Select id="pref-lang" value={lang} onChange={(v) => setLang(v as Lang)}>
               {LANGS.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
       </section>

@@ -1,4 +1,4 @@
-import { ADMIN, expect, login, test } from "./fixtures";
+import { ADMIN, expect, login, test, choose } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 let projectUrl = "";
@@ -98,17 +98,17 @@ test("project admins set up automations in project settings", async ({ page, hub
   await expect(page.getByRole("heading", { level: 1, name: "Automations" })).toBeVisible();
   const archive = page.getByRole("switch", { name: "Auto-archive closed work items" });
   await archive.check();
-  await expect(page.getByLabel("Months").first()).toHaveValue("1");
-  await page.getByLabel("Months").first().selectOption("custom");
+  await expect(page.getByLabel("Months").first()).toHaveAttribute("data-value", "1");
+  await choose(page.getByLabel("Months").first(), "custom");
   await page.getByRole("dialog").getByLabel("Months").fill("13");
   await expect(page.getByRole("dialog").getByRole("button", { name: "Save" })).toBeDisabled();
   await page.getByRole("dialog").getByLabel("Months").fill("4");
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
-  await expect(page.getByLabel("Months").first()).toHaveValue("4");
+  await expect(page.getByLabel("Months").first()).toHaveAttribute("data-value", "4");
   const close = page.getByRole("switch", { name: "Auto-close work items" });
   await close.check();
-  await expect(page.getByLabel("Close into")).toHaveValue(/.+/);
-  await expect(page.getByLabel("Close into").locator("option:checked")).toHaveText("Cancelled");
+  await expect(page.getByLabel("Close into")).toHaveAttribute("data-value", /.+/);
+  await expect(page.getByLabel("Close into")).toHaveText("Cancelled");
   // The settings are saved on the project.
   const p = await page.evaluate(async (url) => (await fetch("/api/v1" + new URL(url).pathname.replace(/^\//, "/workspaces/"))).json(), projectUrl);
   expect([p.archive_in, p.close_in]).toEqual([4, 1]);

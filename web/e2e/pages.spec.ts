@@ -1,4 +1,4 @@
-import { ADMIN, expect, login, test } from "./fixtures";
+import { ADMIN, expect, login, test, choose } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 const shots = process.env.NEXTPLANE_E2E_SHOTS;
@@ -110,7 +110,7 @@ test("organize pages: nest by dragging, move, duplicate", async ({ page, hub }) 
   // Move it back to the top level with the dialog.
   await beta.click();
   await page.getByRole("button", { name: "Move", exact: true }).click();
-  await page.getByLabel("Put it inside").selectOption({ label: "Top level" });
+  await choose(page.getByLabel("Put it inside"), { label: "Top level" });
   await page.getByRole("dialog").getByRole("button", { name: "Move" }).click();
   await expect(page.locator('li[data-page="Beta"]')).toHaveAttribute("style", /padding-inline-start: 0px/);
   // Duplicate.

@@ -15,6 +15,7 @@ import { assignableRoles, can, canRemove, invitableRoles } from "../lib/perm";
 import { wq } from "../lib/queries";
 import { useMe } from "../lib/session";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 export function MembersPage() {
   const t = useT();
@@ -82,13 +83,13 @@ export function MembersPage() {
                 <span className="faint small ellipsis">{m.email}</span>
               </div>
               {roles.length ? (
-                <select
-                  className="select select-inline"
+                <Select
+                  className="select-inline"
                   aria-label={t("members.role")}
                   value={m.role}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     setError(null);
-                    setRole.mutate({ user: m.user_id, role: e.target.value as WsRole });
+                    setRole.mutate({ user: m.user_id, role: v as WsRole });
                   }}
                 >
                   {[...new Set([m.role, ...roles])].map((r) => (
@@ -96,7 +97,7 @@ export function MembersPage() {
                       {t(`role.${r}`)}
                     </option>
                   ))}
-                </select>
+                </Select>
               ) : (
                 <span className="muted small">{t(`role.${m.role}`)}</span>
               )}
@@ -208,11 +209,11 @@ function InviteDialog({ open, onClose, onDone }: { open: boolean; onClose: () =>
           </div>
           <div className="field">
             <label htmlFor="invite-role">{t("members.role")}</label>
-            <select id="invite-role" className="select" value={role} onChange={(e) => setRole(e.target.value as WsRole)}>
+            <Select id="invite-role" value={role} onChange={(v) => setRole(v as WsRole)}>
               {roles.map((r) => (
                 <option key={r} value={r}>{t(`role.${r}`)}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <button className="btn btn-primary" disabled={send.isPending || !emails.trim()}>{t("members.send")}</button>

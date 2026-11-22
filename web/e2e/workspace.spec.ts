@@ -1,5 +1,5 @@
 import type { Browser, Page } from "@playwright/test";
-import { ADMIN, expect, login, test, type Hub } from "./fixtures";
+import { ADMIN, expect, login, test, type Hub, choose } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -42,7 +42,7 @@ test("create a workspace, rename it, invite a member", async ({ page, hub }) => 
   await page.getByRole("link", { name: "Members" }).click();
   await page.getByRole("button", { name: "Invite people" }).click();
   await page.getByRole("dialog").getByLabel("Emails").fill("bob@example.com");
-  await page.getByRole("dialog").getByLabel("Role").selectOption("member");
+  await choose(page.getByRole("dialog").getByLabel("Role"), "member");
   await page.getByRole("button", { name: "Create invites" }).click();
   const code = page.locator(".link-box code");
   await expect(code).toContainText("/invite/");
@@ -78,8 +78,8 @@ test("owner changes Bob's role, then removes him", async ({ page, hub }) => {
   await page.getByRole("button", { name: "Switch workspace" }).click();
   await page.getByRole("menuitem", { name: "Invite members" }).click();
   const bobRow = page.locator(".row", { hasText: "bob@example.com" });
-  await bobRow.getByLabel("Role").selectOption("guest");
-  await expect(bobRow.getByLabel("Role")).toHaveValue("guest");
+  await choose(bobRow.getByLabel("Role"), "guest");
+  await expect(bobRow.getByLabel("Role")).toHaveAttribute("data-value", "guest");
   await bobRow.getByRole("button", { name: "Remove" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Remove" }).click();
   await expect(page.locator(".row", { hasText: "bob@example.com" })).toHaveCount(0);

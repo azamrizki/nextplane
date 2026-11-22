@@ -1,4 +1,4 @@
-import { ADMIN, expect, test } from "./fixtures";
+import { ADMIN, expect, test, choose } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -32,9 +32,9 @@ test("logout, wrong password, login", async ({ page, hub }) => {
   await expect(page).toHaveURL(/\/create-workspace$/);
 
   await page.goto(hub.url + "/profile");
-  await page.getByLabel("Theme").selectOption("dark");
+  await choose(page.getByLabel("Theme"), "dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByLabel("Theme").selectOption("light");
+  await choose(page.getByLabel("Theme"), "light");
 
   // Log out through the API the menu uses; the menu itself is covered in workspace.spec.ts.
   await page.evaluate(() => fetch("/api/v1/auth/logout", { method: "POST" }));

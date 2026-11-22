@@ -32,6 +32,7 @@ import { Picker, type Option } from "./Picker";
 import { PriorityIcon, StateIcon } from "./Props";
 import type { PropsCtx } from "./WorkItemProps";
 import { DEFAULT_VIEW, DISPLAY_KEYS, EMPTY_FILTERS, LAYOUTS, activeFilterCount, type DueFilter, type Filters, type GroupBy, type Layout, type OrderBy, type ViewState } from "../lib/view";
+import { Select } from "./Select";
 
 const LAYOUT_ICON: Record<Layout, ReactNode> = {
   list: <List />,
@@ -256,18 +257,18 @@ export function DisplayMenu({ view, setView, compact }: { view: ViewState; setVi
             <div className="menu-sep" />
             <label className="display-row">
               <span className="grow">{t("view.groupBy")}</span>
-              <select className="select select-inline" value={view.groupBy} onChange={(e) => setView({ groupBy: e.target.value as GroupBy })}>
+              <Select className="select-inline" value={view.groupBy} onChange={(v) => setView({ groupBy: v as GroupBy })}>
                 {(["state", "priority", "assignee", "label", "none"] as GroupBy[]).map((g) => <option key={g} value={g}>{t(`groupBy.${g}`)}</option>)}
-              </select>
+              </Select>
             </label>
           </>
         ) : null}
         <label className="display-row">
           <ArrowDownWideNarrow aria-hidden className="faint" />
           <span className="grow">{t("view.orderBy")}</span>
-          <select className="select select-inline" value={view.orderBy} onChange={(e) => setView({ orderBy: e.target.value as OrderBy })}>
+          <Select className="select-inline" value={view.orderBy} onChange={(v) => setView({ orderBy: v as OrderBy })}>
             {(["manual", "priority", "due_date", "created_at", "updated_at"] as OrderBy[]).map((o) => <option key={o} value={o}>{t(`orderBy.${o}`)}</option>)}
-          </select>
+          </Select>
         </label>
         <div className="menu-sep" />
         <label className="menu-item checkbox-row"><input type="checkbox" checked={view.showSubItems} onChange={(e) => setView({ showSubItems: e.target.checked })} />{t("view.subItems")}</label>

@@ -11,6 +11,7 @@ import { errorText } from "../lib/errors";
 import { pcan } from "../lib/perm";
 import { pq, projectPath, useStates } from "../lib/projects";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 const PRESETS = [1, 3, 6, 9, 12];
 
@@ -76,19 +77,18 @@ export function Automations({ p }: { p: Project }) {
           <span>{t("auto.closeState")}</span>
           <span className="automation-state">
             {target ? <StateIcon group={target.group} color={target.color} /> : null}
-            <select
-              className="select"
+            <Select
               aria-label={t("auto.closeState")}
               value={target?.id ?? ""}
               disabled={!editable || cancelled.length < 2}
-              onChange={(e) => save.mutate({ close_state_id: e.target.value })}
+              onChange={(v) => save.mutate({ close_state_id: v })}
             >
               {cancelled.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </span>
         </div>
       </AutomationBox>
@@ -124,12 +124,11 @@ function Months({ value, disabled, onChange }: { value: number; disabled: boolea
   const valid = /^\d+$/.test(n) && +n >= 1 && +n <= 12;
   return (
     <>
-      <select
-        className="select"
+      <Select
         aria-label={t("auto.months")}
         value={String(value)}
         disabled={disabled}
-        onChange={(e) => (e.target.value === "custom" ? (setN(String(value || 1)), setCustom(true)) : onChange(+e.target.value))}
+        onChange={(v) => (v === "custom" ? (setN(String(value || 1)), setCustom(true)) : onChange(+v))}
       >
         {options.map((m) => (
           <option key={m} value={m}>
@@ -137,7 +136,7 @@ function Months({ value, disabled, onChange }: { value: number; disabled: boolea
           </option>
         ))}
         <option value="custom">{t("auto.custom")}</option>
-      </select>
+      </Select>
       <Dialog
         open={custom}
         onClose={() => setCustom(false)}

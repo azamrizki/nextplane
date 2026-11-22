@@ -9,6 +9,7 @@ import { errorText } from "../lib/errors";
 import { pcan } from "../lib/perm";
 import { projectPath } from "../lib/projects";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 const FIELDS = ["title", "description", "state", "priority", "assignees", "labels", "start_date", "due_date", "estimate"] as const;
 type Field = (typeof FIELDS)[number];
@@ -118,17 +119,16 @@ export function DataTab({ p }: { p: Project }) {
                             <label htmlFor={`map-${f}`}>{t(`x.f.${f}`)}</label>
                           </th>
                           <td>
-                            <select
+                            <Select
                               id={`map-${f}`}
-                              className="select"
-                              value={mapping[f] ?? ""}
-                              onChange={(e) => setMapping((m) => ({ ...m, [f]: e.target.value === "" ? undefined : Number(e.target.value) }))}
+                              value={String(mapping[f] ?? "")}
+                              onChange={(v) => setMapping((m) => ({ ...m, [f]: v === "" ? undefined : Number(v) }))}
                             >
                               <option value="">{t("x.noColumn")}</option>
                               {preview.headers.map((h, i) => (
                                 <option key={i} value={i}>{h || `#${i + 1}`}</option>
                               ))}
-                            </select>
+                            </Select>
                           </td>
                         </tr>
                       ))}

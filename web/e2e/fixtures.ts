@@ -99,3 +99,13 @@ export async function openFilter(page: import("@playwright/test").Page, prop: st
   await page.getByRole("button", { name: "Add filter" }).click();
   await page.getByRole("menuitem", { name: prop, exact: true }).click();
 }
+
+/** Picks a value in one of our Select controls (a button that opens a listbox), as
+ * `selectOption` does for a native select. `value` is the option's value, or `{ label }`. */
+export async function choose(target: import("@playwright/test").Locator, value: string | { label: string }) {
+  await target.click();
+  const page = target.page();
+  const list = page.locator('[role="listbox"]').last();
+  const opt = typeof value === "string" ? list.locator(`[role="option"][data-value="${value}"]`) : list.getByRole("option", { name: value.label, exact: true });
+  await opt.click();
+}

@@ -23,6 +23,7 @@ import { wiq } from "../lib/workItems";
 import { Meter, ProgressPanels } from "./Cycles";
 import { ProjectBar, WorkItemsView } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 function useCtx(): PropsCtx | null | "missing" {
   const ws = useWs();
@@ -121,16 +122,16 @@ function ModuleDialog({ ctx, open, onClose, module: m }: { ctx: PropsCtx; open: 
         <div className="form-row">
           <div className="field grow">
             <label htmlFor="mod-status">{t("mod.status")}</label>
-            <select id="mod-status" className="select" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value as ModuleStatus })}>
+            <Select id="mod-status" value={f.status} onChange={(v) => setF({ ...f, status: v as ModuleStatus })}>
               {MODULE_STATUSES.map((s) => <option key={s} value={s}>{t(`mod.st.${s}`)}</option>)}
-            </select>
+            </Select>
           </div>
           <div className="field grow">
             <label htmlFor="mod-lead">{t("mod.lead")}</label>
-            <select id="mod-lead" className="select" value={f.lead_id} onChange={(e) => setF({ ...f, lead_id: e.target.value })}>
+            <Select id="mod-lead" value={f.lead_id} onChange={(v) => setF({ ...f, lead_id: v })}>
               <option value="">{t("proj.noLead")}</option>
               {ctx.members.map((x) => <option key={x.user_id} value={x.user_id}>{x.name || x.email}</option>)}
-            </select>
+            </Select>
           </div>
         </div>
         <div className="form-row">

@@ -22,6 +22,7 @@ import { projectPath, useProject, useProjects } from "../lib/projects";
 import { useMe } from "../lib/session";
 import { ProjectBar } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 function useCtx(): PropsCtx | null | "missing" {
   const ws = useWs();
@@ -310,14 +311,14 @@ function MoveDialog({ page, pages, onClose, onMove }: { page: Page; pages: Page[
       <p className="faint small">{t("pg.moveHint")}</p>
       <div className="field">
         <label htmlFor="page-parent">{t("pg.parent")}</label>
-        <select id="page-parent" className="select" value={parent} onChange={(e) => setParent(e.target.value)}>
+        <Select id="page-parent" value={parent} onChange={(v) => setParent(v)}>
           <option value="">{t("pg.topLevel")}</option>
           {options.map(([p, depth]) => (
             <option key={p.id} value={p.id}>
               {"\u00a0\u00a0".repeat(depth) + (p.title || t("pg.untitled"))}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </Dialog>
   );

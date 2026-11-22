@@ -16,6 +16,7 @@ import { useProjectCtx } from "../lib/projectCtx";
 import { useProject, useProjects } from "../lib/projects";
 import { ProjectBar } from "./ProjectHome";
 import { useWs } from "./WorkspaceHome";
+import { Select } from "../components/Select";
 
 interface Bucket {
   key: string;
@@ -83,12 +84,12 @@ export function AnalyticsPage() {
         filters={
           <div className="field">
             <label htmlFor="an-project">{t("an.project")}</label>
-            <select id="an-project" className="select" value={project} onChange={(e) => setProject(e.target.value)}>
+            <Select id="an-project" value={project} onChange={(v) => setProject(v)}>
               <option value="">{t("an.allProjects")}</option>
               {(projects.data ?? []).filter((p) => pcan.viewWorkItems(p)).map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
         }
       />
@@ -214,27 +215,27 @@ function CustomTab({ project }: { project?: string }) {
       <div className="an-filters">
         <div className="field">
           <label htmlFor="an-x">{t("an.dimension")}</label>
-          <select id="an-x" className="select" value={x} onChange={(e) => setX(e.target.value as Dim)}>
+          <Select id="an-x" value={x} onChange={(v) => setX(v as Dim)}>
             {dims.map((d) => (
               <option key={d} value={d}>{t(`an.dim.${d}`)}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="field">
           <label htmlFor="an-seg">{t("an.segment")}</label>
-          <select id="an-seg" className="select" value={seg} onChange={(e) => setSegment(e.target.value as Dim | "")}>
+          <Select id="an-seg" value={seg} onChange={(v) => setSegment(v as Dim | "")}>
             <option value="">{t("an.none")}</option>
             {dims.filter((d) => d !== x).map((d) => (
               <option key={d} value={d}>{t(`an.dim.${d}`)}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="field">
           <label htmlFor="an-measure">{t("an.measure")}</label>
-          <select id="an-measure" className="select" value={measure} onChange={(e) => setMeasure(e.target.value as "count" | "points")}>
+          <Select id="an-measure" value={measure} onChange={(v) => setMeasure(v as "count" | "points")}>
             <option value="count">{t("an.count")}</option>
             <option value="points">{t("an.points")}</option>
-          </select>
+          </Select>
         </div>
       </div>
       {!b ? (
