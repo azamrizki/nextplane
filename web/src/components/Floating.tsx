@@ -13,7 +13,8 @@ export function layerHost(anchor: Element | null): HTMLElement {
 /**
  * Places `f` next to `anchor` in viewport coordinates: below (or above when there is more
  * room there, or when `up` asks for it), lined up with the anchor's start or end, kept inside
- * the window, and no taller than the room it has (it scrolls inside). Used for menus and
+ * the window. When neither side has room it slides over its trigger to stay whole, and only a
+ * layer taller than the window gets a height limit (it scrolls inside). Used for menus and
  * pickers so no scrolling or clipping container (board columns, list rows, panels, dialogs)
  * can cut them off.
  */
@@ -26,9 +27,15 @@ export function placeNear(anchor: DOMRect, f: HTMLElement, align: "start" | "end
   const below = vh - anchor.bottom - GAP - MARGIN;
   const above = anchor.top - GAP - MARGIN;
   const goUp = up ? above >= Math.min(h, 160) || above > below : h > below && above > below;
-  const room = Math.max(96, goUp ? above : below);
+  let room = Math.max(96, goUp ? above : below);
   const height = Math.min(h, room);
-  const top = goUp ? anchor.top - GAP - height : anchor.bottom + GAP;
+  let top = goUp ? anchor.top - GAP - height : anchor.bottom + GAP;
+  // Neither side has room but the window does (a big panel such as the range picker on a short
+  // screen): keep it whole and slide it over its trigger rather than make it scroll.
+  if (h > room && h <= vh - 2 * MARGIN) {
+    top = Math.max(MARGIN, Math.min(goUp ? anchor.top - GAP - h : anchor.bottom + GAP, vh - MARGIN - h));
+    room = h;
+  }
   let left = align === "end" ? anchor.right - w : anchor.left;
   left = Math.max(MARGIN, Math.min(left, vw - w - MARGIN));
   // The menu inside scrolls (its border stays whole); see `.floating` in base.css.
@@ -47,8 +54,16 @@ export function placeNear(anchor: DOMRect, f: HTMLElement, align: "start" | "end
 
 /** A layer above everything (see `placeNear`), following its anchor while the page scrolls
  * or the window or its own content changes size. */
-export const Floating = forwardRef<HTMLDivElement, { anchor: RefObject<HTMLElement | null>; align?: "start" | "end"; up?: boolean; className?: string; children: ReactNode; onClick?: (e: React.MouseEvent) => void }>(
-  function Floating({ anchor, align = "start", up = false, className, children, onClick }, outer) {
+export const Floating = forwardRef<HTMLDivElement, {
+    anchor: RefObject<HTMLElement | null>;
+    align?: "start" | "end";
+    up?: boolean;
+    className?: string;
+    children: ReactNode;
+    onClick?: (e: React.MouseEvent) => void;
+    onMouseDown?: (e: React.MouseEvent) => void;
+  }>(
+  function Floating({ anchor, align = "start", up = false, className, children, onClick, onMouseDown }, outer) {
     const el = useRef<HTMLDivElement>(null);
     useImperativeHandle(outer, () => el.current!, []);
     const place = useCallback(() => {
@@ -75,7 +90,7 @@ export const Floating = forwardRef<HTMLDivElement, { anchor: RefObject<HTMLEleme
       };
     }, [place]);
     return createPortal(
-      <div ref={el} className={"floating" + (className ? ` ${className}` : "")} style={{ position: "fixed", top: 0, left: 0, visibility: "hidden" }} onClick={onClick}>
+      <div ref={el} className={"floating" + (className ? ` ${className}` : "")} style={{ position: "fixed", top: 0, left: 0, visibility: "hidden" }} onClick={onClick} onMouseDown={onMouseDown}>
         {children}
       </div>,
       layerHost(anchor.current),
