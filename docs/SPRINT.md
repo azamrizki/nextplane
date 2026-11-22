@@ -441,7 +441,7 @@ The owner approved the mockups (`.generate/overhoul-ui-glass`, outside the repo)
 
 ### Web v1 — owner review
 
-Phases 0–3.6 are done and v0.2.0 is released. These need the owner:
+Phases 0–3.8 are done and v0.3.0 is released. These need the owner:
 
 1. **Declare web v1 final** (or list changes). That starts phase 4 (desktop, Android).
 2. **Git:** ✅ `azamrizki/nextplane`, public since 2026-11-21 (history checked first: no secrets, no `.env`, keys or databases, commits carry no email); `v0.1.0` released.
